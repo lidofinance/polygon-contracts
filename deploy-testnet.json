@@ -1,0 +1,19 @@
+{
+  "network": "goerli",
+  "signer": "",
+  "dao": "",
+  "treasury": "",
+  "matic_erc20_address": "",
+  "matic_stake_manager_proxy": "",
+  "lido_nft_proxy": "",
+  "lido_nft_implementation": "",
+  "stMATIC_proxy": "",
+  "stMATIC_implementation": "",
+  "validator_factory_proxy": "",
+  "validator_factory_implementation": "",
+  "node_operator_registry_proxy": "",
+  "node_operator_registry_implementation": "",
+  "fx_state_root_tunnel": "",
+  "fx_state_child_tunnel": "",
+  "validator_implementation": ""
+}

@@ -1,0 +1,29 @@
+name: build-test
+on:
+  push:    
+    branches:
+      - main
+      - pre-testnet-fixes
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:    
+    branches:
+      - main
+      - pre-testnet-fixes
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      INFURA_API_KEY: "00000000000000000000000000000000"
+      MAINNET_PRIVATE_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      GOERLI_PRIVATE_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node 16
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+      - run: make init
+      - run: make compile
+      - run: make test
