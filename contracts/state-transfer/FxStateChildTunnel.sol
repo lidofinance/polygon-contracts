@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {FxBaseChildTunnel} from "../tunnel/FxBaseChildTunnel.sol";
-
+import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseChildTunnel.sol";
+import "../interfaces/IFxStateChildTunnel.sol";
 /**
  * @title FxStateChildTunnel
  */
-contract FxStateChildTunnel is FxBaseChildTunnel {
+contract FxStateChildTunnel is IFxStateChildTunnel, FxBaseChildTunnel {
     uint256 public latestStateId;
     address public latestRootMessageSender;
     bytes public latestData;
 
     constructor(address _fxChild, address _fxRoot) FxBaseChildTunnel(_fxChild) {
-        setFxRootTunnel(_fxRoot);
+        _setFxRootTunnel(_fxRoot);
     }
 
     function _processMessageFromRoot(
@@ -29,12 +29,18 @@ contract FxStateChildTunnel is FxBaseChildTunnel {
      * @dev Function that returns the amount of stMATIC and MATIC in the PoLido protocol
      * @return First return value is the number of stMATIC present, second value is MATIC
      */
-    function getReserves() public view returns (uint256, uint256) {
+    function getReserves() external view override returns (uint256, uint256) {
         (uint256 stMATIC, uint256 MATIC) = abi.decode(
             latestData,
             (uint256, uint256)
         );
 
         return (stMATIC, MATIC);
+    }
+
+    // set fxRootTunnel if not set already
+    function _setFxRootTunnel(address _fxRootTunnel) private {
+        require(fxRootTunnel == address(0x0), "FxBaseChildTunnel: ROOT_TUNNEL_ALREADY_SET");
+        fxRootTunnel = _fxRootTunnel;
     }
 }

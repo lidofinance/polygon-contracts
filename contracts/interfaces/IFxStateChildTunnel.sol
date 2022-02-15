@@ -3,13 +3,13 @@
 pragma solidity 0.8.7;
 
 interface IFxStateChildTunnel {
-    function latestStateId() external view returns (uint256);
+    function getReserves() external view returns (uint256, uint256);
 
-    function latestRootMessageSender() external view returns (address);
+    // function latestRootMessageSender() external view returns (address);
 
-    function latestData() external view returns (bytes memory);
+    // function latestData() external view returns (bytes memory);
 
-    function sendMessageToRoot(bytes memory message) external;
+    // function sendMessageToRoot(bytes memory message) external;
 
-    function setFxRootTunnel(address _fxRootTunnel) external;
+    // function setFxRootTunnel(address _fxRootTunnel) external;
 }

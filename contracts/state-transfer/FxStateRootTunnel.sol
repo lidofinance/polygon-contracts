@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseRootTunnel.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-import {FxBaseRootTunnel} from "../tunnel/FxBaseRootTunnel.sol";
+import "../interfaces/IFxStateRootTunnel.sol";
 
 /**
  * @title FxStateRootTunnel
  */
-contract FxStateRootTunnel is FxBaseRootTunnel, Ownable {
+contract FxStateRootTunnel is IFxStateRootTunnel, FxBaseRootTunnel, Ownable {
     bytes public latestData;
     address public stMATIC;
 
@@ -26,12 +26,12 @@ contract FxStateRootTunnel is FxBaseRootTunnel, Ownable {
         latestData = data;
     }
 
-    function sendMessageToChild(bytes memory message) public {
+    function sendMessageToChild(bytes memory message) public override {
         require(msg.sender == stMATIC, "Not stMATIC");
         _sendMessageToChild(message);
     }
 
-    function setStMATIC(address _stMATIC) external onlyOwner {
+    function setStMATIC(address _stMATIC) external override onlyOwner {
         stMATIC = _stMATIC;
     }
 }
