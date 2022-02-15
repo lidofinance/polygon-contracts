@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.7;
 
-import "../Validator.sol";
+import "../../NodeOperatorRegistry.sol";
 
-/// @title ValidatorV2
+/// @title NodeOperatorRegistryV2
 /// @dev this contract is used only for test the upgradibility
-contract ValidatorV2 is Validator {
+contract NodeOperatorRegistryV2 is NodeOperatorRegistry {
     uint256 x;
 
     function setX(uint256 _x) public {

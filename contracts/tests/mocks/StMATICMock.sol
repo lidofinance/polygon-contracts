@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.7;
 
-import "../interfaces/INodeOperatorRegistry.sol";
+import "../../StMATIC.sol";
 
-contract StMATICMock {
-    address operator;
+contract StMATICMock is StMATIC {
+    address public operator;
 
-    function withdrawTotalDelegated(address _validatorShare) external pure {
+    function withdrawTotalDelegated(address _validatorShare) external pure override {
         require(_validatorShare != address(0), "ILido error");
     }
 
@@ -15,7 +15,7 @@ contract StMATICMock {
         operator = _operator;
     }
 
-    function claimTokens2StMatic(address _validatorShare) public {
+    function claimTokens2StMatic(address) public {
         require(operator != address(0), "Operator address not set");
     }
 }

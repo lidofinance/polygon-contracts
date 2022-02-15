@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.7;
 
-import "../interfaces/IStakeManager.sol";
-import "../helpers/ERC721Test.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../helpers/ERC721Test.sol";
 import "../mocks/ValidatorShareMock.sol";
+import "../../interfaces/IStakeManager.sol";
 
 contract StakeManagerMock is IStakeManager {
     mapping(uint256 => IStakeManager.Validator) smValidators;
@@ -35,7 +35,7 @@ contract StakeManagerMock is IStakeManager {
         uint256 _heimdallFee,
         bool,
         bytes memory _signerPubkey
-    ) external override {
+    ) external {
         uint256 id = state.id + 1;
         state.validators[_user] = id;
         state.Owners[id] = _user;
@@ -73,25 +73,17 @@ contract StakeManagerMock is IStakeManager {
         uint256,
         uint256 _amount,
         bool
-    ) external override {
+    ) external {
         IERC20(state.token).transferFrom(msg.sender, address(this), _amount);
     }
 
-    function unstake(uint256 _validatorId) external override {
+    function unstake(uint256 _validatorId) external {
         smValidators[_validatorId].deactivationEpoch = block.timestamp;
     }
 
-    function topUpForFee(address _user, uint256 _heimdallFee)
-        external
-        override
-    {}
+    function topUpForFee(address _user, uint256 _heimdallFee) external {}
 
-    function getValidatorId(address _user)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getValidatorId(address _user) external view returns (uint256) {
         return state.validators[_user];
     }
 
@@ -104,11 +96,11 @@ contract StakeManagerMock is IStakeManager {
         return state.validatorShares[_validatorId];
     }
 
-    function withdrawRewards(uint256) external override {
+    function withdrawRewards(uint256) external {
         IERC20(state.token).transfer(msg.sender, 1000);
     }
 
-    function unstakeClaim(uint256 _validatorId) external override {
+    function unstakeClaim(uint256 _validatorId) external {
         IERC20(state.token).transfer(
             msg.sender,
             IERC20(state.token).balanceOf(address(this))
@@ -120,7 +112,6 @@ contract StakeManagerMock is IStakeManager {
     function validatorStake(uint256 _validatorId)
         external
         view
-        override
         returns (uint256)
     {
         return state.stakedAmount[_validatorId];
@@ -128,21 +119,20 @@ contract StakeManagerMock is IStakeManager {
 
     function updateSigner(uint256 _validatorId, bytes memory _signerPubkey)
         external
-        override
     {}
 
     function claimFee(
         uint256 _accumFeeAmount,
         uint256 _index,
         bytes memory _proof
-    ) external override {}
+    ) external {}
 
     function updateCommissionRate(
         uint256 _validatorId,
         uint256 _newCommissionRate
-    ) external override {}
+    ) external {}
 
-    function unjail(uint256 _validatorId) external override {
+    function unjail(uint256 _validatorId) external {
         require(
             smValidators[_validatorId].status == IStakeManager.Status.Locked,
             "validator not locked"
@@ -150,7 +140,7 @@ contract StakeManagerMock is IStakeManager {
         smValidators[_validatorId].status = IStakeManager.Status.Active;
     }
 
-    function withdrawalDelay() external pure override returns (uint256) {
+    function withdrawalDelay() external pure returns (uint256) {
         return (2**13);
     }
 
@@ -182,12 +172,12 @@ contract StakeManagerMock is IStakeManager {
         return smValidators[_validatorId];
     }
 
-    function NFTContract() external view override returns (address) {
+    function NFTContract() external view returns (address) {
         return state.stakeNFT;
     }
 
     /// @notice Returns the validator accumulated rewards on stake manager.
-    function validatorReward(uint256) external pure override returns (uint256) {
+    function validatorReward(uint256) external pure returns (uint256) {
         return 1000;
     }
 

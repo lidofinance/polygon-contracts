@@ -3,15 +3,14 @@
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "../interfaces/IValidatorShare.sol";
-import "../interfaces/IStakeManager.sol";
+import "../../interfaces/IValidatorShare.sol";
+import "../../interfaces/IStakeManager.sol";
 
 contract ValidatorShareMock is IValidatorShare {
     address public token;
 
     bool public override delegation;
-    uint256 mAmount;
+    uint256 public mAmount;
 
     uint256 public totalShares;
     uint256 public withdrawPool;
@@ -23,7 +22,7 @@ contract ValidatorShareMock is IValidatorShare {
         public user2WithdrawPoolShare;
     mapping(address => uint256) public override unbondNonces;
 
-    IStakeManager stakeManager;
+    IStakeManager public stakeManager;
 
     constructor(
         address _token,
@@ -115,11 +114,11 @@ contract ValidatorShareMock is IValidatorShare {
         return (totalStaked, 1);
     }
 
-    function withdrawExchangeRate() external view override returns (uint256) {
+    function withdrawExchangeRate() external pure override returns (uint256) {
         return 0;
     }
 
-    function unbonds_new(address _address, uint256 _unbondNonce) external view override returns (DelegatorUnbond memory) {
+    function unbonds_new(address, uint256) external pure override returns (DelegatorUnbond memory) {
         DelegatorUnbond memory unbond = DelegatorUnbond(1,2);
         return unbond;
     }
