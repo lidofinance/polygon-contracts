@@ -7,10 +7,6 @@ import "../../StMATIC.sol";
 contract StMATICMock is StMATIC {
     address public operator;
 
-    function withdrawTotalDelegated(address _validatorShare) external pure override {
-        require(_validatorShare != address(0), "ILido error");
-    }
-
     function setOperator(address _operator) public {
         operator = _operator;
     }
