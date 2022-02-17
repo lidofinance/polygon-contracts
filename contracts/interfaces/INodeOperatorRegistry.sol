@@ -19,16 +19,24 @@ interface INodeOperatorRegistry {
         UNSTAKED
     }
 
-    /// @notice The node operator struct
+    /// @notice The full node operator struct.
     /// @param validatorId the validator id on stakeManager.
     /// @param validatorShare the validator share address of the validator.
     /// @param rewardAddress the reward address.
     /// @param status the status of the node operator in the stake manager.
-    struct NodeOperatorRegistry {
+    struct FullNodeOperatorRegistry {
         uint256 validatorId;
         address validatorShare;
         address rewardAddress;
         NodeOperatorRegistryStatus status;
+    }
+
+    /// @notice The node operator struct
+    /// @param validatorShare the validator share address of the validator.
+    /// @param rewardAddress the reward address.
+    struct NodeOperatorRegistry {
+        address validatorShare;
+        address rewardAddress;
     }
 
     /// @notice Add a new node operator registry to the system.
@@ -83,7 +91,7 @@ interface INodeOperatorRegistry {
     function getNodeOperatorRegistry(uint256 _validatorId)
         external
         view
-        returns (NodeOperatorRegistry memory);
+        returns (FullNodeOperatorRegistry memory);
 
     /// @notice Returns a node operator registry.
     /// @param _rewardAddress the reward address.
@@ -91,7 +99,7 @@ interface INodeOperatorRegistry {
     function getNodeOperatorRegistry(address _rewardAddress)
         external
         view
-        returns (NodeOperatorRegistry memory);
+        returns (FullNodeOperatorRegistry memory);
 
     /// @notice List all the node operator registry in the system.
     /// @return activeNodeOperator the number of active operators.
