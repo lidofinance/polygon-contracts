@@ -3,24 +3,12 @@ import { Signer, Contract, BigNumber } from "ethers";
 import { expect } from "chai";
 import { } from "hardhat/types";
 import {
-    ValidatorFactory,
-    ValidatorFactory__factory,
     NodeOperatorRegistry__factory,
     NodeOperatorRegistry,
-    ValidatorProxy,
-    ERC721Test,
     StakeManagerMock,
-    ValidatorFactoryV2,
-    NodeOperatorRegistryV2,
     StMATICMock,
-    Polygon,
-    ValidatorShareMock,
-    Polygon__factory,
-    ERC721Test__factory,
     StakeManagerMock__factory,
-    Validator__factory,
     StMATICMock__factory,
-    ValidatorV2__factory
 } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -32,7 +20,6 @@ let user3: SignerWithAddress;
 
 let nodeOperatorRegistry: NodeOperatorRegistry;
 let stMATICMock: StMATICMock;
-let polygonERC20: Polygon;
 let stakeManagerMock: StakeManagerMock;
 
 describe("NodeOperator", function () {
@@ -43,30 +30,15 @@ describe("NodeOperator", function () {
         user2 = accounts[2];
         user3 = accounts[3];
 
-        // deploy ERC20 token
-        const PolygonERC20 = (await ethers.getContractFactory(
-            "Polygon"
-        )) as Polygon__factory;
-        polygonERC20 = await PolygonERC20.deploy();
-        await polygonERC20.deployed();
-
         // deploy stake manager mock
         const StakeManagerMock = (await ethers.getContractFactory(
             "StakeManagerMock"
         )) as StakeManagerMock__factory;
         stakeManagerMock = await StakeManagerMock.deploy(
-            polygonERC20.address,
-            ethers.constants.AddressZero
+            ethers.constants.AddressZero, // delete later when clean the StakeManagerMocK
+            ethers.constants.AddressZero // delete later when clean the StakeManagerMocK
         );
         await stakeManagerMock.deployed();
-
-        // deploy node operator contract
-        const NodeOperatorRegistry = (await ethers.getContractFactory(
-            "NodeOperatorRegistry"
-        )) as NodeOperatorRegistry__factory;
-        nodeOperatorRegistry = (await upgrades.deployProxy(
-            NodeOperatorRegistry, [])) as NodeOperatorRegistry;
-        await nodeOperatorRegistry.deployed();
 
         // deploy stMATIC mock contract
         const StMATICMock = (await ethers.getContractFactory(
@@ -75,26 +47,162 @@ describe("NodeOperator", function () {
         stMATICMock = await StMATICMock.deploy();
         await stMATICMock.deployed();
 
-        await nodeOperatorRegistry.setStMaticAddress(stMATICMock.address);
-        await stMATICMock.setOperator(nodeOperatorRegistry.address);
-
-        // transfer some funds to the stake manager, so we can use it to withdraw rewards.
-        await polygonERC20.mint(ethers.utils.parseEther("130000"));
-        await polygonERC20.transfer(
+        // deploy node operator contract
+        const NodeOperatorRegistry = (await ethers.getContractFactory(
+            "NodeOperatorRegistry"
+        )) as NodeOperatorRegistry__factory;
+        nodeOperatorRegistry = (await upgrades.deployProxy(
+            NodeOperatorRegistry, [
             stakeManagerMock.address,
-            ethers.utils.parseEther("10000")
-        );
+            stMATICMock.address]
+        )) as NodeOperatorRegistry;
+        await nodeOperatorRegistry.deployed();
 
-        await polygonERC20.transfer(user1.address, toEth("1000"));
-        await polygonERC20.transfer(user2.address, toEth("1000"));
-        await polygonERC20.transfer(user3.address, toEth("1000"));
+        await stMATICMock.setOperator(nodeOperatorRegistry.address);
     });
 
     describe("Node Operator", async function () {
+        it("Success add a new operator", async function () {
+            await stakeOperator(user1)
+
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            expect(await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .emit(nodeOperatorRegistry, "AddNodeOperatorRegistry").withArgs(1, user1.address)
+
+            expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
+        });
+
+        it("Success add multiple operators", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            expect(await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .emit(nodeOperatorRegistry, "AddNodeOperatorRegistry").withArgs(1, user1.address)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            expect(await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user2.address))
+                .emit(nodeOperatorRegistry, "AddNodeOperatorRegistry").withArgs(2, user2.address)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            expect(await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user3.address))
+                .emit(nodeOperatorRegistry, "AddNodeOperatorRegistry").withArgs(3, user3.address)
+
+            expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
+            expect((await nodeOperatorRegistry.validatorIds(1))).eq(2)
+            expect((await nodeOperatorRegistry.validatorIds(2))).eq(3)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+
+        });
+
+        it("Fail add a new operator", async function () {
+            let validatorId: BigNumber = BigNumber.from(0)
+            // invalid validator id
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("ValidatorId=0")
+
+            validatorId = BigNumber.from(100)
+            // invalid reward address
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, ethers.constants.AddressZero))
+                .revertedWith("Invalid reward address")
+
+            // invalid validator not exists in stakeManager
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("Validator isn't ACTIVE")
+
+            // stake a validator
+            await stakeOperator(user1)
+
+            // add the validator
+            validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address)
+
+            // add a validator with the same validatorId
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("Validator exists")
+        });
+
+        it("Fail add a jailed operator", async function () {
+            // stake a validator
+            await stakeOperator(user1)
+            // slash the validator
+            await stakeManagerMock.slash(1)
+            // revert the validator is not active
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("Validator isn't ACTIVE")
+        });
+
+        it("Fail add a unstaked operator", async function () {
+            // stake a validator
+            await stakeOperator(user1)
+            // unstake a validator
+            await stakeManagerMock.unstake(1)
+            // revert the validator is not active
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await expect(nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("Validator isn't ACTIVE")
+        });
+
+        it("Fail add operator missing Role", async function () {
+            // stake validators
+            await stakeOperator(user1)
+
+            // get validator id
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+
+            // revert remove operator which not exist
+            await expect(nodeOperatorRegistry.connect(user1).addNodeOperatorRegistry(validatorId, user1.address))
+                .revertedWith("Unauthorized")
+        })
     });
 });
 
+
+async function stakeOperator(user: SignerWithAddress) {
+    await stakeManagerMock.connect(user)
+        .stakeFor(
+            user.address,
+            toEth("10"),
+            toEth("10"),
+            true,
+            ethers.utils.hexZeroPad("0x01", 64)
+        )
+}
 // convert a string to ether
 function toEth(amount: string): BigNumber {
     return ethers.utils.parseEther(amount);
+}
+
+async function checkOperator(
+    this: any,
+    id: number,
+    no: {
+        status?: number;
+        rewardAddress?: string;
+        validatorId?: BigNumber;
+        validatorShare?: string;
+    }
+) {
+    const res = await nodeOperatorRegistry["getNodeOperatorRegistry(uint256)"].call(
+        this,
+        id
+    );
+    console.log(res)
+    if (no.status) {
+        expect(res.status, "status").equal(no.status);
+    }
+    if (no.rewardAddress) {
+        expect(res.rewardAddress, "rewardAddress").equal(no.rewardAddress);
+    }
+    if (no.validatorId) {
+        expect(res.validatorId, "validatorId").equal(no.validatorId);
+    }
+    if (no.validatorShare) {
+        expect(res.validatorShare, "validatorShare").equal(no.validatorShare);
+    }
 }

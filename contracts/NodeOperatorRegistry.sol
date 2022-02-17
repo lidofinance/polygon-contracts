@@ -28,10 +28,20 @@ contract NodeOperatorRegistry is
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
 
+    /// @notice This stores the operators ids.
+    uint256[] public validatorIds;
+
+    /// @notice Mapping of all owners with node operator id. Mapping is used to be able to
+    /// extend the struct.
+    mapping(uint256 => address) public validatorRewardAddress;
+
+    // /// @notice Mapping of all node operators. Mapping is used to be able to extend the struct.
+    // mapping(uint256 => NodeOperatorRegistry) public operators;
+
     /// @notice Check if the msg.sender has permission.
     /// @param _role role needed to call function.
     modifier userHasRole(bytes32 _role) {
-        require(hasRole(_role, msg.sender), "unauthorized");
+        require(hasRole(_role, msg.sender), "Unauthorized");
         _;
     }
 
@@ -58,7 +68,34 @@ contract NodeOperatorRegistry is
     function addNodeOperatorRegistry(
         uint256 _validatorId,
         address _rewardAddress
-    ) external override userHasRole(DAO_ROLE) {}
+    ) external override userHasRole(DAO_ROLE) {
+        require(_validatorId != 0, "ValidatorId=0");
+        require(
+            validatorRewardAddress[_validatorId] == address(0),
+            "Validator exists"
+        );
+        require(_rewardAddress != address(0), "Invalid reward address");
+
+        IStakeManager.Validator memory validator = stakeManager.validators(
+            _validatorId
+        );
+
+        require(
+            validator.status == IStakeManager.Status.Active &&
+                validator.deactivationEpoch == 0,
+            "Validator isn't ACTIVE"
+        );
+
+        require(
+            validator.contractAddress != address(0),
+            "Validator has no ValidatorShare"
+        );
+
+        validatorRewardAddress[_validatorId] = _rewardAddress;
+        validatorIds.push(_validatorId);
+
+        emit AddNodeOperatorRegistry(_validatorId, _rewardAddress);
+    }
 
     /// @notice Remove a new node operator registry from the system and
     /// ONLY DAO can execute this function.
@@ -82,10 +119,7 @@ contract NodeOperatorRegistry is
     /// @notice Update the reward address of a Node Operator Registry.
     /// ONLY Operator owner can call this function
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(address _newRewardAddress)
-        external
-        override
-    {}
+    function setRewardAddress(address _newRewardAddress) external override {}
 
     /// @notice List all node operator registry available in the system.
     /// @return Returns a list of Active node operator registry.
@@ -121,7 +155,7 @@ contract NodeOperatorRegistry is
         external
         view
         override
-        returns (NodeOperatorRegistry memory)
+        returns (FullNodeOperatorRegistry memory)
     {}
 
     /// @notice Returns a node operator registry.
@@ -131,7 +165,7 @@ contract NodeOperatorRegistry is
         external
         view
         override
-        returns (NodeOperatorRegistry memory)
+        returns (FullNodeOperatorRegistry memory)
     {}
 
     /// @notice List all the node operator registry in the system.
