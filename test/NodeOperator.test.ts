@@ -250,7 +250,29 @@ describe("NodeOperator", function () {
 
             // revert user1 try to set stMatic address
             await expect(nodeOperatorRegistry.connect(user1).setStMaticAddress(user1.address))
-            .revertedWith("Unauthorized")
+                .revertedWith("Unauthorized")
+        })
+
+        it("Success set reward address", async function () {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address)
+
+            expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(validatorId, user2.address))
+                .emit(nodeOperatorRegistry, "SetRewardAddress")
+                .withArgs(user1.address, user2.address)
+        })
+
+        it("Fail set reward address", async function () {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address)
+
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, user2.address))
+                .revertedWith("Unauthorized")
+
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, ethers.constants.AddressZero))
+                .revertedWith("Unauthorized")
         })
     });
 });

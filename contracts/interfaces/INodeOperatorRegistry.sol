@@ -61,8 +61,9 @@ interface INodeOperatorRegistry {
 
     /// @notice Update reward address of a Node Operator Registry.
     /// ONLY Operator owner can call this function
+    /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(address _newRewardAddress) external;
+    function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external;
 
     /// @notice List all node operator registry available in the system.
     /// @return Returns a list of Active node operator registry.

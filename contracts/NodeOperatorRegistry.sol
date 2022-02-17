@@ -143,8 +143,17 @@ contract NodeOperatorRegistry is
 
     /// @notice Update the reward address of a Node Operator Registry.
     /// ONLY Operator owner can call this function
+    /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(address _newRewardAddress) external override {}
+    function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external override {
+        address oldRewardAddress = validatorRewardAddress[_validatorId];
+        require(oldRewardAddress == msg.sender, "Unauthorized");
+        require(_newRewardAddress != address(0), "Invalid reward address");
+
+        validatorRewardAddress[_validatorId] = _newRewardAddress;
+
+        emit SetRewardAddress(oldRewardAddress, _newRewardAddress);
+    }
 
     /// @notice List all node operator registry available in the system.
     /// @return Returns a list of Active node operator registry.
