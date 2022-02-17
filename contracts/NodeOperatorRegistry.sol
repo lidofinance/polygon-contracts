@@ -132,7 +132,14 @@ contract NodeOperatorRegistry is
         external
         override
         userHasRole(DAO_ROLE)
-    {}
+    {
+        require(_newStMatic != address(0), "Invalid stMatic address");
+
+        address oldStMATIC = address(stMATIC);
+        stMATIC = IStMATIC(_newStMatic);
+
+        emit SetStMaticAddress(oldStMATIC, _newStMatic);
+    }
 
     /// @notice Update the reward address of a Node Operator Registry.
     /// ONLY Operator owner can call this function

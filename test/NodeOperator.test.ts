@@ -232,9 +232,25 @@ describe("NodeOperator", function () {
             // get validator id
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
 
-            // revert remove operator which not exist
+            // revert user1 try no remove an operator
             await expect(nodeOperatorRegistry.connect(user1).removeNodeOperatorRegistry(validatorId))
                 .revertedWith("Unauthorized")
+        })
+
+        it("Success set StMatic address", async function () {
+            expect(await nodeOperatorRegistry.setStMaticAddress(user1.address))
+                .emit(nodeOperatorRegistry, "SetStMaticAddress")
+                .withArgs(stMATICMock.address, user1.address)
+        })
+
+        it("Fail set StMatic address", async function () {
+            // revert zero address
+            await expect(nodeOperatorRegistry.setStMaticAddress(ethers.constants.AddressZero))
+                .revertedWith("Invalid stMatic address")
+
+            // revert user1 try to set stMatic address
+            await expect(nodeOperatorRegistry.connect(user1).setStMaticAddress(user1.address))
+            .revertedWith("Unauthorized")
         })
     });
 });
