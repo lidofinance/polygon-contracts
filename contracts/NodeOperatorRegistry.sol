@@ -35,9 +35,6 @@ contract NodeOperatorRegistry is
     /// extend the struct.
     mapping(uint256 => address) public validatorRewardAddress;
 
-    // /// @notice Mapping of all node operators. Mapping is used to be able to extend the struct.
-    // mapping(uint256 => NodeOperatorRegistry) public operators;
-
     /// @notice Check if the msg.sender has permission.
     /// @param _role role needed to call function.
     modifier userHasRole(bytes32 _role) {
@@ -105,7 +102,28 @@ contract NodeOperatorRegistry is
         external
         override
         userHasRole(DAO_ROLE)
-    {}
+    {
+        address rewardAddress = validatorRewardAddress[_validatorId];
+        require(rewardAddress != address(0), "Validator exists");
+
+        uint256 length = validatorIds.length;
+        for (uint256 idx = 0; idx < length - 1; idx++) {
+            if (_validatorId == validatorIds[idx]) {
+                validatorIds[idx] = validatorIds[validatorIds.length - 1];
+                break;
+            }
+        }
+
+        IStakeManager.Validator memory validator = stakeManager.validators(
+            _validatorId
+        );
+        stMATIC.withdrawTotalDelegated(validator.contractAddress);
+
+        validatorIds.pop();
+        delete validatorRewardAddress[_validatorId];
+
+        emit RemoveNodeOperatorRegistry(_validatorId, rewardAddress);
+    }
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function

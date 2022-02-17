@@ -159,6 +159,83 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.connect(user1).addNodeOperatorRegistry(validatorId, user1.address))
                 .revertedWith("Unauthorized")
         })
+
+        it("Success remove an operator", async function () {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId, user1.address)
+            expect(await nodeOperatorRegistry.removeNodeOperatorRegistry(validatorId))
+                .emit(nodeOperatorRegistry, "RemoveNodeOperatorRegistry")
+                .withArgs(validatorId, user1.address)
+
+            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(ethers.constants.AddressZero)
+        });
+
+        it("Success remove multiple operator", async function () {
+            // stake validators
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            // get validators ids
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address)
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address)
+            const validatorId3 = await stakeManagerMock.getValidatorId(user3.address)
+
+            // add operator 1 & 2
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId1, user1.address)
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId2, user2.address)
+
+            // remove operator 1
+            expect(await nodeOperatorRegistry.removeNodeOperatorRegistry(validatorId1))
+                .emit(nodeOperatorRegistry, "RemoveNodeOperatorRegistry")
+                .withArgs(validatorId1, user1.address)
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
+
+            // add operator 3
+            await nodeOperatorRegistry.addNodeOperatorRegistry(validatorId3, user3.address)
+
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
+            expect(await nodeOperatorRegistry.validatorIds(1)).eq(3)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+
+            // remove operator 2
+            expect(await nodeOperatorRegistry.removeNodeOperatorRegistry(validatorId2))
+                .emit(nodeOperatorRegistry, "RemoveNodeOperatorRegistry")
+                .withArgs(validatorId2, user2.address)
+
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
+            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+
+            // remove operator 3
+            expect(await nodeOperatorRegistry.removeNodeOperatorRegistry(validatorId3))
+                .emit(nodeOperatorRegistry, "RemoveNodeOperatorRegistry")
+                .withArgs(validatorId3, user3.address)
+        });
+
+        it("Fail remove operator", async function () {
+            // stake validators
+            await stakeOperator(user1)
+
+            const validatorId = 100
+            // revert remove operator which not exist
+            await expect(nodeOperatorRegistry.removeNodeOperatorRegistry(validatorId))
+                .revertedWith("Validator exists")
+        })
+
+        it("Fail remove operator missing Role", async function () {
+            // stake validators
+            await stakeOperator(user1)
+
+            // get validator id
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+
+            // revert remove operator which not exist
+            await expect(nodeOperatorRegistry.connect(user1).removeNodeOperatorRegistry(validatorId))
+                .revertedWith("Unauthorized")
+        })
     });
 });
 
