@@ -80,11 +80,11 @@ describe("NodeOperator", function () {
 
             const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
             const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
-            const validatorId13= await stakeManagerMock.getValidatorId(user3.address);
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
 
             await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
-            await nodeOperatorRegistry.addNodeOperator(validatorId13, user3.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
@@ -108,6 +108,30 @@ describe("NodeOperator", function () {
             const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
             allActiveOperators.forEach((activeOperator, index) => {
                 expect(activeOperator.rewardAddress).to.equal(ethers.constants.AddressZero);
+            })
+        });
+
+        it("should return all withdraw node operators", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            await stakeOperator(user3);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+            await stakeManagerMock.unstake(validatorId2);
+
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
+            await stakeManagerMock.slash(validatorId3);
+
+
+            const expectedRewardAddress = [user1.address, user2.address, user3.address];
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperator();
+            allWithdrawOperators.forEach((withdrawOperator, index) => {
+                expect(withdrawOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
             })
         });
 
