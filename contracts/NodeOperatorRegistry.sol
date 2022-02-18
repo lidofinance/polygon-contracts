@@ -156,7 +156,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice List all node operator available in the system.
-    /// @return Returns a list of Active node operator.
+    /// @return Returns a list of all node operators.
     function listAllNodeOperator()
         external
         view
@@ -166,12 +166,49 @@ contract NodeOperatorRegistry is
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator.
-    function listActiveNodeOperator()
-        external
-        view
-        override
-        returns (NodeOperatorRegistry[] memory)
-    {}
+    function listActiveNodeOperators() external view override returns (NodeOperatorRegistry[] memory){
+        uint256 counter = 0;
+        uint256 length = validatorIds.length;
+        IStakeManager.Validator memory validator;
+        NodeOperatorRegistry[] memory activeNodeOperators = new NodeOperatorRegistry[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            validator = stakeManager.validators(validatorIds[i]);
+            if(validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch == 0) {
+                activeNodeOperators[counter] = NodeOperatorRegistry(
+                    validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                );
+                counter++;
+            }
+        }
+
+        return activeNodeOperators;
+    }
+
+    /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
+    /// @notice UNSTAKED operators.
+    /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
+    function listWithdrawNodeOperator() external view override returns (NodeOperatorRegistry[] memory){
+        uint256 counter = 0;
+        uint256 length = validatorIds.length;
+        IStakeManager.Validator memory validator;
+        NodeOperatorRegistry[] memory activeNodeOperators = new NodeOperatorRegistry[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            validator = stakeManager.validators(validatorIds[i]);
+            if( validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch == 0 ||
+                validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch != 0 ||
+                validator.status == IStakeManager.Status.Locked  && validator.deactivationEpoch == 0
+            ) {
+                activeNodeOperators[counter] = NodeOperatorRegistry(
+                    validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                );
+                counter++;
+            }
+        }
+
+        return activeNodeOperators;
+    }
 
     /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
     /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator.
