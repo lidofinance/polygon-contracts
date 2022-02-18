@@ -32,18 +32,13 @@ contract StakeManagerMock is IStakeManager {
     function stakeFor(
         address _user,
         uint256 _amount,
-        uint256 _heimdallFee,
+        uint256,
         bool,
         bytes memory _signerPubkey
     ) external {
         uint256 id = state.id + 1;
         state.validators[_user] = id;
         state.Owners[id] = _user;
-        IERC20(state.token).transferFrom(
-            msg.sender,
-            address(this),
-            _amount + _heimdallFee
-        );
 
         smValidators[id] = IStakeManager.Validator({
             amount: _amount,
