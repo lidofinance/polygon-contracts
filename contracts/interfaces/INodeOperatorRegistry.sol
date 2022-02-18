@@ -72,17 +72,9 @@ interface INodeOperatorRegistry {
         view
         returns (NodeOperatorRegistry[] memory);
 
-    /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
-    /// @notice UNSTAKED operators.
-    /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
-    function listWithdrawNodeOperator()
-        external
-        view
-        returns (NodeOperatorRegistry[] memory);
-
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator registry.
-    function listActiveNodeOperators()
+    function listActiveNodeOperator()
         external
         view
         returns (NodeOperatorRegistry[] memory);

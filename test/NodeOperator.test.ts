@@ -11,8 +11,6 @@ import {
     StMATICMock__factory,
 } from "../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { writevSync } from "fs";
-import { zeroOutAddresses } from "hardhat/internal/hardhat-network/stack-traces/library-utils";
 
 let accounts: SignerWithAddress[];
 let signer: SignerWithAddress;
@@ -73,44 +71,6 @@ describe("NodeOperator", function () {
 
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
             expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
-        });
-
-        it("should return all active operators", async function() {
-            await stakeOperator(user1);
-            await stakeOperator(user2);
-            await stakeOperator(user3);
-
-            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
-            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
-            const validatorId13= await stakeManagerMock.getValidatorId(user3.address);
-
-            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
-            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
-            await nodeOperatorRegistry.addNodeOperator(validatorId13, user3.address);
-
-            const expectedRewardAddress = [user1.address, user2.address, user3.address];
-            const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
-            allActiveOperators.forEach((activeOperator, index) => {
-                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
-            })
-        });
-
-        it("should return zero address node operators if no operator is active", async function() {
-            await stakeOperator(user1);
-            await stakeOperator(user2);
-
-            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
-            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
-
-            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
-            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
-
-            await stakeManagerMock.unstake(validatorId1);
-            await stakeManagerMock.slash(validatorId2);
-            const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
-            allActiveOperators.forEach((activeOperator, index) => {
-                expect(activeOperator.rewardAddress).to.equal(ethers.constants.AddressZero);
-            })
         });
 
         it("Success add multiple operators", async function () {
