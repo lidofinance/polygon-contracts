@@ -39,65 +39,65 @@ interface INodeOperatorRegistry {
         address rewardAddress;
     }
 
-    /// @notice Add a new node operator registry to the system.
+    /// @notice Add a new node operator to the system.
     /// ONLY DAO can execute this function.
     /// @param _validatorId the validator id on stakeManager.
     /// @param _rewardAddress the reward address.
-    function addNodeOperatorRegistry(
+    function addNodeOperator(
         uint256 _validatorId,
         address _rewardAddress
     ) external;
 
-    /// @notice Remove a new node operator registry from the system and
+    /// @notice Remove a new node operator from the system.
     /// ONLY DAO can execute this function.
     /// withdraw delegated tokens from it.
     /// @param _validatorId the validator id on stakeManager.
-    function removeNodeOperatorRegistry(uint256 _validatorId) external;
+    function removeNodeOperator(uint256 _validatorId) external;
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
     /// @param _newStMatic new stMatic address.
     function setStMaticAddress(address _newStMatic) external;
 
-    /// @notice Update reward address of a Node Operator Registry.
+    /// @notice Update reward address of a Node Operator.
     /// ONLY Operator owner can call this function
     /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
     function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external;
 
-    /// @notice List all node operator registry available in the system.
+    /// @notice List all node operator available in the system.
     /// @return Returns a list of Active node operator registry.
-    function listAllNodeOperatorRegistry()
+    function listAllNodeOperator()
         external
         view
         returns (NodeOperatorRegistry[] memory);
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator registry.
-    function listActiveNodeOperatorRegistry()
+    function listActiveNodeOperator()
         external
         view
         returns (NodeOperatorRegistry[] memory);
 
     /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
     /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator registry.
-    function listDelegatedNodeOperatorRegistry()
+    function listDelegatedNodeOperator()
         external
         view
         returns (NodeOperatorRegistry[] memory);
 
-    /// @notice Returns a node operator registry.
+    /// @notice Returns a node operator.
     /// @param _validatorId the validator id on stakeManager.
-    /// @return Returns a node operator registry.
-    function getNodeOperatorRegistry(uint256 _validatorId)
+    /// @return Returns a node operator.
+    function getNodeOperator(uint256 _validatorId)
         external
         view
         returns (FullNodeOperatorRegistry memory);
 
-    /// @notice Returns a node operator registry.
+    /// @notice Returns a node operator.
     /// @param _rewardAddress the reward address.
-    /// @return Returns a node operator registry.
-    function getNodeOperatorRegistry(address _rewardAddress)
+    /// @return Returns a node operator.
+    function getNodeOperator(address _rewardAddress)
         external
         view
         returns (FullNodeOperatorRegistry memory);
@@ -118,15 +118,15 @@ interface INodeOperatorRegistry {
         );
 
     // ***********************************EVENTS***********************************
-    /// @notice Add Node Operator Registry event
+    /// @notice Add Node Operator event
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
-    event AddNodeOperatorRegistry(uint256 validatorId, address rewardAddress);
+    event AddNodeOperator(uint256 validatorId, address rewardAddress);
 
-    /// @notice Remove Node Operator Registry event.
+    /// @notice Remove Node Operator event.
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
-    event RemoveNodeOperatorRegistry(
+    event RemoveNodeOperator(
         uint256 validatorId,
         address rewardAddress
     );
@@ -137,7 +137,8 @@ interface INodeOperatorRegistry {
     event SetStMaticAddress(address oldStMatic, address newStMatic);
 
     /// @notice Set reward address event.
+    /// @param validatorId the validator id.
     /// @param oldRewardAddress old reward address.
     /// @param newRewardAddress new reward address.
-    event SetRewardAddress(address oldRewardAddress, address newRewardAddress);
+    event SetRewardAddress(uint256 validatorId, address oldRewardAddress, address newRewardAddress);
 }

@@ -58,11 +58,11 @@ contract NodeOperatorRegistry is
         _setupRole(DAO_ROLE, msg.sender);
     }
 
-    /// @notice Add a new node operator registry to the system.
+    /// @notice Add a new node operator to the system.
     /// ONLY DAO can execute this function.
     /// @param _validatorId the validator id on stakeManager.
     /// @param _rewardAddress the reward address.
-    function addNodeOperatorRegistry(
+    function addNodeOperator(
         uint256 _validatorId,
         address _rewardAddress
     ) external override userHasRole(DAO_ROLE) {
@@ -91,20 +91,20 @@ contract NodeOperatorRegistry is
         validatorRewardAddress[_validatorId] = _rewardAddress;
         validatorIds.push(_validatorId);
 
-        emit AddNodeOperatorRegistry(_validatorId, _rewardAddress);
+        emit AddNodeOperator(_validatorId, _rewardAddress);
     }
 
-    /// @notice Remove a new node operator registry from the system and
+    /// @notice Remove a new node operator from the system.
     /// ONLY DAO can execute this function.
     /// withdraw delegated tokens from it.
     /// @param _validatorId the validator id on stakeManager.
-    function removeNodeOperatorRegistry(uint256 _validatorId)
+    function removeNodeOperator(uint256 _validatorId)
         external
         override
         userHasRole(DAO_ROLE)
     {
         address rewardAddress = validatorRewardAddress[_validatorId];
-        require(rewardAddress != address(0), "Validator exists");
+        require(rewardAddress != address(0), "Validator doesn't exist");
 
         uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length - 1; idx++) {
@@ -122,7 +122,7 @@ contract NodeOperatorRegistry is
         validatorIds.pop();
         delete validatorRewardAddress[_validatorId];
 
-        emit RemoveNodeOperatorRegistry(_validatorId, rewardAddress);
+        emit RemoveNodeOperator(_validatorId, rewardAddress);
     }
 
     /// @notice Set StMatic address.
@@ -141,7 +141,7 @@ contract NodeOperatorRegistry is
         emit SetStMaticAddress(oldStMATIC, _newStMatic);
     }
 
-    /// @notice Update the reward address of a Node Operator Registry.
+    /// @notice Update the reward address of a Node Operator.
     /// ONLY Operator owner can call this function
     /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
@@ -152,12 +152,12 @@ contract NodeOperatorRegistry is
 
         validatorRewardAddress[_validatorId] = _newRewardAddress;
 
-        emit SetRewardAddress(oldRewardAddress, _newRewardAddress);
+        emit SetRewardAddress(_validatorId, oldRewardAddress, _newRewardAddress);
     }
 
-    /// @notice List all node operator registry available in the system.
-    /// @return Returns a list of Active node operator registry.
-    function listAllNodeOperatorRegistry()
+    /// @notice List all node operator available in the system.
+    /// @return Returns a list of Active node operator.
+    function listAllNodeOperator()
         external
         view
         override
@@ -165,8 +165,8 @@ contract NodeOperatorRegistry is
     {}
 
     /// @notice List all the ACTIVE operators on the stakeManager.
-    /// @return Returns a list of ACTIVE node operator registry.
-    function listActiveNodeOperatorRegistry()
+    /// @return Returns a list of ACTIVE node operator.
+    function listActiveNodeOperator()
         external
         view
         override
@@ -174,35 +174,35 @@ contract NodeOperatorRegistry is
     {}
 
     /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
-    /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator registry.
-    function listDelegatedNodeOperatorRegistry()
+    /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator.
+    function listDelegatedNodeOperator()
         external
         view
         override
         returns (NodeOperatorRegistry[] memory)
     {}
 
-    /// @notice Returns a node operator registry.
+    /// @notice Returns a node operator.
     /// @param _validatorId the validator id on stakeManager.
-    /// @return Returns a node operator registry.
-    function getNodeOperatorRegistry(uint256 _validatorId)
+    /// @return Returns a node operator.
+    function getNodeOperator(uint256 _validatorId)
         external
         view
         override
         returns (FullNodeOperatorRegistry memory)
     {}
 
-    /// @notice Returns a node operator registry.
+    /// @notice Returns a node operator.
     /// @param _rewardAddress the reward address.
-    /// @return Returns a node operator registry.
-    function getNodeOperatorRegistry(address _rewardAddress)
+    /// @return Returns a node operator.
+    function getNodeOperator(address _rewardAddress)
         external
         view
         override
         returns (FullNodeOperatorRegistry memory)
     {}
 
-    /// @notice List all the node operator registry in the system.
+    /// @notice List all the node operator in the system.
     /// @return activeNodeOperator the number of active operators.
     /// @return jailedNodeOperator the number of jailed operators.
     /// @return ejectedNodeOperator the number of ejected operators.
