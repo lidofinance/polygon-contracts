@@ -93,7 +93,7 @@ describe("NodeOperator", function () {
             })
         });
 
-        it("should return zero address node operators if no operator is active", async function() {
+        it("should return an empty array if no operator is active", async function() {
             await stakeOperator(user1);
             await stakeOperator(user2);
 
@@ -106,9 +106,17 @@ describe("NodeOperator", function () {
             await stakeManagerMock.unstake(validatorId1);
             await stakeManagerMock.slash(validatorId2);
             const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
-            allActiveOperators.forEach((activeOperator, index) => {
-                expect(activeOperator.rewardAddress).to.equal(ethers.constants.AddressZero);
-            })
+            expect(allActiveOperators).to.be.an("array").that.is.empty;
+        });
+
+        it("should return an empty array if there is no withdrawal operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await nodeOperatorRegistry.removeNodeOperator(validatorId);
+
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperator();
+            expect(allWithdrawOperators).to.be.an("array").that.is.empty;
         });
 
         it("should return all withdraw node operators", async function() {

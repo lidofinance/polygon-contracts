@@ -182,6 +182,14 @@ contract NodeOperatorRegistry is
             }
         }
 
+        if(counter < length){
+            NodeOperatorRegistry[] memory filteredActiveNodeOperators = new NodeOperatorRegistry[](counter);
+            for(uint256 i = 0; i < counter; i++){
+                filteredActiveNodeOperators[i] = activeNodeOperators[i];
+            }
+            activeNodeOperators = filteredActiveNodeOperators;
+        }
+
         return activeNodeOperators;
     }
 
@@ -192,7 +200,7 @@ contract NodeOperatorRegistry is
         uint256 counter = 0;
         uint256 length = validatorIds.length;
         IStakeManager.Validator memory validator;
-        NodeOperatorRegistry[] memory activeNodeOperators = new NodeOperatorRegistry[](length);
+        NodeOperatorRegistry[] memory withdrawNodeOperators = new NodeOperatorRegistry[](length);
 
         for (uint256 i = 0; i < length; i++) {
             validator = stakeManager.validators(validatorIds[i]);
@@ -200,14 +208,22 @@ contract NodeOperatorRegistry is
                 validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch != 0 ||
                 validator.status == IStakeManager.Status.Locked  && validator.deactivationEpoch == 0
             ) {
-                activeNodeOperators[counter] = NodeOperatorRegistry(
+                withdrawNodeOperators[counter] = NodeOperatorRegistry(
                     validator.contractAddress, validatorRewardAddress[validatorIds[i]]
                 );
                 counter++;
             }
         }
 
-        return activeNodeOperators;
+        if(counter < length){
+            NodeOperatorRegistry[] memory filteredActiveNodeOperators = new NodeOperatorRegistry[](counter);
+            for(uint256 i = 0; i < counter; i++){
+                filteredActiveNodeOperators[i] = withdrawNodeOperators[i];
+            }
+            withdrawNodeOperators = filteredActiveNodeOperators;
+        }
+
+        return withdrawNodeOperators;
     }
 
     /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
