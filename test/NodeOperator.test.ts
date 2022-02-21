@@ -87,7 +87,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
-            const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators(true);
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
 
             expect(allActiveOperators.length).to.equal(3);
             allActiveOperators.forEach((activeOperator, index) => {
@@ -108,7 +108,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
-            let allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators(true);
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(3);
 
             let expectedRewardAddress = [user1.address, user2.address, user3.address];
@@ -117,7 +117,7 @@ describe("NodeOperator", function () {
             })
 
             await stakeManagerMock.unstake(validatorId1);
-            allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators(true);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(2);
 
             expectedRewardAddress = [user2.address, user3.address];
@@ -126,7 +126,7 @@ describe("NodeOperator", function () {
             })
 
             await stakeManagerMock.slash(validatorId2);
-            allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators(true);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(1);
 
             expectedRewardAddress = [user3.address];
@@ -147,7 +147,7 @@ describe("NodeOperator", function () {
 
             await stakeManagerMock.unstake(validatorId1);
             await stakeManagerMock.slash(validatorId2);
-            const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators(true);
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators).to.be.an("array").that.is.empty;
         });
 
@@ -157,7 +157,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
             await nodeOperatorRegistry.removeNodeOperator(validatorId);
 
-            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperator();
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
             expect(allWithdrawOperators).to.be.an("array").that.is.empty;
         });
 
@@ -179,7 +179,7 @@ describe("NodeOperator", function () {
 
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
-            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperator();
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
             expect(allWithdrawOperators.length).to.equal(3);
             allWithdrawOperators.forEach((withdrawOperator, index) => {
                 expect(withdrawOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
