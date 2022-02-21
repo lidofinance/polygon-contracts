@@ -88,6 +88,48 @@ describe("NodeOperator", function () {
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             const allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
+
+            expect(allActiveOperators.length).to.equal(3);
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+        });
+
+        it("should return an array of only active operators", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            await stakeOperator(user3);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
+
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
+
+            let allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
+            expect(allActiveOperators.length).to.equal(3);
+
+            let expectedRewardAddress = [user1.address, user2.address, user3.address];
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+
+            await stakeManagerMock.unstake(validatorId1);
+            allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
+            expect(allActiveOperators.length).to.equal(2);
+
+            expectedRewardAddress = [user2.address, user3.address];
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+
+            await stakeManagerMock.slash(validatorId2);
+            allActiveOperators = await nodeOperatorRegistry.listActiveNodeOperators();
+            expect(allActiveOperators.length).to.equal(1);
+
+            expectedRewardAddress = [user3.address];
             allActiveOperators.forEach((activeOperator, index) => {
                 expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
             })
@@ -138,6 +180,7 @@ describe("NodeOperator", function () {
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperator();
+            expect(allWithdrawOperators.length).to.equal(3);
             allWithdrawOperators.forEach((withdrawOperator, index) => {
                 expect(withdrawOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
             })

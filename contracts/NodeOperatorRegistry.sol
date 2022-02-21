@@ -5,7 +5,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-
+import "./interfaces/IValidatorShare.sol";
 import "./interfaces/INodeOperatorRegistry.sol";
 import "./interfaces/IStMATIC.sol";
 
@@ -167,48 +167,62 @@ contract NodeOperatorRegistry is
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator.
     function listActiveNodeOperators() external view override returns (NodeOperatorRegistry[] memory){
-        uint256 counter = 0;
-        uint256 length = validatorIds.length;
-        IStakeManager.Validator memory validator;
-        NodeOperatorRegistry[] memory activeNodeOperators = new NodeOperatorRegistry[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            validator = stakeManager.validators(validatorIds[i]);
-            if(validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch == 0) {
-                activeNodeOperators[counter] = NodeOperatorRegistry(
-                    validator.contractAddress, validatorRewardAddress[validatorIds[i]]
-                );
-                counter++;
-            }
-        }
-
-        if(counter < length){
-            NodeOperatorRegistry[] memory filteredActiveNodeOperators = new NodeOperatorRegistry[](counter);
-            for(uint256 i = 0; i < counter; i++){
-                filteredActiveNodeOperators[i] = activeNodeOperators[i];
-            }
-            activeNodeOperators = filteredActiveNodeOperators;
-        }
-
-        return activeNodeOperators;
+        return _filterNodeOperators({
+            allOperators: false,
+            withDelegation: true,
+            operatorRegistryStatus: uint(NodeOperatorRegistryStatus.ACTIVE)
+        });
     }
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.
-    /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
+    /// @return Returns a list of ACTIVE, JAILED, UNSTAKED or EJECTED node operator.
     function listWithdrawNodeOperator() external view override returns (NodeOperatorRegistry[] memory){
+        IStakeManager.Validator memory validator;
+        return _filterNodeOperators({
+            allOperators: true,
+            withDelegation: false,
+            operatorRegistryStatus: type(uint).max
+        });
+    }
+
+    ///@notice filter node operators by their registry status or by return all operators
+    /// @param allOperators filters all operators from the node operator registry
+    /// @param withDelegation filters only ACTIVE operators with delegation
+    /// @param operatorRegistryStatus filters operators based on any other status in the registry including
+    /// ACTIVE, JAILED, UNSTAKED, and EJECTED.
+    function _filterNodeOperators(bool allOperators, bool withDelegation, uint operatorRegistryStatus)
+    private
+    view
+    returns (NodeOperatorRegistry[] memory)
+    {
         uint256 counter = 0;
         uint256 length = validatorIds.length;
         IStakeManager.Validator memory validator;
-        NodeOperatorRegistry[] memory withdrawNodeOperators = new NodeOperatorRegistry[](length);
+        NodeOperatorRegistry[] memory nodeOperators = new NodeOperatorRegistry[](length);
 
         for (uint256 i = 0; i < length; i++) {
             validator = stakeManager.validators(validatorIds[i]);
-            if( validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch == 0 ||
-                validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch != 0 ||
-                validator.status == IStakeManager.Status.Locked  && validator.deactivationEpoch == 0
+            if(
+                allOperators ||
+                (operatorRegistryStatus == uint(NodeOperatorRegistryStatus.ACTIVE) &&
+                    validator.status == IStakeManager.Status.Active  &&
+                    validator.deactivationEpoch == 0) ||
+                (operatorRegistryStatus == uint(NodeOperatorRegistryStatus.UNSTAKED) &&
+                    validator.status == IStakeManager.Status.Active  &&
+                    validator.deactivationEpoch != 0) ||
+                (operatorRegistryStatus == uint(NodeOperatorRegistryStatus.JAILED) &&
+                    validator.status == IStakeManager.Status.Locked  &&
+                    validator.deactivationEpoch == 0) ||
+                (operatorRegistryStatus == uint(NodeOperatorRegistryStatus.EJECTED) &&
+                    (validator.status == IStakeManager.Status.Active || validator.status == IStakeManager.Status.Locked) &&
+                    validator.deactivationEpoch != 0)
             ) {
-                withdrawNodeOperators[counter] = NodeOperatorRegistry(
+                if(withDelegation) {
+                    if(!IValidatorShare(validator.contractAddress).delegation()) continue;
+                }
+
+                nodeOperators[counter] = NodeOperatorRegistry(
                     validator.contractAddress, validatorRewardAddress[validatorIds[i]]
                 );
                 counter++;
@@ -216,14 +230,14 @@ contract NodeOperatorRegistry is
         }
 
         if(counter < length){
-            NodeOperatorRegistry[] memory filteredActiveNodeOperators = new NodeOperatorRegistry[](counter);
+            NodeOperatorRegistry[] memory filteredNodeOperators = new NodeOperatorRegistry[](counter);
             for(uint256 i = 0; i < counter; i++){
-                filteredActiveNodeOperators[i] = withdrawNodeOperators[i];
+                filteredNodeOperators[i] = nodeOperators[i];
             }
-            withdrawNodeOperators = filteredActiveNodeOperators;
+            nodeOperators = filteredNodeOperators;
         }
 
-        return withdrawNodeOperators;
+        return nodeOperators;
     }
 
     /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
