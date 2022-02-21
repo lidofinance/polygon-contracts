@@ -82,7 +82,7 @@ interface INodeOperatorRegistry {
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator registry.
-    function listActiveNodeOperators()
+    function listActiveNodeOperators(bool withDelegation)
         external
         view
         returns (NodeOperatorRegistry[] memory);
