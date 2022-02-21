@@ -73,6 +73,119 @@ describe("NodeOperator", function () {
             expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
         });
 
+        it("should return all active operators", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            await stakeOperator(user3);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
+
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
+
+            const expectedRewardAddress = [user1.address, user2.address, user3.address];
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+
+            expect(allActiveOperators.length).to.equal(3);
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+        });
+
+        it("should return an array of only active operators", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            await stakeOperator(user3);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
+
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
+
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(3);
+
+            let expectedRewardAddress = [user1.address, user2.address, user3.address];
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+
+            await stakeManagerMock.unstake(validatorId1);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(2);
+
+            expectedRewardAddress = [user2.address, user3.address];
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+
+            await stakeManagerMock.slash(validatorId2);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(1);
+
+            expectedRewardAddress = [user3.address];
+            allActiveOperators.forEach((activeOperator, index) => {
+                expect(activeOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+        });
+
+        it("should return an empty array if no operator is active", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+
+            await stakeManagerMock.unstake(validatorId1);
+            await stakeManagerMock.slash(validatorId2);
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators).to.be.an("array").that.is.empty;
+        });
+
+        it("should return an empty array if there is no withdrawal operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await nodeOperatorRegistry.removeNodeOperator(validatorId);
+
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
+            expect(allWithdrawOperators).to.be.an("array").that.is.empty;
+        });
+
+        it("should return all withdraw node operators", async function() {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            await stakeOperator(user3);
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address);
+
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
+            await stakeManagerMock.unstake(validatorId2);
+
+            const validatorId3= await stakeManagerMock.getValidatorId(user3.address);
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
+            await stakeManagerMock.slash(validatorId3);
+
+
+            const expectedRewardAddress = [user1.address, user2.address, user3.address];
+            const allWithdrawOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
+            expect(allWithdrawOperators.length).to.equal(3);
+            allWithdrawOperators.forEach((withdrawOperator, index) => {
+                expect(withdrawOperator.rewardAddress).to.equal(expectedRewardAddress[index]);
+            })
+        });
+
         it("Success add multiple operators", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
