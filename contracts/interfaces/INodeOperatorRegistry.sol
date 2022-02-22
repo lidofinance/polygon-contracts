@@ -65,13 +65,6 @@ interface INodeOperatorRegistry {
     /// @param _newRewardAddress the new reward address.
     function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external;
 
-    /// @notice List all node operator available in the system.
-    /// @return Returns a list of Active node operator registry.
-    function listAllNodeOperator()
-        external
-        view
-        returns (NodeOperatorRegistry[] memory);
-
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.
     /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
@@ -83,13 +76,6 @@ interface INodeOperatorRegistry {
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator registry.
     function listDelegatedNodeOperators()
-        external
-        view
-        returns (NodeOperatorRegistry[] memory);
-
-    /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
-    /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator registry.
-    function listDelegatedNodeOperator()
         external
         view
         returns (NodeOperatorRegistry[] memory);
