@@ -33,7 +33,11 @@ contract NodeOperatorRegistry is
 
     /// @notice Mapping of all owners with node operator id. Mapping is used to be able to
     /// extend the struct.
-    mapping(uint256 => address) public validatorRewardAddress;
+    mapping(uint256 => address) public validatorIdToRewardAddress;
+
+    /// @notice Mapping of validator reward address to validator Id. Mapping is used to be able to
+    /// extend the struct.
+    mapping(address => uint256) public validatorRewardAddressToId;
 
     /// @notice Check if the msg.sender has permission.
     /// @param _role role needed to call function.
@@ -68,7 +72,11 @@ contract NodeOperatorRegistry is
     ) external override userHasRole(DAO_ROLE) {
         require(_validatorId != 0, "ValidatorId=0");
         require(
-            validatorRewardAddress[_validatorId] == address(0),
+            validatorIdToRewardAddress[_validatorId] == address(0),
+            "Validator exists"
+        );
+        require(
+            validatorRewardAddressToId[_rewardAddress] == 0,
             "Validator exists"
         );
         require(_rewardAddress != address(0), "Invalid reward address");
@@ -88,7 +96,8 @@ contract NodeOperatorRegistry is
             "Validator has no ValidatorShare"
         );
 
-        validatorRewardAddress[_validatorId] = _rewardAddress;
+        validatorIdToRewardAddress[_validatorId] = _rewardAddress;
+        validatorRewardAddressToId[_rewardAddress] = _validatorId;
         validatorIds.push(_validatorId);
 
         emit AddNodeOperator(_validatorId, _rewardAddress);
@@ -103,7 +112,7 @@ contract NodeOperatorRegistry is
         override
         userHasRole(DAO_ROLE)
     {
-        address rewardAddress = validatorRewardAddress[_validatorId];
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
 
         uint256 length = validatorIds.length;
@@ -120,7 +129,8 @@ contract NodeOperatorRegistry is
         stMATIC.withdrawTotalDelegated(validator.contractAddress);
 
         validatorIds.pop();
-        delete validatorRewardAddress[_validatorId];
+        delete validatorIdToRewardAddress[_validatorId];
+        delete validatorRewardAddressToId[rewardAddress];
 
         emit RemoveNodeOperator(_validatorId, rewardAddress);
     }
@@ -143,26 +153,17 @@ contract NodeOperatorRegistry is
 
     /// @notice Update the reward address of a Node Operator.
     /// ONLY Operator owner can call this function
-    /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external override {
-        address oldRewardAddress = validatorRewardAddress[_validatorId];
+    function setRewardAddress(address _newRewardAddress) external override {
+        uint256 validatorId = validatorRewardAddressToId[msg.sender];
+        address oldRewardAddress = validatorIdToRewardAddress[validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
         require(_newRewardAddress != address(0), "Invalid reward address");
 
-        validatorRewardAddress[_validatorId] = _newRewardAddress;
+        validatorIdToRewardAddress[validatorId] = _newRewardAddress;
 
-        emit SetRewardAddress(_validatorId, oldRewardAddress, _newRewardAddress);
+        emit SetRewardAddress(validatorId, oldRewardAddress, _newRewardAddress);
     }
-
-    /// @notice List all node operator available in the system.
-    /// @return Returns a list of all node operators.
-    function listAllNodeOperator()
-        external
-        view
-        override
-        returns (NodeOperatorRegistry[] memory)
-    {}
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return Returns a list of ACTIVE node operator.
@@ -178,7 +179,7 @@ contract NodeOperatorRegistry is
                 if(!IValidatorShare(validator.contractAddress).delegation()) continue;
 
                 activeNodeOperators[counter] = NodeOperatorRegistry(
-                    validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                    validator.contractAddress, validatorIdToRewardAddress[validatorIds[i]]
                 );
                 counter++;
             }
@@ -206,41 +207,90 @@ contract NodeOperatorRegistry is
         for (uint256 i = 0; i < length; i++) {
             validator = stakeManager.validators(validatorIds[i]);
             withdrawNodeOperators[i] = NodeOperatorRegistry(
-                validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                validator.contractAddress, validatorIdToRewardAddress[validatorIds[i]]
             );
         }
 
         return withdrawNodeOperators;
     }
 
-    /// @notice List all the ACTIVE, JAILED and EJECTED operators on the stakeManager.
-    /// @return Returns a list of ACTIVE, JAILED and EJECTED node operator.
-    function listDelegatedNodeOperator()
-        external
-        view
-        override
-        returns (NodeOperatorRegistry[] memory)
-    {}
-
     /// @notice Returns a node operator.
     /// @param _validatorId the validator id on stakeManager.
-    /// @return Returns a node operator.
+    /// @return nodeOperator Returns a node operator.
     function getNodeOperator(uint256 _validatorId)
         external
         view
         override
-        returns (FullNodeOperatorRegistry memory)
-    {}
+        returns (FullNodeOperatorRegistry memory nodeOperator)
+    {
+        (
+            NodeOperatorRegistryStatus operatorStatus,
+            IStakeManager.Validator memory validator
+        ) = _getOperatorStatusAndValidator(_validatorId);
+        nodeOperator.validatorShare = validator.contractAddress;
+        nodeOperator.validatorId = _validatorId;
+        nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
+        nodeOperator.status = operatorStatus;
+        return nodeOperator;
+    }
 
     /// @notice Returns a node operator.
     /// @param _rewardAddress the reward address.
-    /// @return Returns a node operator.
+    /// @return nodeOperator Returns a node operator.
     function getNodeOperator(address _rewardAddress)
         external
         view
         override
-        returns (FullNodeOperatorRegistry memory)
-    {}
+        returns (FullNodeOperatorRegistry memory nodeOperator)
+    {
+        uint256 validatorId = validatorRewardAddressToId[_rewardAddress];
+        (
+            NodeOperatorRegistryStatus operatorStatus,
+            IStakeManager.Validator memory validator
+        ) = _getOperatorStatusAndValidator(validatorId);
+
+        nodeOperator.status = operatorStatus;
+        nodeOperator.rewardAddress = _rewardAddress;
+        nodeOperator.validatorId = validatorId;
+        nodeOperator.validatorShare = validator.contractAddress;
+        return nodeOperator;
+    }
+
+    /// @notice Returns a node operator status.
+    /// @param  validatorId is the id of the node operator.
+    /// @return operatorStatus Returns a node operator status.
+    function getNodeOperatorStatus(uint256 validatorId)
+    external
+    view
+    returns(NodeOperatorRegistryStatus operatorStatus) {
+        (operatorStatus, ) = _getOperatorStatusAndValidator(validatorId);
+    }
+
+    /// @notice Returns a node operator status.
+    /// @param  _validatorId is the id of the node operator.
+    /// @return operatorStatus is the operator status.
+    /// @return validator is the validator info.
+    function _getOperatorStatusAndValidator(uint256 _validatorId)
+    private
+    view
+    returns(NodeOperatorRegistryStatus operatorStatus, IStakeManager.Validator memory validator){
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
+        require(rewardAddress != address(0), "Operator not found");
+        validator = stakeManager.validators(_validatorId);
+
+        if(validator.status == IStakeManager.Status.Active  && validator.deactivationEpoch == 0){
+            operatorStatus = NodeOperatorRegistryStatus.ACTIVE;
+        }else if(validator.status == IStakeManager.Status.Locked && validator.deactivationEpoch == 0){
+            operatorStatus = NodeOperatorRegistryStatus.JAILED;
+        }else if((validator.status == IStakeManager.Status.Active || validator.status == IStakeManager.Status.Locked)
+            && validator.deactivationEpoch != 0){
+            operatorStatus = NodeOperatorRegistryStatus.EJECTED;
+        }else if((validator.status == IStakeManager.Status.Unstaked)){
+            operatorStatus = NodeOperatorRegistryStatus.UNSTAKED;
+        }
+
+        return (operatorStatus, validator);
+    }
 
     /// @notice List all the node operator in the system.
     /// @return activeNodeOperator the number of active operators.

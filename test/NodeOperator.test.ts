@@ -70,7 +70,7 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "AddNodeOperator").withArgs(1, user1.address)
 
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(user1.address)
         });
 
         it("should return all active operators", async function() {
@@ -206,9 +206,9 @@ describe("NodeOperator", function () {
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
             expect((await nodeOperatorRegistry.validatorIds(1))).eq(2)
             expect((await nodeOperatorRegistry.validatorIds(2))).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(user1.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
         });
 
@@ -281,7 +281,7 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "RemoveNodeOperator")
                 .withArgs(validatorId, user1.address)
 
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(ethers.constants.AddressZero)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(ethers.constants.AddressZero)
         });
 
         it("Success remove multiple operator", async function () {
@@ -304,15 +304,15 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "RemoveNodeOperator")
                 .withArgs(validatorId1, user1.address)
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
 
             // add operator 3
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address)
 
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
             expect(await nodeOperatorRegistry.validatorIds(1)).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
             // remove operator 2
             expect(await nodeOperatorRegistry.removeNodeOperator(validatorId2))
@@ -320,7 +320,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId2, user2.address)
 
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
             // remove operator 3
             expect(await nodeOperatorRegistry.removeNodeOperator(validatorId3))
@@ -371,7 +371,7 @@ describe("NodeOperator", function () {
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
-            expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(validatorId, user2.address))
+            expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(user2.address))
                 .emit(nodeOperatorRegistry, "SetRewardAddress")
                 .withArgs(validatorId, user1.address, user2.address)
         })
@@ -381,12 +381,63 @@ describe("NodeOperator", function () {
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
-            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, user2.address))
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
                 .revertedWith("Unauthorized")
 
-            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, ethers.constants.AddressZero))
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Unauthorized")
         })
+
+        it("should get an operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            let nodeOperator = await nodeOperatorRegistry["getNodeOperator(address)"](user1.address);
+            expect(nodeOperator.validatorId).to.equal(1);
+            expect(nodeOperator.rewardAddress).to.equal(user1.address);
+
+            nodeOperator = await nodeOperatorRegistry["getNodeOperator(uint256)"](1);
+            expect(nodeOperator.validatorId).to.equal(1);
+            expect(nodeOperator.rewardAddress).to.equal(user1.address);
+        });
+
+        it("should return empty data for a non-existing operator", async function() {
+            await expect(nodeOperatorRegistry["getNodeOperator(address)"](user1.address))
+              .revertedWith("Operator not found");
+
+            await expect(nodeOperatorRegistry["getNodeOperator(uint256)"](1))
+              .revertedWith("Operator not found")
+
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await nodeOperatorRegistry.removeNodeOperator(validatorId);
+
+            await expect(nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId))
+              .revertedWith("Operator not found")
+        });
+
+        it("should return the correct operator status", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            let operatorStatus = await nodeOperatorRegistry.getNodeOperatorStatus(validatorId);
+            expect(operatorStatus).to.equal(OPERATOR_STATUS.ACTIVE);
+
+            await stakeManagerMock.slash(validatorId);
+            operatorStatus = await nodeOperatorRegistry.getNodeOperatorStatus(validatorId);
+            expect(operatorStatus).to.equal(OPERATOR_STATUS.JAILED);
+
+            await stakeManagerMock.unjail(validatorId);
+            operatorStatus = await nodeOperatorRegistry.getNodeOperatorStatus(validatorId);
+            expect(operatorStatus).to.equal(OPERATOR_STATUS.ACTIVE);
+
+            await stakeManagerMock.unstake(validatorId)
+            operatorStatus = await nodeOperatorRegistry.getNodeOperatorStatus(validatorId);
+            expect(operatorStatus).to.equal(OPERATOR_STATUS.EJECTED);
+        });
     });
 });
 
@@ -401,6 +452,14 @@ async function stakeOperator(user: SignerWithAddress) {
             ethers.utils.hexZeroPad("0x01", 64)
         )
 }
+
+const OPERATOR_STATUS = {
+    ACTIVE: 0,
+    JAILED: 1,
+    EJECTED: 2,
+    UNSTAKED: 3
+};
+
 // convert a string to ether
 function toEth(amount: string): BigNumber {
     return ethers.utils.parseEther(amount);
