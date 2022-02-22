@@ -33,7 +33,11 @@ contract NodeOperatorRegistry is
 
     /// @notice Mapping of all owners with node operator id. Mapping is used to be able to
     /// extend the struct.
-    mapping(uint256 => address) public validatorRewardAddress;
+    mapping(uint256 => address) public validatorIdToRewardAddress;
+
+    /// @notice Mapping of validator reward address to validator Id. Mapping is used to be able to
+    /// extend the struct.
+    mapping(address => uint256) public validatorRewardAddressToId;
 
     /// @notice Check if the msg.sender has permission.
     /// @param _role role needed to call function.
@@ -68,7 +72,7 @@ contract NodeOperatorRegistry is
     ) external override userHasRole(DAO_ROLE) {
         require(_validatorId != 0, "ValidatorId=0");
         require(
-            validatorRewardAddress[_validatorId] == address(0),
+            validatorIdToRewardAddress[_validatorId] == address(0),
             "Validator exists"
         );
         require(_rewardAddress != address(0), "Invalid reward address");
@@ -88,7 +92,8 @@ contract NodeOperatorRegistry is
             "Validator has no ValidatorShare"
         );
 
-        validatorRewardAddress[_validatorId] = _rewardAddress;
+        validatorIdToRewardAddress[_validatorId] = _rewardAddress;
+        validatorRewardAddressToId[_rewardAddress] = _validatorId;
         validatorIds.push(_validatorId);
 
         emit AddNodeOperator(_validatorId, _rewardAddress);
@@ -103,7 +108,7 @@ contract NodeOperatorRegistry is
         override
         userHasRole(DAO_ROLE)
     {
-        address rewardAddress = validatorRewardAddress[_validatorId];
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
 
         uint256 length = validatorIds.length;
@@ -120,7 +125,8 @@ contract NodeOperatorRegistry is
         stMATIC.withdrawTotalDelegated(validator.contractAddress);
 
         validatorIds.pop();
-        delete validatorRewardAddress[_validatorId];
+        delete validatorIdToRewardAddress[_validatorId];
+        delete validatorRewardAddressToId[rewardAddress];
 
         emit RemoveNodeOperator(_validatorId, rewardAddress);
     }
@@ -146,11 +152,11 @@ contract NodeOperatorRegistry is
     /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
     function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external override {
-        address oldRewardAddress = validatorRewardAddress[_validatorId];
+        address oldRewardAddress = validatorIdToRewardAddress[_validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
         require(_newRewardAddress != address(0), "Invalid reward address");
 
-        validatorRewardAddress[_validatorId] = _newRewardAddress;
+        validatorIdToRewardAddress[_validatorId] = _newRewardAddress;
 
         emit SetRewardAddress(_validatorId, oldRewardAddress, _newRewardAddress);
     }
@@ -169,7 +175,7 @@ contract NodeOperatorRegistry is
                 if(!IValidatorShare(validator.contractAddress).delegation()) continue;
 
                 activeNodeOperators[counter] = NodeOperatorRegistry(
-                    validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                    validator.contractAddress, validatorIdToRewardAddress[validatorIds[i]]
                 );
                 counter++;
             }
@@ -197,7 +203,7 @@ contract NodeOperatorRegistry is
         for (uint256 i = 0; i < length; i++) {
             validator = stakeManager.validators(validatorIds[i]);
             withdrawNodeOperators[i] = NodeOperatorRegistry(
-                validator.contractAddress, validatorRewardAddress[validatorIds[i]]
+                validator.contractAddress, validatorIdToRewardAddress[validatorIds[i]]
             );
         }
 
@@ -219,7 +225,7 @@ contract NodeOperatorRegistry is
         ) = _getOperatorStatusAndValidator(_validatorId);
         nodeOperator.validatorShare = validator.contractAddress;
         nodeOperator.validatorId = _validatorId;
-        nodeOperator.rewardAddress = validatorRewardAddress[_validatorId];
+        nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
         nodeOperator.status = operatorStatus;
         return nodeOperator;
     }
@@ -233,23 +239,16 @@ contract NodeOperatorRegistry is
         override
         returns (FullNodeOperatorRegistry memory nodeOperator)
     {
-        uint256 length = validatorIds.length;
-        for(uint256 i = 0; i < length;i++){
-            uint256 validatorId =  validatorIds[i];
-            if(_rewardAddress == validatorRewardAddress[validatorId]){
-                (
-                    NodeOperatorRegistryStatus operatorStatus,
-                    IStakeManager.Validator memory validator
-                ) = _getOperatorStatusAndValidator(validatorId);
+        uint256 validatorId = validatorRewardAddressToId[_rewardAddress];
+        (
+            NodeOperatorRegistryStatus operatorStatus,
+            IStakeManager.Validator memory validator
+        ) = _getOperatorStatusAndValidator(validatorId);
 
-                nodeOperator.status = operatorStatus;
-                nodeOperator.rewardAddress = _rewardAddress;
-                nodeOperator.validatorId = validatorId;
-                nodeOperator.validatorShare = validator.contractAddress;
-                return nodeOperator;
-            }
-        }
-
+        nodeOperator.status = operatorStatus;
+        nodeOperator.rewardAddress = _rewardAddress;
+        nodeOperator.validatorId = validatorId;
+        nodeOperator.validatorShare = validator.contractAddress;
         return nodeOperator;
     }
 
@@ -271,7 +270,7 @@ contract NodeOperatorRegistry is
     private
     view
     returns(NodeOperatorRegistryStatus operatorStatus, IStakeManager.Validator memory validator){
-        address rewardAddress = validatorRewardAddress[_validatorId];
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Operator not found");
         validator = stakeManager.validators(_validatorId);
 

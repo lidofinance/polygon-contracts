@@ -70,7 +70,7 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "AddNodeOperator").withArgs(1, user1.address)
 
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(user1.address)
         });
 
         it("should return all active operators", async function() {
@@ -206,9 +206,9 @@ describe("NodeOperator", function () {
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
             expect((await nodeOperatorRegistry.validatorIds(1))).eq(2)
             expect((await nodeOperatorRegistry.validatorIds(2))).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(user1.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(user1.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
         });
 
@@ -281,7 +281,7 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "RemoveNodeOperator")
                 .withArgs(validatorId, user1.address)
 
-            expect((await nodeOperatorRegistry.validatorRewardAddress(1))).eq(ethers.constants.AddressZero)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(ethers.constants.AddressZero)
         });
 
         it("Success remove multiple operator", async function () {
@@ -304,15 +304,15 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "RemoveNodeOperator")
                 .withArgs(validatorId1, user1.address)
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
 
             // add operator 3
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address)
 
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
             expect(await nodeOperatorRegistry.validatorIds(1)).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(2))).eq(user2.address)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
             // remove operator 2
             expect(await nodeOperatorRegistry.removeNodeOperator(validatorId2))
@@ -320,7 +320,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId2, user2.address)
 
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
-            expect((await nodeOperatorRegistry.validatorRewardAddress(3))).eq(user3.address)
+            expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
             // remove operator 3
             expect(await nodeOperatorRegistry.removeNodeOperator(validatorId3))
@@ -403,9 +403,8 @@ describe("NodeOperator", function () {
         });
 
         it("should return empty data for a non-existing operator", async function() {
-            let nodeOperator = await nodeOperatorRegistry["getNodeOperator(address)"](user1.address);
-            expect(nodeOperator.validatorId).to.equal(0);
-            expect(nodeOperator.rewardAddress).to.equal(ethers.constants.AddressZero);
+            await expect(nodeOperatorRegistry["getNodeOperator(address)"](user1.address))
+              .revertedWith("Operator not found");
 
             await expect(nodeOperatorRegistry["getNodeOperator(uint256)"](1))
               .revertedWith("Operator not found")
