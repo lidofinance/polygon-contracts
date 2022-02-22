@@ -75,6 +75,10 @@ contract NodeOperatorRegistry is
             validatorIdToRewardAddress[_validatorId] == address(0),
             "Validator exists"
         );
+        require(
+            validatorRewardAddressToId[_rewardAddress] == 0,
+            "Validator exists"
+        );
         require(_rewardAddress != address(0), "Invalid reward address");
 
         IStakeManager.Validator memory validator = stakeManager.validators(
@@ -149,16 +153,16 @@ contract NodeOperatorRegistry is
 
     /// @notice Update the reward address of a Node Operator.
     /// ONLY Operator owner can call this function
-    /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external override {
-        address oldRewardAddress = validatorIdToRewardAddress[_validatorId];
+    function setRewardAddress(address _newRewardAddress) external override {
+        uint256 validatorId = validatorRewardAddressToId[msg.sender];
+        address oldRewardAddress = validatorIdToRewardAddress[validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
         require(_newRewardAddress != address(0), "Invalid reward address");
 
-        validatorIdToRewardAddress[_validatorId] = _newRewardAddress;
+        validatorIdToRewardAddress[validatorId] = _newRewardAddress;
 
-        emit SetRewardAddress(_validatorId, oldRewardAddress, _newRewardAddress);
+        emit SetRewardAddress(validatorId, oldRewardAddress, _newRewardAddress);
     }
 
     /// @notice List all the ACTIVE operators on the stakeManager.

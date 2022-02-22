@@ -61,9 +61,8 @@ interface INodeOperatorRegistry {
 
     /// @notice Update reward address of a Node Operator.
     /// ONLY Operator owner can call this function
-    /// @param _validatorId the validator id.
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(uint256 _validatorId, address _newRewardAddress) external;
+    function setRewardAddress(address _newRewardAddress) external;
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.

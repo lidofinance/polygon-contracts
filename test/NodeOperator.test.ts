@@ -371,7 +371,7 @@ describe("NodeOperator", function () {
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
-            expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(validatorId, user2.address))
+            expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(user2.address))
                 .emit(nodeOperatorRegistry, "SetRewardAddress")
                 .withArgs(validatorId, user1.address, user2.address)
         })
@@ -381,10 +381,10 @@ describe("NodeOperator", function () {
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
-            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, user2.address))
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
                 .revertedWith("Unauthorized")
 
-            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(validatorId, ethers.constants.AddressZero))
+            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Unauthorized")
         })
 
