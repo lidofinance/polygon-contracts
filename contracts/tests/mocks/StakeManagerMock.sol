@@ -125,7 +125,9 @@ contract StakeManagerMock is IStakeManager {
     function updateCommissionRate(
         uint256 _validatorId,
         uint256 _newCommissionRate
-    ) external {}
+    ) external {
+        smValidators[_validatorId].commissionRate = _newCommissionRate;
+    }
 
     function unjail(uint256 _validatorId) external {
         require(
