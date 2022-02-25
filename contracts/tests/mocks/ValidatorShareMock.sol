@@ -5,6 +5,7 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../interfaces/IValidatorShare.sol";
 import "../../interfaces/IStakeManager.sol";
+import "hardhat/console.sol";
 
 contract ValidatorShareMock is IValidatorShare {
     address public token;
@@ -179,5 +180,10 @@ contract ValidatorShareMock is IValidatorShare {
 
     function updateDelegation(bool _delegation) external override {
         delegation = _delegation;
+    }
+
+    /// @notice Test only used to increase the delegation for a user.
+    function increseStakeFor(uint256 _amount) external {
+        totalStaked = _amount;
     }
 }
