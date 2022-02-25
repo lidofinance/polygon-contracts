@@ -51,4 +51,7 @@ interface IStakeManager {
         external
         view
         returns (Validator memory);
+
+    /// @notice Returns a withdrawal delay.
+    function withdrawalDelay() external  view returns (uint256);
 }
