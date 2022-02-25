@@ -183,6 +183,7 @@ describe("Starting to test StMATIC contract", () => {
             [
                 mockStakeManager.address,
                 mockERC20.address,
+                100
             ]
         )) as NodeOperatorRegistry;
         await nodeOperatorRegistry.deployed();

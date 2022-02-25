@@ -26,7 +26,8 @@ contract NodeOperatorRegistry is
     /// @notice stMatic interface.
     IStMATIC public stMATIC;
 
-    uint256 MIN_DELEGATE_DISTANCE_THRESHOLD;
+    /// @notice Minimum delegation distance threshold.
+    uint256 public MIN_DELEGATE_DISTANCE_THRESHOLD;
 
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
@@ -61,7 +62,7 @@ contract NodeOperatorRegistry is
 
         stakeManager = _stakeManager;
         stMATIC = _stMATIC;
-        MIN_DELEGATE_DISTANCE_THRESHOLD = _minDelegateDistanceThreshold;
+
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DAO_ROLE, msg.sender);
 
@@ -257,13 +258,12 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Returns operators info.
-    /// @param _onlyActiveOperator if true return only activ operators
     /// @return activeNodeOperators all active node operators.
     /// @return activeOperatorCount count onlt active validators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
     /// @return distanceThreshold the distance between the min and max amount staked in a validator.
-    function getActiveStakeInfo(bool _onlyActiveOperator)
+    function _getValidatorDelegationAmount()
         public
         view
         returns (
@@ -291,17 +291,15 @@ contract NodeOperatorRegistry is
             validatorId = validatorIds[i];
             (status, validator) = _getOperatorStatusAndValidator(validatorId);
 
-            if (_onlyActiveOperator) {
-                require(
-                    !(status == NodeOperatorRegistryStatus.EJECTED),
-                    "Could not calculate the stake data, an operator was EJECTED"
-                );
+            require(
+                !(status == NodeOperatorRegistryStatus.EJECTED),
+                "Could not calculate the stake data, an operator was EJECTED"
+            );
 
-                require(
-                    !(status == NodeOperatorRegistryStatus.UNSTAKED),
-                    "Could not calculate the stake data, an operator was UNSTAKED"
-                );
-            }
+            require(
+                !(status == NodeOperatorRegistryStatus.UNSTAKED),
+                "Could not calculate the stake data, an operator was UNSTAKED"
+            );
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
@@ -325,23 +323,23 @@ contract NodeOperatorRegistry is
                 status
             );
 
-            if (
-                status == NodeOperatorRegistryStatus.JAILED &&
-                _onlyActiveOperator
-            ) continue;
+            if (status == NodeOperatorRegistryStatus.JAILED) continue;
             activeOperatorCount++;
         }
+
+        require(activeOperatorCount > 0, "There are no active validator");
+
         // The max amount is multiplied by 100 to have a precise value.
         minAmount = minAmount == 0 ? 1 : minAmount;
         distanceThreshold = ((maxAmount * 100) / minAmount);
     }
 
     /// @notice Calculate the ratios to delegate to each validator.
-    /// @param _totalBuffred The total amount buffered in stMatic.
+    /// @param _totalBuffered The total amount buffered in stMatic.
     /// @return activeNodeOperators all active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    function getValidatorDelegationAmount(uint256 _totalBuffred)
+    function getValidatorDelegationAmount(uint256 _totalBuffered)
         external
         view
         override
@@ -357,13 +355,13 @@ contract NodeOperatorRegistry is
             uint256[] memory stakePerOperator,
             uint256 totalStaked,
             uint256 distanceThreshold
-        ) = getActiveStakeInfo(true);
+        ) = _getValidatorDelegationAmount();
 
         activeNodeOperators = new NodeOperatorRegistry[](activeOperatorCount);
         operatorRatios = new uint256[](activeOperatorCount);
 
         uint256 length = _activeNodeOperators.length;
-        uint256 rebalanceTarget = (totalStaked + _totalBuffred) /
+        uint256 rebalanceTarget = (totalStaked + _totalBuffered) /
             activeOperatorCount;
 
         uint256 operatorRatioToDelegate;
@@ -375,10 +373,7 @@ contract NodeOperatorRegistry is
                     NodeOperatorRegistryStatus.ACTIVE)
             ) continue;
 
-            if (
-                distanceThreshold > MIN_DELEGATE_DISTANCE_THRESHOLD &&
-                distanceThreshold != 0
-            ) {
+            if (distanceThreshold > MIN_DELEGATE_DISTANCE_THRESHOLD) {
                 operatorRatioToDelegate = stakePerOperator[idx] >=
                     rebalanceTarget
                     ? 0

@@ -452,7 +452,7 @@ describe("NodeOperator", function () {
             expect(operatorStatus).to.equal(OPERATOR_STATUS.EJECTED);
         });
 
-        it.only("Success getValidatorDelegationAmount first delegation", async function () {
+        it("Success getValidatorDelegationAmount first delegation", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -478,7 +478,7 @@ describe("NodeOperator", function () {
             expect(res.operatorRatios[2], "1-res.operatorRatios[3]").eq(toEth("0"))
         })
 
-        it.only("Success getValidatorDelegationAmount When not balanced", async function () {
+        it("Success getValidatorDelegationAmount When not balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -560,7 +560,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it.only("Success getValidatorDelegationAmount when system is balanced", async function () {
+        it("Success getValidatorDelegationAmount when system is balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -595,7 +595,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it.only("Success getValidatorDelegationAmount when buffered token", async function () {
+        it("Success getValidatorDelegationAmount when buffered token", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -630,7 +630,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it.only("Success getValidatorDelegationAmount lowest validator is jailed", async function () {
+        it("Success getValidatorDelegationAmount lowest validator is jailed", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -680,7 +680,36 @@ describe("NodeOperator", function () {
             })
         })
 
-        it.only("Fail getValidatorDelegationAmount", async function () {
+        it("Fail getValidatorDelegationAmount all validators was slashed", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1200")
+            const validator2Stake = toEth("500")
+            const validator3Stake = toEth("100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increseStakeFor(validatorId, validator3Stake)
+
+            await stakeManagerMock.slash(1)
+            await stakeManagerMock.slash(2)
+            await stakeManagerMock.slash(3)
+
+            await expect(nodeOperatorRegistry.getValidatorDelegationAmount(toEth("0")))
+                .revertedWith("There are no active validator")
+        })
+
+        it("Fail getValidatorDelegationAmount", async function () {
             await expect(nodeOperatorRegistry.getValidatorDelegationAmount(toEth("0")))
                 .revertedWith("Not enough operators to get stake infos")
 
@@ -730,14 +759,14 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
     rewardAddresses: Array<string>
 }) {
     let res = await nodeOperatorRegistry.getValidatorDelegationAmount(totalBuffered)
-     expect(res.activeNodeOperators.length, `${id}--activeNodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.activeNodeOperators.length, `${id}--activeNodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
     expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
     for (let idx = 0; idx < res.operatorRatios.length; idx++) {
         expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
-    
+
     expect(res.activeNodeOperators.length, `${id}--res.activeNodeOperators.length`).eq(data.rewardAddresses.length)
     for (let idx = 0; idx < res.activeNodeOperators.length; idx++) {
         expect(res.activeNodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
@@ -766,10 +795,11 @@ async function stakeOperator(user: SignerWithAddress) {
 }
 
 const OPERATOR_STATUS = {
-    ACTIVE: 0,
-    JAILED: 1,
-    EJECTED: 2,
-    UNSTAKED: 3
+    INACTIVE: 0,
+    ACTIVE: 1,
+    JAILED: 2,
+    EJECTED: 3,
+    UNSTAKED: 4
 };
 
 // convert a string to ether
