@@ -40,6 +40,9 @@ contract StakeManagerMock is IStakeManager {
         state.validators[_user] = id;
         state.Owners[id] = _user;
 
+        address validatorShare =address(
+            new ValidatorShareMock(state.token, address(this), id)
+        );
         smValidators[id] = IStakeManager.Validator({
             amount: _amount,
             reward: 0,
@@ -47,9 +50,7 @@ contract StakeManagerMock is IStakeManager {
             deactivationEpoch: 0,
             jailTime: 0,
             signer: address(uint160(uint256(keccak256(_signerPubkey)))),
-            contractAddress: address(
-                new ValidatorShareMock(state.token, address(this), id)
-            ),
+            contractAddress: validatorShare,
             status: IStakeManager.Status.Active,
             commissionRate: 0,
             lastCommissionUpdate: 0,
@@ -59,9 +60,7 @@ contract StakeManagerMock is IStakeManager {
         });
         state.id++;
         state.stakedAmount[id] = _amount;
-        state.validatorShares[id] = address(
-            new ValidatorShareMock(state.token, address(this), id)
-        );
+        state.validatorShares[id] = validatorShare;
     }
 
     function restake(
@@ -88,7 +87,8 @@ contract StakeManagerMock is IStakeManager {
         override
         returns (address)
     {
-        return state.validatorShares[_validatorId];
+        return smValidators[_validatorId].contractAddress;
+        // return state.validatorShares[_validatorId];
     }
 
     function withdrawRewards(uint256) external {
@@ -137,7 +137,7 @@ contract StakeManagerMock is IStakeManager {
         smValidators[_validatorId].status = IStakeManager.Status.Active;
     }
 
-    function withdrawalDelay() external pure returns (uint256) {
+    function withdrawalDelay() external override pure returns (uint256) {
         return (2**13);
     }
 

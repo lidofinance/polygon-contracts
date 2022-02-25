@@ -13,6 +13,7 @@ interface INodeOperatorRegistry {
     /// EJECTED: ((validator.status == status.Active || validator.status == status.Locked) && validator.deactivationEpoch != 0)
     /// UNSTAKED: (validator.status == status.Unstaked)
     enum NodeOperatorRegistryStatus {
+        INACTIVE,
         ACTIVE,
         JAILED,
         EJECTED,
@@ -45,10 +46,8 @@ interface INodeOperatorRegistry {
     /// ONLY DAO can execute this function.
     /// @param _validatorId the validator id on stakeManager.
     /// @param _rewardAddress the reward address.
-    function addNodeOperator(
-        uint256 _validatorId,
-        address _rewardAddress
-    ) external;
+    function addNodeOperator(uint256 _validatorId, address _rewardAddress)
+        external;
 
     /// @notice Remove a new node operator from the system.
     /// ONLY DAO can execute this function.
@@ -121,6 +120,20 @@ interface INodeOperatorRegistry {
             uint256 jailedNodeOperator,
             uint256 ejectedNodeOperator,
             uint256 unstakedNodeOperator
+        );
+
+    /// @notice Calculate the ratios to delegate to each validator.
+    /// @param _totalBuffred The total amount buffered in stMatic.
+    /// @return activeNodeOperators all active node operators.
+    /// @return operatorRatios is a list of operator's ratio.
+    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    function getValidatorDelegationAmount(uint256 _totalBuffred)
+        external
+        view
+        returns (
+            NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio
         );
 
     // ***********************************EVENTS***********************************
