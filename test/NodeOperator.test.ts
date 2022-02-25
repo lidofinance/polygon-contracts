@@ -379,14 +379,14 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setCommissionRate(10);
 
-            expect(await nodeOperatorRegistry.removeNodeOperator(validatorId1))
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
               .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
               .withArgs(validatorId1, user1.address)
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
             expect(await nodeOperatorRegistry.validatorIds(1)).eq(2)
 
             await stakeManagerMock.unstake(validatorId2);
-            expect(await nodeOperatorRegistry.removeNodeOperator(validatorId2))
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
               .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
               .withArgs(validatorId2, user2.address)
             expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
@@ -394,7 +394,7 @@ describe("NodeOperator", function () {
             await stakeManagerMock.slash(validatorId3);
             await stakeManagerMock.unstake(validatorId3);
 
-            expect(await nodeOperatorRegistry.removeNodeOperator(validatorId3))
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId3))
               .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
               .withArgs(validatorId3, user3.address)
         });
@@ -411,12 +411,12 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setCommissionRate(20);
 
-            await stakeManagerMock.updateCommissionRate(validatorId1, 30);
+            await stakeManagerMock.updateCommissionRate(validatorId1, 20);
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
               .revertedWith("Cannot remove valid operator.")
 
             await stakeManagerMock.slash(validatorId2);
-            await stakeManagerMock.updateCommissionRate(validatorId2, 30);
+            await stakeManagerMock.updateCommissionRate(validatorId2, 20);
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
               .revertedWith("Cannot remove valid operator.")
         });

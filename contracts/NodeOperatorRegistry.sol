@@ -161,20 +161,18 @@ contract NodeOperatorRegistry is
             IStakeManager.Validator memory validator
         ) = _getOperatorStatusAndValidator(validatorId);
 
+        require(
+            operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
+            operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
+            validator.commissionRate != DEFAULT_COMMISSION_RATE, "Cannot remove valid operator."
+        );
+
         uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length - 1; idx++) {
             if (validatorId == validatorIds[idx]) {
-                if(
-                    operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
-                    operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
-                    validator.commissionRate <= DEFAULT_COMMISSION_RATE
-                ){
-                    validatorIds[idx] = validatorIds[validatorIds.length - 1];
-                    validatorIds.pop();
-                    break;
-                }else{
-                    revert("Cannot remove valid operator.");
-                }
+                validatorIds[idx] = validatorIds[validatorIds.length - 1];
+                validatorIds.pop();
+                break;
             }
         }
 
@@ -193,7 +191,7 @@ contract NodeOperatorRegistry is
         override
         userHasRole(DAO_ROLE)
     {
-        require((newCommissionRate != 0), "Invalid commission rate");
+        require(newCommissionRate != 0, "Invalid commission rate");
 
         uint256 oldCommissionRate = DEFAULT_COMMISSION_RATE;
         DEFAULT_COMMISSION_RATE = newCommissionRate;
@@ -375,6 +373,7 @@ contract NodeOperatorRegistry is
 
             activeNodeOperators[i] = FullNodeOperatorRegistry(
                 validatorId,
+                validator.commissionRate,
                 validator.contractAddress,
                 validatorIdToRewardAddress[validatorIds[i]],
                 status
