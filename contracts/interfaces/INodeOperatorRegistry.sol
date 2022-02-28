@@ -21,12 +21,14 @@ interface INodeOperatorRegistry {
     }
 
     /// @notice The full node operator struct.
+    /// @param commission rate of each operator
     /// @param validatorId the validator id on stakeManager.
     /// @param validatorShare the validator share address of the validator.
     /// @param rewardAddress the reward address.
     /// @param status the status of the node operator in the stake manager.
     struct FullNodeOperatorRegistry {
         uint256 validatorId;
+        uint256 commissionRate;
         address validatorShare;
         address rewardAddress;
         NodeOperatorRegistryStatus status;
@@ -52,6 +54,17 @@ interface INodeOperatorRegistry {
     /// withdraw delegated tokens from it.
     /// @param _validatorId the validator id on stakeManager.
     function removeNodeOperator(uint256 _validatorId) external;
+
+    /// @notice Remove an invalid node operator from the system if it fails to meet certain conditions
+    /// 1. If the commission of the Node Operator is less than the standard commission
+    /// 2. If the Node Operator is either Unstaked or Ejected
+    /// @param validatorId the validator id on stakeManager.
+    function removeInvalidNodeOperator(uint256 validatorId) external;
+
+    /// @notice Set the new commission rate
+    /// ONLY DAO can call this function
+    /// @param newCommissionRate the new commission rate
+    function setCommissionRate(uint256 newCommissionRate) external;
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
@@ -132,7 +145,18 @@ interface INodeOperatorRegistry {
     /// @notice Remove Node Operator event.
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
-    event RemoveNodeOperator(uint256 validatorId, address rewardAddress);
+    event RemoveNodeOperator(
+        uint256 validatorId,
+        address rewardAddress
+    );
+
+    /// @notice Remove Invalid Node Operator event.
+    /// @param validatorId validator id.
+    /// @param rewardAddress reward address.
+    event RemoveInvalidNodeOperator(
+        uint256 validatorId,
+        address rewardAddress
+    );
 
     /// @notice Set StMatic address event.
     /// @param oldStMatic old stMatic address.
@@ -143,9 +167,10 @@ interface INodeOperatorRegistry {
     /// @param validatorId the validator id.
     /// @param oldRewardAddress old reward address.
     /// @param newRewardAddress new reward address.
-    event SetRewardAddress(
-        uint256 validatorId,
-        address oldRewardAddress,
-        address newRewardAddress
-    );
+    event SetRewardAddress(uint256 validatorId, address oldRewardAddress, address newRewardAddress);
+
+    /// @notice Emit when the default commission rate is changed.
+    /// @param oldCommissionRate the old commission rate.
+    /// @param newCommissionRate the new commission rate.
+    event SetCommissionRate(uint256 oldCommissionRate, uint256 newCommissionRate);
 }

@@ -32,6 +32,9 @@ contract NodeOperatorRegistry is
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
 
+    /// @notice the default commission rate for operators
+    uint256 public DEFAULT_COMMISSION_RATE;
+
     /// @notice This stores the operators ids.
     uint256[] public validatorIds;
 
@@ -141,6 +144,58 @@ contract NodeOperatorRegistry is
         delete validatorRewardAddressToId[rewardAddress];
 
         emit RemoveNodeOperator(_validatorId, rewardAddress);
+    }
+
+    /// @notice Remove a node operator from the system if it fails to meet certain conditions
+    /// 1. If the commission of the Node Operator is less than the standard commission
+    /// 2. If the Node Operator is either Unstaked or Ejected
+    function removeInvalidNodeOperator(uint256 validatorId)
+        external
+        override
+    {
+        address rewardAddress = validatorIdToRewardAddress[validatorId];
+        require(rewardAddress != address(0), "Validator doesn't exist");
+
+        (
+            NodeOperatorRegistryStatus operatorStatus,
+            IStakeManager.Validator memory validator
+        ) = _getOperatorStatusAndValidator(validatorId);
+
+        require(
+            operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
+            operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
+            validator.commissionRate != DEFAULT_COMMISSION_RATE, "Cannot remove valid operator."
+        );
+
+        uint256 length = validatorIds.length;
+        for (uint256 idx = 0; idx < length - 1; idx++) {
+            if (validatorId == validatorIds[idx]) {
+                validatorIds[idx] = validatorIds[validatorIds.length - 1];
+                validatorIds.pop();
+                break;
+            }
+        }
+
+        stMATIC.withdrawTotalDelegated(validator.contractAddress);
+        delete validatorIdToRewardAddress[validatorId];
+        delete validatorRewardAddressToId[rewardAddress];
+
+        emit RemoveInvalidNodeOperator(validatorId, rewardAddress);
+    }
+
+    ///@notice Set default commission rate
+    /// ONLY DAO can call this function
+    ///@param newCommissionRate new commission rate
+    function setCommissionRate(uint256 newCommissionRate)
+        external
+        override
+        userHasRole(DAO_ROLE)
+    {
+        require(newCommissionRate != 0, "Invalid commission rate");
+
+        uint256 oldCommissionRate = DEFAULT_COMMISSION_RATE;
+        DEFAULT_COMMISSION_RATE = newCommissionRate;
+        emit SetCommissionRate(oldCommissionRate, newCommissionRate);
     }
 
     /// @notice Set StMatic address.
@@ -318,6 +373,7 @@ contract NodeOperatorRegistry is
 
             activeNodeOperators[i] = FullNodeOperatorRegistry(
                 validatorId,
+                validator.commissionRate,
                 validator.contractAddress,
                 validatorIdToRewardAddress[validatorIds[i]],
                 status
@@ -417,6 +473,7 @@ contract NodeOperatorRegistry is
         nodeOperator.validatorId = _validatorId;
         nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
         nodeOperator.status = operatorStatus;
+        nodeOperator.commissionRate = validator.commissionRate;
         return nodeOperator;
     }
 
@@ -439,6 +496,7 @@ contract NodeOperatorRegistry is
         nodeOperator.rewardAddress = _rewardAddress;
         nodeOperator.validatorId = validatorId;
         nodeOperator.validatorShare = validator.contractAddress;
+        nodeOperator.commissionRate = validator.commissionRate;
         return nodeOperator;
     }
 

@@ -363,6 +363,78 @@ describe("NodeOperator", function () {
                 .revertedWith("Unauthorized")
         })
 
+        it("should successfully remove an invalid operator", async function() {
+            // stake validators
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address)
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address)
+            const validatorId3 = await stakeManagerMock.getValidatorId(user3.address)
+
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address)
+
+            await nodeOperatorRegistry.setCommissionRate(10);
+
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
+              .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
+              .withArgs(validatorId1, user1.address)
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
+            expect(await nodeOperatorRegistry.validatorIds(1)).eq(2)
+
+            await stakeManagerMock.unstake(validatorId2);
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
+              .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
+              .withArgs(validatorId2, user2.address)
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
+
+            await stakeManagerMock.slash(validatorId3);
+            await stakeManagerMock.unstake(validatorId3);
+
+            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId3))
+              .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
+              .withArgs(validatorId3, user3.address)
+        });
+
+        it("should fail to remove an invalid node operator", async function() {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+
+            const validatorId1 = await stakeManagerMock.getValidatorId(user1.address)
+            const validatorId2 = await stakeManagerMock.getValidatorId(user2.address)
+
+            await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address)
+
+            await nodeOperatorRegistry.setCommissionRate(20);
+
+            await stakeManagerMock.updateCommissionRate(validatorId1, 20);
+            await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
+              .revertedWith("Cannot remove valid operator.")
+
+            await stakeManagerMock.slash(validatorId2);
+            await stakeManagerMock.updateCommissionRate(validatorId2, 20);
+            await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
+              .revertedWith("Cannot remove valid operator.")
+        });
+
+        it("should successfully set the commission rate", async function () {
+            expect(await nodeOperatorRegistry.setCommissionRate(10))
+              .emit(nodeOperatorRegistry, "SetCommissionRate")
+              .withArgs(0, 10)
+        })
+
+        it("should fail to set the commission rate", async function () {
+            await expect(nodeOperatorRegistry.setCommissionRate(0))
+              .revertedWith("Invalid commission rate")
+
+            await expect(nodeOperatorRegistry.connect(user1).setCommissionRate(10))
+              .revertedWith("Unauthorized")
+        })
+
         it("Success set StMatic address", async function () {
             expect(await nodeOperatorRegistry.setStMaticAddress(user1.address))
                 .emit(nodeOperatorRegistry, "SetStMaticAddress")
