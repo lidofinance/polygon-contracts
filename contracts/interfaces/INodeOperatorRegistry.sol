@@ -127,7 +127,21 @@ interface INodeOperatorRegistry {
     /// @return activeNodeOperators all active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    function getValidatorDelegationAmount(uint256 _totalBuffred)
+    function getValidatorsDelegationAmount(uint256 _totalBuffred)
+        external
+        view
+        returns (
+            NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio
+        );
+
+    /// @notice Calculate the ratios to withdraw from each validator.
+    /// @param _totalBuffered The total amount buffered in stMatic.
+    /// @return activeNodeOperators all active node operators.
+    /// @return operatorRatios is a list of operator's ratio.
+    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    function getValidatorsRebalanceAmount(uint256 _totalBuffered)
         external
         view
         returns (
@@ -145,18 +159,12 @@ interface INodeOperatorRegistry {
     /// @notice Remove Node Operator event.
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
-    event RemoveNodeOperator(
-        uint256 validatorId,
-        address rewardAddress
-    );
+    event RemoveNodeOperator(uint256 validatorId, address rewardAddress);
 
     /// @notice Remove Invalid Node Operator event.
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
-    event RemoveInvalidNodeOperator(
-        uint256 validatorId,
-        address rewardAddress
-    );
+    event RemoveInvalidNodeOperator(uint256 validatorId, address rewardAddress);
 
     /// @notice Set StMatic address event.
     /// @param oldStMatic old stMatic address.
@@ -167,10 +175,17 @@ interface INodeOperatorRegistry {
     /// @param validatorId the validator id.
     /// @param oldRewardAddress old reward address.
     /// @param newRewardAddress new reward address.
-    event SetRewardAddress(uint256 validatorId, address oldRewardAddress, address newRewardAddress);
+    event SetRewardAddress(
+        uint256 validatorId,
+        address oldRewardAddress,
+        address newRewardAddress
+    );
 
     /// @notice Emit when the default commission rate is changed.
     /// @param oldCommissionRate the old commission rate.
     /// @param newCommissionRate the new commission rate.
-    event SetCommissionRate(uint256 oldCommissionRate, uint256 newCommissionRate);
+    event SetCommissionRate(
+        uint256 oldCommissionRate,
+        uint256 newCommissionRate
+    );
 }
