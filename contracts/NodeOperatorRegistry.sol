@@ -493,6 +493,7 @@ contract NodeOperatorRegistry is
     /// @return activeNodeOperators all active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 _totalBuffered)
         external
         view
@@ -500,7 +501,8 @@ contract NodeOperatorRegistry is
         returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
             uint256[] memory operatorRatios,
-            uint256 totalRatio
+            uint256 totalRatio,
+            uint256 totalToWithdraw
         )
     {
         require(validatorIds.length > 1, "Not enough operator to rebalance");
@@ -545,12 +547,12 @@ contract NodeOperatorRegistry is
                 _activeNodeOperators[idx].rewardAddress
             );
         }
+        totalToWithdraw = totalRatio > _totalBuffered
+            ? totalRatio - _totalBuffered
+            : 0;
 
-        require(
-            ((totalRatio * (100 - MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE)) /
-                100) >= _totalBuffered,
-            "The total buffered tokens can cover rebalance"
-        );
+        require(totalToWithdraw > 0, "Zero total to withdraw");
+        totalToWithdraw = totalToWithdraw * MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE / 100;
     }
 
     /// @notice Returns a node operator.

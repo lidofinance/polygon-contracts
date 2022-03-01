@@ -141,13 +141,15 @@ interface INodeOperatorRegistry {
     /// @return activeNodeOperators all active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 _totalBuffered)
         external
         view
         returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
             uint256[] memory operatorRatios,
-            uint256 totalRatio
+            uint256 totalRatio,
+            uint256 totalToWithdraw
         );
 
     // ***********************************EVENTS***********************************

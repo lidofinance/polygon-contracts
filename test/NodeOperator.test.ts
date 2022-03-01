@@ -826,9 +826,9 @@ describe("NodeOperator", function () {
             await stakeOperator(user2)
             await stakeOperator(user3)
 
-            const validator1Stake = toEth("1000")
-            const validator2Stake = toEth("700")
-            const validator3Stake = toEth("100")
+            const validator1Stake = toEth("20000")
+            const validator2Stake = toEth("60000")
+            const validator3Stake = toEth("1000")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
             await increseStakeFor(validatorId, validator1Stake)
@@ -841,49 +841,54 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
             await increseStakeFor(validatorId, validator3Stake)
 
-            // Case 1: setMinRebalanceDistanceThreshold = 100 this should ignore the validator 3
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
-            await checkGetValidatorRebalanceAmount("case-1", {
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+
+            await checkGetValidatorRebalanceAmount("case-1", toEth("0"), {
                 activeNodeOperatorsLength: 3,
-                totalRatio: toEth("500"),
+                totalRatio: toEth("33000"),
                 operatorRatios: [
-                    toEth("400"),
-                    toEth("100"),
+                    toEth("0"),
+                    toEth("33000"),
                     toEth("0"),
                 ],
                 rewardAddresses: [
                     user1.address, user2.address, user3.address
-                ]
+                ],
+                totalToWithdraw: toEth("33000")
             })
 
-            // Case 2: setMinRebalanceDistanceThreshold = 120 this should ignore the validator 2 && 3
-            await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(120)
-            await checkGetValidatorRebalanceAmount("case-2", {
+            await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+
+            await checkGetValidatorRebalanceAmount("case-1", toEth("30000"), {
                 activeNodeOperatorsLength: 3,
-                totalRatio: toEth("400"),
+                totalRatio: toEth("33000"),
                 operatorRatios: [
-                    toEth("400"),
                     toEth("0"),
+                    toEth("33000"),
                     toEth("0"),
                 ],
                 rewardAddresses: [
                     user1.address, user2.address, user3.address
-                ]
+                ],
+                totalToWithdraw: toEth("3000")
             })
 
-            // Case 3: setMinRebalanceDistanceThreshold = 1000 this should ignore all validators
-            await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(1000)
-            await checkGetValidatorRebalanceAmount("case-3", {
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(50)
+
+            await checkGetValidatorRebalanceAmount("case-1", toEth("30000"), {
                 activeNodeOperatorsLength: 3,
-                totalRatio: toEth("0"),
+                totalRatio: toEth("33000"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("0"),
+                    toEth("33000"),
                     toEth("0"),
                 ],
                 rewardAddresses: [
                     user1.address, user2.address, user3.address
-                ]
+                ],
+                totalToWithdraw: toEth("1500")
             })
         })
 
@@ -942,7 +947,7 @@ describe("NodeOperator", function () {
                 .revertedWith("The system is balanced")
         })
 
-        it("Should fail getValidatorsRebalanceAmount Zero Rebalance target", async function () {
+        it("Should fail getValidatorsRebalanceAmount Zero total to withdraw", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -950,7 +955,6 @@ describe("NodeOperator", function () {
             const validator1Stake = toEth("1000")
             const validator2Stake = toEth("700")
             const validator3Stake = toEth("100")
-            let totalBuffered = toEth("1000")
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
@@ -964,38 +968,79 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
             await increseStakeFor(validatorId, validator3Stake)
 
-            await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(120)
-            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(20)
-            
-            totalBuffered = toEth("0")
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
-            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+            await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("1000")))
+                .revertedWith("Zero total to withdraw")
+        })
 
-            await nodeOperatorRegistry.getValidatorsRebalanceAmount(totalBuffered)
-            await checkGetValidatorRebalanceAmount("case-1", {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("500"),
-                operatorRatios: [
+        it("Should fail getValidatorsRebalanceAmount totalToWithdraw", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("700")
+            const validator3Stake = toEth("100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increseStakeFor(validatorId, validator3Stake)
+
+
+            let totalBuffered = toEth("100")
+            const maxWithdrawPercentagePerRebalance = [50, 100]
+            const minRebalanceDistanceThreshold = [100, 120]
+            const expectedTotalRatios = ["500", "400"]
+            const operatorRatiosSteps = [
+                [
                     toEth("400"),
                     toEth("100"),
                     toEth("0"),
                 ],
-                rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                [
+                    toEth("400"),
+                    toEth("0"),
+                    toEth("0"),
                 ]
-            })
+            ]
+            for (let idx = 0; idx < maxWithdrawPercentagePerRebalance.length; idx++) {
+                await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(minRebalanceDistanceThreshold[idx])
+                await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(maxWithdrawPercentagePerRebalance[idx])
+
+                let expectedTotalRatio = toEth(expectedTotalRatios[idx])
+                let totalToWithdraw = expectedTotalRatio.sub(totalBuffered).mul(maxWithdrawPercentagePerRebalance[idx]).div(100)
+
+                await checkGetValidatorRebalanceAmount("case-" + idx, totalBuffered, {
+                    activeNodeOperatorsLength: 3,
+                    totalRatio: expectedTotalRatio,
+                    operatorRatios: operatorRatiosSteps[idx],
+                    rewardAddresses: [
+                        user1.address, user2.address, user3.address
+                    ],
+                    totalToWithdraw: totalToWithdraw
+                })
+            }
         })
     });
 });
 
 
-async function checkGetValidatorRebalanceAmount(id: string, data: {
+async function checkGetValidatorRebalanceAmount(id: string, totalBuffered: BigNumber, data: {
     activeNodeOperatorsLength: number,
     totalRatio: BigNumber,
     operatorRatios: Array<BigNumber>,
-    rewardAddresses: Array<string>
+    rewardAddresses: Array<string>,
+    totalToWithdraw: BigNumber,
 }) {
-    let res = await nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("0"))
+    let res = await nodeOperatorRegistry.getValidatorsRebalanceAmount(totalBuffered)
     expect(res.activeNodeOperators.length, `${id}--activeNodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
@@ -1008,6 +1053,7 @@ async function checkGetValidatorRebalanceAmount(id: string, data: {
     for (let idx = 0; idx < res.activeNodeOperators.length; idx++) {
         expect(res.activeNodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
+    expect(res.totalToWithdraw, `${id}--res.totalToWithdraw.length`).eq(data.totalToWithdraw)
 }
 
 async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigNumber, data: {
