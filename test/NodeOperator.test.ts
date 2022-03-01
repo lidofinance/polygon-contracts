@@ -20,6 +20,7 @@ let signer: SignerWithAddress;
 let user1: SignerWithAddress;
 let user2: SignerWithAddress;
 let user3: SignerWithAddress;
+let user4: SignerWithAddress;
 
 let nodeOperatorRegistry: NodeOperatorRegistry;
 let stMATICMock: StMATICMock;
@@ -33,6 +34,7 @@ describe("NodeOperator", function () {
         user1 = accounts[1];
         user2 = accounts[2];
         user3 = accounts[3];
+        user4 = accounts[4];
 
         // deploy erc20 token mock
         const polygonMock = (await ethers.getContractFactory(
@@ -554,10 +556,12 @@ describe("NodeOperator", function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
+            await stakeOperator(user4)
 
             const validator1Stake = toEth("1200")
             const validator2Stake = toEth("500")
             const validator3Stake = toEth("100")
+            const validator4Stake = toEth("0")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
             await increseStakeFor(validatorId, validator1Stake)
@@ -570,48 +574,55 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
             await increseStakeFor(validatorId, validator3Stake)
 
-            // Case 1: setMinDelegateDistanceThreshold = 100 this should ignore the validatore 1
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increseStakeFor(validatorId, validator4Stake)
+
+            // Case 1: setMinDelegateDistanceThreshold = 100 this should ignore the validator 1
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(100)
             await checkGetValidatorDelegationAmount("1", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("600"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("100"),
-                    toEth("500"),
+                    toEth("0"),
+                    toEth("350"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
-            // Case 2: setMinDelegateDistanceThreshold = 150 this should ignore the validatore 1 & 2
+            // Case 2: setMinDelegateDistanceThreshold = 150 this should ignore the validator 1 & 2
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(150)
             await checkGetValidatorDelegationAmount("2", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("500"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
-                    toEth("500"),
+                    toEth("350"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
             // Case 3: setMinDelegateDistanceThreshold = 1000 this should ignore the validatore 1 & 2 & 3
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(1000)
             await checkGetValidatorDelegationAmount("3", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("0"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("450"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
                     toEth("0"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
@@ -620,14 +631,15 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(100)
 
             await checkGetValidatorDelegationAmount("4", toEth("0"), {
-                activeNodeOperatorsLength: 2,
-                totalRatio: toEth("800"),
+                activeNodeOperatorsLength: 3,
+                totalRatio: toEth("1100"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("800"),
+                    toEth("500"),
+                    toEth("600"),
                 ],
                 rewardAddresses: [
-                    user1.address, user3.address
+                    user1.address, user3.address, user4.address
                 ]
             })
         })
@@ -877,6 +889,10 @@ const OPERATOR_STATUS = {
 // convert a string to ether
 function toEth(amount: string): BigNumber {
     return ethers.utils.parseEther(amount);
+}
+
+function toBigNumber(amount: String): BigNumber {
+    return ethers.BigNumber.from(amount);
 }
 
 async function checkOperator(
