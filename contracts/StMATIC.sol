@@ -276,9 +276,7 @@ contract StMATIC is
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorDelegationAmount(totalBuffered);
-
         uint256 activeOperatorsLength = activeNodeOperators.length;
-        require(activeOperatorsLength > 0, "No operator shares, cannot delegate");
 
         uint256 remainder;
         uint256 amountDelegated;
