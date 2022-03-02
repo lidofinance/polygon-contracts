@@ -275,7 +275,7 @@ contract StMATIC is
             INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio
-        ) = nodeOperatorRegistry.getValidatorDelegationAmount(totalBuffered);
+        ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
         uint256 activeOperatorsLength = activeNodeOperators.length;
 
         uint256 remainder;

@@ -843,15 +843,15 @@ describe("NodeOperator", function () {
             const validator3Stake = toEth("1000")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
             await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
@@ -944,15 +944,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(120)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("0")))
@@ -970,15 +970,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("1000")))
@@ -996,15 +996,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
 
             let totalBuffered = toEth("100")
@@ -1096,7 +1096,7 @@ async function increaseStakeFor(validatorId: BigNumber, amount: BigNumber) {
 
     let validatorShareMock: ValidatorShareMock = (await ethers
         .getContractAt("ValidatorShareMock", validatorShareAddress)) as ValidatorShareMock
-    await validatorShareMock.increseStakeFor(amount)
+    await validatorShareMock.increaseStakeFor(amount)
 }
 
 async function stakeOperator(user: SignerWithAddress) {
