@@ -29,6 +29,12 @@ contract NodeOperatorRegistry is
     /// @notice Minimum delegation distance threshold.
     uint256 public MIN_DELEGATE_DISTANCE_THRESHOLD;
 
+    /// @notice Minimum rebalance distance threshold.
+    uint256 public MIN_REBALANCE_DISTANCE_THRESHOLD;
+
+    /// @notice Maximum withdraw percentage per rebalance.
+    uint256 public MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE;
+
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
 
@@ -149,10 +155,7 @@ contract NodeOperatorRegistry is
     /// @notice Remove a node operator from the system if it fails to meet certain conditions
     /// 1. If the commission of the Node Operator is less than the standard commission
     /// 2. If the Node Operator is either Unstaked or Ejected
-    function removeInvalidNodeOperator(uint256 validatorId)
-        external
-        override
-    {
+    function removeInvalidNodeOperator(uint256 validatorId) external override {
         address rewardAddress = validatorIdToRewardAddress[validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
 
@@ -163,8 +166,9 @@ contract NodeOperatorRegistry is
 
         require(
             operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
-            operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
-            validator.commissionRate != DEFAULT_COMMISSION_RATE, "Cannot remove valid operator."
+                operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
+                validator.commissionRate != DEFAULT_COMMISSION_RATE,
+            "Cannot remove valid operator."
         );
 
         uint256 length = validatorIds.length;
@@ -226,6 +230,34 @@ contract NodeOperatorRegistry is
         validatorIdToRewardAddress[validatorId] = _newRewardAddress;
 
         emit SetRewardAddress(validatorId, oldRewardAddress, _newRewardAddress);
+    }
+
+    /// @notice set MIN_REBALANCE_DISTANCE_THRESHOLD
+    /// ONLY DAO can call this function
+    /// @param _minRebalanceDistanceThreshold the min rebalance threshold to include
+    /// a validator in the delegation process.
+    function setMinRebalanceDistanceThreshold(
+        uint256 _minRebalanceDistanceThreshold
+    ) public userHasRole(DAO_ROLE) {
+        require(
+            _minRebalanceDistanceThreshold >= 100,
+            "Invalid minRebalanceDistanceThreshold"
+        );
+        MIN_REBALANCE_DISTANCE_THRESHOLD = _minRebalanceDistanceThreshold;
+    }
+
+    /// @notice set MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE
+    /// ONLY DAO can call this function
+    /// @param _maxWithdrawPercentagePerRebalance the max withdraw percentage to
+    /// withdraw from a validator per rebalance.
+    function setMaxWithdrawPercentagePerRebalance(
+        uint256 _maxWithdrawPercentagePerRebalance
+    ) public userHasRole(DAO_ROLE) {
+        require(
+            _maxWithdrawPercentagePerRebalance <= 100,
+            "Invalid minRebalanceDistanceThreshold"
+        );
+        MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = _maxWithdrawPercentagePerRebalance;
     }
 
     /// @notice set MIN_DELEGATE_DISTANCE_THRESHOLD
@@ -318,7 +350,7 @@ contract NodeOperatorRegistry is
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
     /// @return distanceThreshold the distance between the min and max amount staked in a validator.
-    function _getValidatorDelegationAmount()
+    function _getValidatorsDelegationAmount()
         public
         view
         returns (
@@ -395,7 +427,7 @@ contract NodeOperatorRegistry is
     /// @return activeNodeOperators all active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    function getValidatorDelegationAmount(uint256 _totalBuffered)
+    function getValidatorsDelegationAmount(uint256 _totalBuffered)
         external
         view
         override
@@ -411,7 +443,7 @@ contract NodeOperatorRegistry is
             uint256[] memory stakePerOperator,
             uint256 totalStaked,
             uint256 distanceThreshold
-        ) = _getValidatorDelegationAmount();
+        ) = _getValidatorsDelegationAmount();
 
         activeNodeOperators = new NodeOperatorRegistry[](activeOperatorCount);
         operatorRatios = new uint256[](activeOperatorCount);
@@ -454,6 +486,73 @@ contract NodeOperatorRegistry is
 
             index++;
         }
+    }
+
+    /// @notice Calculate the operator ratios to rebalance the system.
+    /// @param _totalBuffered The total amount buffered in stMatic.
+    /// @return activeNodeOperators all active node operators.
+    /// @return operatorRatios is a list of operator's ratio.
+    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    /// @return totalToWithdraw the total amount to withdraw.
+    function getValidatorsRebalanceAmount(uint256 _totalBuffered)
+        external
+        view
+        override
+        returns (
+            NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio,
+            uint256 totalToWithdraw
+        )
+    {
+        require(validatorIds.length > 1, "Not enough operator to rebalance");
+
+        (
+            FullNodeOperatorRegistry[] memory _activeNodeOperators,
+            ,
+            uint256[] memory stakePerOperator,
+            uint256 totalStaked,
+            uint256 distanceThreshold
+        ) = _getValidatorsDelegationAmount();
+
+        require(
+            distanceThreshold >= MIN_REBALANCE_DISTANCE_THRESHOLD &&
+                totalStaked > 0,
+            "The system is balanced"
+        );
+
+        uint256 length = _activeNodeOperators.length;
+        activeNodeOperators = new NodeOperatorRegistry[](length);
+        operatorRatios = new uint256[](length);
+
+        uint256 rebalanceTarget = totalStaked / length;
+        uint256 operatorRatioToRebalance;
+
+        for (uint256 idx = 0; idx < length; idx++) {
+            operatorRatioToRebalance = stakePerOperator[idx] > rebalanceTarget
+                ? stakePerOperator[idx] - rebalanceTarget
+                : 0;
+
+            operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
+                rebalanceTarget >=
+                MIN_REBALANCE_DISTANCE_THRESHOLD
+                ? operatorRatioToRebalance
+                : 0;
+
+            operatorRatios[idx] = operatorRatioToRebalance;
+            totalRatio += operatorRatioToRebalance;
+
+            activeNodeOperators[idx] = NodeOperatorRegistry(
+                _activeNodeOperators[idx].validatorShare,
+                _activeNodeOperators[idx].rewardAddress
+            );
+        }
+        totalToWithdraw = totalRatio > _totalBuffered
+            ? totalRatio - _totalBuffered
+            : 0;
+
+        require(totalToWithdraw > 0, "Zero total to withdraw");
+        totalToWithdraw = totalToWithdraw * MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE / 100;
     }
 
     /// @notice Returns a node operator.
