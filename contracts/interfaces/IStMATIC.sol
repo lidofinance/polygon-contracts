@@ -111,6 +111,8 @@ interface IStMATIC is IERC20Upgradeable {
 
     function togglePause() external;
 
+    function rebalanceDelegatedTokens() external;
+
     function getTotalStake(IValidatorShare _validatorShare)
         external
         view
