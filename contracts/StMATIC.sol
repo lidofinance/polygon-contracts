@@ -440,33 +440,22 @@ contract StMATIC is
     }
 
     function rebalanceDelegatedTokens() external override {
-        require(
-            totalBuffered > delegationLowerBound + reservedFunds, "Amount to delegate lower than minimum"
-        );
-
+        uint256 amountToReDelegate = totalBuffered - reservedFunds + _calculatePendingBufferedTokens();
         (
             INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
-        ) = nodeOperatorRegistry.getValidatorsRebalanceAmount(totalBuffered);
-
-        require(totalRatio > 0, "The system is balanced");
-        require(totalToWithdraw > 0, "Invalid withdrawal amount");
-
-        uint256 activeOperatorsLength = activeNodeOperators.length;
-
-        uint256 amountToReDelegate = totalBuffered - reservedFunds + _calculatePendingBufferedTokens();
-        if (amountToReDelegate >= totalToWithdraw) return;
+        ) = nodeOperatorRegistry.getValidatorsRebalanceAmount(amountToReDelegate);
 
         uint256 amountToWithdraw;
+        uint256 activeOperatorsLength = activeNodeOperators.length;
         for(uint256 i = 0; i < activeOperatorsLength; i++){
             if(operatorRatios[i] == 0) continue;
 
             amountToWithdraw = (operatorRatios[i] * totalToWithdraw ) / totalRatio;
             _createWithdrawRequest(activeNodeOperators[i].validatorShare, amountToWithdraw);
         }
-
     }
 
     function _createWithdrawRequest(address _validatorShare, uint256 amount) private {

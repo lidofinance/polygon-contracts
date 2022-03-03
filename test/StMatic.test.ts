@@ -758,6 +758,52 @@ describe("Starting to test StMATIC contract", () => {
         expect(await validatorShare.totalStaked()).to.eq(toEth("10"));
     });
 
+
+    it.only("Should rebalance delegated tokens to validators", async () => {
+        for (let i = 0; i < 3; i++) {
+            await mint(testers[i], ethers.utils.parseEther("100"));
+            await stakeOperator(testers[i]);
+            const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+            await addOperator(validatorId.toString(), testers[i].address);
+        }
+
+        const user1SubmitAmount = toEth("100");
+        await mint(user1, user1SubmitAmount);
+        await submit(user1, user1SubmitAmount);
+
+        let user2SubmitAmount = toEth("50");
+        await mint(user2, user2SubmitAmount);
+        await submit(user2, user2SubmitAmount);
+
+        await stMATIC.delegate();
+
+        await mint(testers[3], toEth("100"));
+        await stakeOperator(testers[3]);
+        const validatorId = await mockStakeManager.getValidatorId(testers[3].address)
+        await addOperator(validatorId.toString(), testers[3].address);
+
+        await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100);
+
+        const maxWithdrawPercentagePerRebalance = 50
+        await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(maxWithdrawPercentagePerRebalance);
+        await stMATIC.rebalanceDelegatedTokens();
+
+        const pendingWithdrawalsId = await poLidoNFT.getOwnedTokens(stMATIC.address);
+        expect(pendingWithdrawalsId.length).to.equal(3);
+
+        //CASE 1: Expect sum of amount2WithdrawFromStMATIC to equal totalToWithdraw
+        let totalWithdrawRequestAmount = toEth("0");
+        let totalToWithdraw = toEth("18.75");
+        for(let i = 0; i < pendingWithdrawalsId.length; i++){
+            const withdrawalRequest = await stMATIC.token2WithdrawRequest(pendingWithdrawalsId[i]);
+            totalWithdrawRequestAmount = totalWithdrawRequestAmount
+                    .add(withdrawalRequest.amount2WithdrawFromStMATIC);
+        }
+
+        expect(totalWithdrawRequestAmount).to.equal(totalToWithdraw);
+    });
+
+
     it("Requesting withdraw AFTER slashing should result in lower balance", async () => {
         // const ownedTokens: BigNumber[][] = [];
         // const submitAmounts: string[] = [];
@@ -1350,6 +1396,7 @@ describe("Starting to test StMATIC contract", () => {
 
 
 // convert a string to ether
+// @ts-ignore
 function toEth(amount: string): BigNumber {
     return ethers.utils.parseEther(amount);
 }
