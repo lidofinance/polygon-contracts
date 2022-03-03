@@ -467,7 +467,7 @@ contract NodeOperatorRegistry is
                     ? 0
                     : rebalanceTarget - stakePerOperator[idx];
 
-                if (operatorRatioToDelegate != 0) {
+                if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
                     operatorRatioToDelegate = (rebalanceTarget * 100) /
                         stakePerOperator[idx] >=
                         MIN_DELEGATE_DISTANCE_THRESHOLD
