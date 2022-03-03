@@ -20,6 +20,7 @@ let signer: SignerWithAddress;
 let user1: SignerWithAddress;
 let user2: SignerWithAddress;
 let user3: SignerWithAddress;
+let user4: SignerWithAddress;
 
 let nodeOperatorRegistry: NodeOperatorRegistry;
 let stMATICMock: StMATICMock;
@@ -33,6 +34,7 @@ describe("NodeOperator", function () {
         user1 = accounts[1];
         user2 = accounts[2];
         user3 = accounts[3];
+        user4 = accounts[4];
 
         // deploy erc20 token mock
         const polygonMock = (await ethers.getContractFactory(
@@ -554,64 +556,73 @@ describe("NodeOperator", function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
+            await stakeOperator(user4)
 
             const validator1Stake = toEth("1200")
             const validator2Stake = toEth("500")
             const validator3Stake = toEth("100")
+            const validator4Stake = toEth("0")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
 
             // Case 1: setMinDelegateDistanceThreshold = 100 this should ignore the validator 1
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(100)
             await checkGetValidatorDelegationAmount("1", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("600"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("100"),
-                    toEth("500"),
+                    toEth("0"),
+                    toEth("350"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
             // Case 2: setMinDelegateDistanceThreshold = 150 this should ignore the validator 1 & 2
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(150)
             await checkGetValidatorDelegationAmount("2", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("500"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
-                    toEth("500"),
+                    toEth("350"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
             // Case 3: setMinDelegateDistanceThreshold = 1000 this should ignore the validator 1 & 2 & 3
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(1000)
             await checkGetValidatorDelegationAmount("3", toEth("0"), {
-                activeNodeOperatorsLength: 3,
-                totalRatio: toEth("0"),
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("450"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
                     toEth("0"),
+                    toEth("450"),
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, user3.address
+                    user1.address, user2.address, user3.address, user4.address
                 ]
             })
 
@@ -620,14 +631,15 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(100)
 
             await checkGetValidatorDelegationAmount("4", toEth("0"), {
-                activeNodeOperatorsLength: 2,
-                totalRatio: toEth("800"),
+                activeNodeOperatorsLength: 3,
+                totalRatio: toEth("1100"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("800"),
+                    toEth("500"),
+                    toEth("600"),
                 ],
                 rewardAddresses: [
-                    user1.address, user3.address
+                    user1.address, user3.address, user4.address
                 ]
             })
         })
@@ -642,15 +654,15 @@ describe("NodeOperator", function () {
             const validator3Stake = toEth("1000")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(120)
             await checkGetValidatorDelegationAmount("1", toEth("0"), {
@@ -677,15 +689,15 @@ describe("NodeOperator", function () {
             const validator3Stake = toEth("100")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(120)
             await checkGetValidatorDelegationAmount("1", toEth("3600"), {
@@ -712,15 +724,15 @@ describe("NodeOperator", function () {
             const validator3Stake = toEth("100")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await stakeManagerMock.slash(3)
             await nodeOperatorRegistry.setMinDelegateDistanceThreshold(120)
@@ -763,15 +775,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await stakeManagerMock.slash(1)
             await stakeManagerMock.slash(2)
@@ -795,15 +807,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await stakeManagerMock.unstake(1)
             await expect(nodeOperatorRegistry.getValidatorsDelegationAmount(toEth("0")))
@@ -831,15 +843,15 @@ describe("NodeOperator", function () {
             const validator3Stake = toEth("1000")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
             await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
@@ -932,15 +944,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(120)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("0")))
@@ -958,15 +970,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
             await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("1000")))
@@ -984,15 +996,15 @@ describe("NodeOperator", function () {
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
-            await increseStakeFor(validatorId, validator1Stake)
+            await increaseStakeFor(validatorId, validator1Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user2.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
-            await increseStakeFor(validatorId, validator2Stake)
+            await increaseStakeFor(validatorId, validator2Stake)
 
             validatorId = await stakeManagerMock.getValidatorId(user3.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
-            await increseStakeFor(validatorId, validator3Stake)
+            await increaseStakeFor(validatorId, validator3Stake)
 
 
             let totalBuffered = toEth("100")
@@ -1077,14 +1089,14 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
     }
 }
 
-async function increseStakeFor(validatorId: BigNumber, amount: BigNumber) {
+async function increaseStakeFor(validatorId: BigNumber, amount: BigNumber) {
     let validatorShareAddress = await stakeManagerMock.getValidatorContract(validatorId)
 
     await erc20Mock.connect(signer).transfer(validatorShareAddress, toEth("1000"))
 
     let validatorShareMock: ValidatorShareMock = (await ethers
         .getContractAt("ValidatorShareMock", validatorShareAddress)) as ValidatorShareMock
-    await validatorShareMock.increseStakeFor(amount)
+    await validatorShareMock.increaseStakeFor(amount)
 }
 
 async function stakeOperator(user: SignerWithAddress) {
@@ -1109,6 +1121,10 @@ const OPERATOR_STATUS = {
 // convert a string to ether
 function toEth(amount: string): BigNumber {
     return ethers.utils.parseEther(amount);
+}
+
+function toBigNumber(amount: String): BigNumber {
+    return ethers.BigNumber.from(amount);
 }
 
 async function checkOperator(

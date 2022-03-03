@@ -14,6 +14,7 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IPoLidoNFT.sol";
 import "./interfaces/IFxStateRootTunnel.sol";
 import "./interfaces/IStMATIC.sol";
+import "hardhat/console.sol";
 
 contract StMATIC is
     IStMATIC,
@@ -266,57 +267,50 @@ contract StMATIC is
      * @dev Delegates tokens to validator share contract
      */
     function delegate() external override whenNotPaused {
-         require(
-             totalBuffered > delegationLowerBound + reservedFunds,
-             "Amount to delegate lower than minimum"
-         );
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos = nodeOperatorRegistry
-             .listDelegatedNodeOperators();
-         uint256 operatorInfosLength = operatorInfos.length;
+        require(
+            totalBuffered > delegationLowerBound + reservedFunds, "Amount to delegate lower than minimum"
+        );
 
-         require(operatorInfosLength > 0, "No operator shares, cannot delegate");
+        (
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio
+        ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
+        uint256 activeOperatorsLength = activeNodeOperators.length;
 
-         uint256 availableAmountToDelegate = totalBuffered - reservedFunds;
-         uint256 maxDelegateLimitsSum;
-         uint256 remainder;
+        uint256 remainder;
+        uint256 amountDelegated;
+        uint256 amountToDelegate = totalBuffered - reservedFunds;
 
-         for (uint256 i = 0; i < operatorInfosLength; i++) {
-             maxDelegateLimitsSum += 100; //operatorInfos[i].maxDelegateLimit;
-         }
+        IERC20Upgradeable(token).safeApprove(address(stakeManager), 0);
+        IERC20Upgradeable(token).safeApprove(
+            address(stakeManager),
+            amountToDelegate
+        );
 
-         require(maxDelegateLimitsSum > 0, "maxDelegateLimitsSum=0");
+        for (uint256 i = 0; i < activeOperatorsLength; i++) {
+            uint256 amountToDelegatePerOperator;
 
-         uint256 totalToDelegatedAmount = maxDelegateLimitsSum <=
-             availableAmountToDelegate
-             ? maxDelegateLimitsSum
-             : availableAmountToDelegate;
+            if(totalRatio == 0){
+                amountToDelegatePerOperator = amountToDelegate / activeOperatorsLength;
+            }else {
+                if(operatorRatios[i] == 0) continue;
+                amountToDelegatePerOperator = (operatorRatios[i] * amountToDelegate) / totalRatio;
+            }
 
-         IERC20Upgradeable(token).safeApprove(address(stakeManager), 0);
-
-         IERC20Upgradeable(token).safeApprove(
-             address(stakeManager),
-             totalToDelegatedAmount
-         );
-
-         uint256 amountDelegated;
-
-         for (uint256 i = 0; i < operatorInfosLength; i++) {
-             uint256 amountToDelegatePerOperator = (10 * totalToDelegatedAmount) /
-                 maxDelegateLimitsSum;
-
-             buyVoucher(
-                 operatorInfos[i].validatorShare,
-                 amountToDelegatePerOperator,
+            buyVoucher(
+                activeNodeOperators[i].validatorShare,
+                amountToDelegatePerOperator,
                  0
-             );
+            );
 
-             amountDelegated += amountToDelegatePerOperator;
-         }
+            amountDelegated += amountToDelegatePerOperator;
+        }
 
-         remainder = availableAmountToDelegate - amountDelegated;
-         totalBuffered = remainder + reservedFunds;
+        remainder = amountToDelegate - amountDelegated;
+        totalBuffered = remainder + reservedFunds;
 
-         emit DelegateEvent(amountDelegated, remainder);
+        emit DelegateEvent(amountDelegated, remainder);
     }
 
     /**
@@ -663,17 +657,17 @@ contract StMATIC is
         returns (uint256)
     {
         uint256 totalStake;
-        // Operator.OperatorInfo[] memory operatorInfos = nodeOperatorRegistry
-        //     .getOperatorInfos(false, true);
+        INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators =
+            nodeOperatorRegistry.listDelegatedNodeOperators();
 
-        // uint256 operatorInfosLength = operatorInfos.length;
-        // for (uint256 i = 0; i < operatorInfosLength; i++) {
-        //     (uint256 currValidatorShare, ) = getTotalStake(
-        //         IValidatorShare(operatorInfos[i].validatorShare)
-        //     );
+         uint256 operatorsLength = nodeOperators.length;
+         for (uint256 i = 0; i < operatorsLength; i++) {
+             (uint256 currValidatorShare, ) = getTotalStake(
+                 IValidatorShare(nodeOperators[i].validatorShare)
+             );
 
-        //     totalStake += currValidatorShare;
-        // }
+             totalStake += currValidatorShare;
+         }
 
         return totalStake;
     }
@@ -744,26 +738,26 @@ contract StMATIC is
      * @return Minimal validator balance in MATIC
      */
     function getMinValidatorBalance() public view override returns (uint256) {
-        // Operator.OperatorInfo[] memory operatorInfos = nodeOperatorRegistry
-        //     .getOperatorInfos(false, false);
+        INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators =
+            nodeOperatorRegistry.listDelegatedNodeOperators();
 
-        // uint256 operatorInfosLength = operatorInfos.length;
+        uint256 operatorsLength = nodeOperators.length;
         uint256 minValidatorBalance = type(uint256).max;
 
-        // for (uint256 i = 0; i < operatorInfosLength; i++) {
-        //     (uint256 validatorShare, ) = getTotalStake(
-        //         IValidatorShare(operatorInfos[i].validatorShare)
-        //     );
-        //     // 10% of current validatorShare
-        //     uint256 minValidatorBalanceCurrent = validatorShare / 10;
+         for (uint256 i = 0; i < operatorsLength; i++) {
+             (uint256 validatorShare, ) = getTotalStake(
+                 IValidatorShare(nodeOperators[i].validatorShare)
+             );
+             // 10% of current validatorShare
+             uint256 currentMinValidatorBalance = validatorShare / 10;
 
-        //     if (
-        //         minValidatorBalanceCurrent != 0 &&
-        //         minValidatorBalanceCurrent < minValidatorBalance
-        //     ) {
-        //         minValidatorBalance = minValidatorBalanceCurrent;
-        //     }
-        // }
+             if (
+                 currentMinValidatorBalance != 0 &&
+                 currentMinValidatorBalance < minValidatorBalance
+             ) {
+                 minValidatorBalance = currentMinValidatorBalance;
+             }
+         }
 
         return minValidatorBalance;
     }

@@ -183,7 +183,7 @@ contract ValidatorShareMock is IValidatorShare {
     }
 
     /// @notice Test only used to increase the delegation for a user.
-    function increseStakeFor(uint256 _amount) external {
+    function increaseStakeFor(uint256 _amount) external {
         totalStaked = _amount;
     }
 }

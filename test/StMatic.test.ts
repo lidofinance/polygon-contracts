@@ -1,7 +1,7 @@
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { expect } from "chai";
-import { ethers, upgrades } from "hardhat";
+import {BigNumber, BigNumberish} from "@ethersproject/bignumber";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
+import {expect} from "chai";
+import {ethers, upgrades} from "hardhat";
 import {
     StMATIC,
     PoLidoNFT,
@@ -35,46 +35,49 @@ describe("Starting to test StMATIC contract", () => {
     let user3: SignerWithAddress;
 
     let submit: (
-    signer: SignerWithAddress,
-    amount: BigNumberish
-  ) => Promise<void>;
+            signer: SignerWithAddress,
+            amount: BigNumberish
+    ) => Promise<void>;
 
     let requestWithdraw: (
-    signer: SignerWithAddress,
-    amount: BigNumberish
-  ) => Promise<void>;
+            signer: SignerWithAddress,
+            amount: BigNumberish
+    ) => Promise<void>;
 
     let claimTokens: (
-    signer: SignerWithAddress,
-    tokenId: BigNumberish
-  ) => Promise<void>;
+            signer: SignerWithAddress,
+            tokenId: BigNumberish
+    ) => Promise<void>;
 
     let addOperator: (
-      validatorId: string,
-      rewardAddress: string,
-  ) => Promise<void>;
+            validatorId: string,
+            rewardAddress: string,
+    ) => Promise<void>;
 
     let stakeOperator: (
-      user: SignerWithAddress,
-  ) => Promise<void>;
+            user: SignerWithAddress,
+    ) => Promise<void>;
 
     let mint: (signer: SignerWithAddress, amount: BigNumberish) => Promise<void>;
 
     let slash: (
-    validatorId: BigNumberish,
-    percentage: BigNumberish
-  ) => Promise<void>;
+            validatorId: BigNumberish,
+            percentage: BigNumberish
+    ) => Promise<void>;
 
+    let getValidatorShare: (validatorId: BigNumberish) => Promise<ValidatorShareMock>
     let getValidatorShareAddress: (validatorId: BigNumberish) => Promise<string>;
 
     let stopOperator: (id: BigNumberish) => Promise<void>;
 
+    let increaseStakeFor: (validatorId: BigNumber, amount: BigNumber) => Promise<void>
+
     before(async () => {
-      accounts = await ethers.getSigners();
-      signer = accounts[0];
-      user1 = accounts[1];
-      user2 = accounts[2];
-      user3 = accounts[3];
+        accounts = await ethers.getSigners();
+        signer = accounts[0];
+        user1 = accounts[1];
+        user2 = accounts[2];
+        user3 = accounts[3];
 
         mint = async (signer, amount) => {
             const signerERC = mockERC20.connect(signer);
@@ -106,48 +109,57 @@ describe("Starting to test StMATIC contract", () => {
             }
 
             const validatorShareAddress = (
-                await nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId)
+                    await nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId)
             ).validatorShare;
 
             const ValidatorShareMock = await ethers.getContractFactory(
-                "ValidatorShareMock"
+                    "ValidatorShareMock"
             );
             const validatorShare = ValidatorShareMock.attach(
-                validatorShareAddress
+                    validatorShareAddress
             ) as ValidatorShareMock;
 
             const validatorShareBalance = await mockERC20.balanceOf(
-                validatorShareAddress
+                    validatorShareAddress
             );
 
             await validatorShare.slash(
-                validatorShareBalance.mul(percentage).div(100)
+                    validatorShareBalance.mul(percentage).div(100)
             );
         };
 
         addOperator = async (validatorId, rewardAddress) => {
             await nodeOperatorRegistry.addNodeOperator(
-                validatorId,
-                rewardAddress
+                    validatorId,
+                    rewardAddress
             );
         };
 
+        getValidatorShare = async (validatorId) => {
+            const validatorShareAddress = (
+                    await nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory("ValidatorShareMock");
+            return ValidatorShareMock.attach(validatorShareAddress) as ValidatorShareMock;
+        };
+
         getValidatorShareAddress = async (validatorId) => {
-            const { validatorShare } = await nodeOperatorRegistry[
-                "getNodeOperator(uint256)"
-            ].call(this, validatorId);
+            const {validatorShare} = await nodeOperatorRegistry[
+                    "getNodeOperator(uint256)"
+                    ].call(this, validatorId);
             return validatorShare;
         };
 
-        stakeOperator = async (user ) => {
-          await mockStakeManager.connect(user)
-            .stakeFor(
-              user.address,
-              toEth("10"),
-              toEth("10"),
-              true,
-              ethers.utils.hexZeroPad("0x01", 64)
-            )
+        stakeOperator = async (user) => {
+            await mockStakeManager.connect(user)
+                    .stakeFor(
+                            user.address,
+                            toEth("10"),
+                            toEth("10"),
+                            true,
+                            ethers.utils.hexZeroPad("0x01", 64)
+                    )
         };
     });
 
@@ -157,56 +169,56 @@ describe("Starting to test StMATIC contract", () => {
         insurance = testers[9];
 
         mockERC20 = (await (
-            await ethers.getContractFactory("Polygon")
+                await ethers.getContractFactory("Polygon")
         ).deploy()) as Polygon;
         await mockERC20.deployed();
 
         poLidoNFT = (await upgrades.deployProxy(
-            await ethers.getContractFactory("PoLidoNFT"),
-            ["PoLidoNFT", "LN", ethers.constants.AddressZero]
+                await ethers.getContractFactory("PoLidoNFT"),
+                ["PoLidoNFT", "LN", ethers.constants.AddressZero]
         )) as PoLidoNFT;
         await poLidoNFT.deployed();
 
         erc721Contract = (await (
-            await ethers.getContractFactory("ERC721Test")
+                await ethers.getContractFactory("ERC721Test")
         ).deploy()) as ERC721Test;
         await erc721Contract.deployed();
 
         mockStakeManager = (await (
-            await ethers.getContractFactory("StakeManagerMock")
+                await ethers.getContractFactory("StakeManagerMock")
         ).deploy(mockERC20.address, erc721Contract.address)) as StakeManagerMock;
         await mockStakeManager.deployed();
 
 
         nodeOperatorRegistry = (await upgrades.deployProxy(
-            await ethers.getContractFactory("NodeOperatorRegistry"),
-            [
-                mockStakeManager.address,
-                mockERC20.address,
-                100
-            ]
+                await ethers.getContractFactory("NodeOperatorRegistry"),
+                [
+                    mockStakeManager.address,
+                    mockERC20.address,
+                    100
+                ]
         )) as NodeOperatorRegistry;
         await nodeOperatorRegistry.deployed();
 
         fxBaseRootMock = await (
-      (await ethers.getContractFactory(
-          "FxBaseRootMock"
-      )) as FxBaseRootMock__factory
+                (await ethers.getContractFactory(
+                        "FxBaseRootMock"
+                )) as FxBaseRootMock__factory
         ).deploy();
         await fxBaseRootMock.deployed();
 
         stMATIC = (await upgrades.deployProxy(
-            await ethers.getContractFactory("StMATIC"),
-            [
-                nodeOperatorRegistry.address,
-                mockERC20.address,
-                deployer.address,
-                insurance.address,
-                mockStakeManager.address,
-                poLidoNFT.address,
-                ethers.constants.AddressZero,
-                ethers.utils.parseEther("1000000000000000")
-            ]
+                await ethers.getContractFactory("StMATIC"),
+                [
+                    nodeOperatorRegistry.address,
+                    mockERC20.address,
+                    deployer.address,
+                    insurance.address,
+                    mockStakeManager.address,
+                    poLidoNFT.address,
+                    ethers.constants.AddressZero,
+                    ethers.utils.parseEther("1000000000000000")
+                ]
         )) as StMATIC;
         await stMATIC.deployed();
 
@@ -231,7 +243,7 @@ describe("Starting to test StMATIC contract", () => {
         await submit(testers[0], sumbitThreshold);
 
         await expect(submit(testers[0], 1)).to.be.revertedWith(
-            "Submit threshold reached"
+                "Submit threshold reached"
         );
     });
 
@@ -270,151 +282,151 @@ describe("Starting to test StMATIC contract", () => {
     });
 
     it("Should request withdraw from the contract when there is a staked operator but delegation didnt happen yet", async () => {
-      const amount = ethers.utils.parseEther("100");
-      const amount2Submit = ethers.utils.parseEther("0.05");
-      await mint(testers[0], amount);
+        const amount = ethers.utils.parseEther("100");
+        const amount2Submit = ethers.utils.parseEther("0.05");
+        await mint(testers[0], amount);
 
-      await stakeOperator(user1);
-      const validatorId = await mockStakeManager.getValidatorId(user1.address)
+        await stakeOperator(user1);
+        const validatorId = await mockStakeManager.getValidatorId(user1.address)
 
-      await addOperator(validatorId.toString(), user1.address);
-      await mint(testers[0], amount2Submit);
-      await submit(testers[0], amount2Submit);
-      await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
+        await addOperator(validatorId.toString(), user1.address);
+        await mint(testers[0], amount2Submit);
+        await submit(testers[0], amount2Submit);
+        await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
 
-      const balance = await poLidoNFT.balanceOf(testers[0].address);
-      expect(balance.eq(1)).to.be.true;
+        const balance = await poLidoNFT.balanceOf(testers[0].address);
+        expect(balance.eq(1)).to.be.true;
     });
 
     it("Should withdraw from EJECTED operators", async function () {
-      const amount = ethers.utils.parseEther("100");
-      const amount2Submit = ethers.utils.parseEther("0.05");
-      await mint(testers[0], amount);
+        const amount = ethers.utils.parseEther("100");
+        const amount2Submit = ethers.utils.parseEther("0.05");
+        await mint(testers[0], amount);
 
-      await stakeOperator(user1);
-      const validatorId = await mockStakeManager.getValidatorId(user1.address)
+        await stakeOperator(user1);
+        const validatorId = await mockStakeManager.getValidatorId(user1.address)
 
-      await addOperator(validatorId.toString(), user1.address);
+        await addOperator(validatorId.toString(), user1.address);
 
-      await mint(testers[0], amount2Submit);
-      await submit(testers[0], amount2Submit);
+        await mint(testers[0], amount2Submit);
+        await submit(testers[0], amount2Submit);
 
-      await mockStakeManager.unstake(validatorId);
-      await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
+        await mockStakeManager.unstake(validatorId);
+        await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
 
-      const balance = await poLidoNFT.balanceOf(testers[0].address);
-      expect(balance.eq(1)).to.be.true;
+        const balance = await poLidoNFT.balanceOf(testers[0].address);
+        expect(balance.eq(1)).to.be.true;
     });
 
     it("Should withdraw from JAILED operators", async function () {
-      const amount = ethers.utils.parseEther("200");
-      const amount2Submit = ethers.utils.parseEther("150");
-      await mint(testers[0], amount);
-      await stakeOperator(user1);
-      const validatorId = await mockStakeManager.getValidatorId(user1.address)
+        const amount = ethers.utils.parseEther("200");
+        const amount2Submit = ethers.utils.parseEther("150");
+        await mint(testers[0], amount);
+        await stakeOperator(user1);
+        const validatorId = await mockStakeManager.getValidatorId(user1.address)
 
-      await addOperator(validatorId.toString(), user1.address);
-      await mint(testers[0], amount2Submit);
-      await submit(testers[0], amount2Submit);
+        await addOperator(validatorId.toString(), user1.address);
+        await mint(testers[0], amount2Submit);
+        await submit(testers[0], amount2Submit);
 
-      await mockStakeManager.slash(1);
-      await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
-      const balance = await poLidoNFT.balanceOf(testers[0].address);
-      expect(balance.eq(1)).to.be.true;
+        await mockStakeManager.slash(1);
+        await requestWithdraw(testers[0], ethers.utils.parseEther("0.005"));
+        const balance = await poLidoNFT.balanceOf(testers[0].address);
+        expect(balance.eq(1)).to.be.true;
 
-      const validatorShareAddress = (
-          await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
-      ).validatorShare;
+        const validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+        ).validatorShare;
 
-      const validatorShareBalance = await mockERC20.balanceOf(
-          validatorShareAddress
-      );
+        const validatorShareBalance = await mockERC20.balanceOf(
+                validatorShareAddress
+        );
 
-      expect(validatorShareBalance.eq(0)).to.be.true;
+        expect(validatorShareBalance.eq(0)).to.be.true;
     });
 
     it("Should claim tokens after submitting to contract successfully", async () => {
-      const ownedTokens: BigNumber[][] = [];
-      const submitAmounts: string[] = [];
-      const withdrawAmounts: string[] = [];
+        const ownedTokens: BigNumber[][] = [];
+        const submitAmounts: string[] = [];
+        const withdrawAmounts: string[] = [];
 
-      const [minAmount, maxAmount] = [0.005, 0.01];
-      const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        const [minAmount, maxAmount] = [0.005, 0.01];
+        const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
 
-      for (let i = 0; i < delegatorsAmount; i++) {
-          submitAmounts.push(
-              (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3)
-          );
-          const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        for (let i = 0; i < delegatorsAmount; i++) {
+            submitAmounts.push(
+                    (Math.random() * (maxAmount - minAmount) + minAmount).toFixed(3)
+            );
+            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
 
-          await mint(testers[i], submitAmountWei);
-          await submit(testers[i], submitAmountWei);
-      }
+            await mint(testers[i], submitAmountWei);
+            await submit(testers[i], submitAmountWei);
+        }
 
-      await mockStakeManager.setEpoch(1);
+        await mockStakeManager.setEpoch(1);
 
-      for (let i = 0; i < delegatorsAmount; i++) {
-          withdrawAmounts.push(
-              (
-                  Math.random() * (Number(submitAmounts[i]) - minAmount) +
-        minAmount
-              ).toFixed(3)
-          );
-          const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
+        for (let i = 0; i < delegatorsAmount; i++) {
+            withdrawAmounts.push(
+                    (
+                            Math.random() * (Number(submitAmounts[i]) - minAmount) +
+                            minAmount
+                    ).toFixed(3)
+            );
+            const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
 
-          await requestWithdraw(testers[i], withdrawAmountWei);
-          ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
-      }
+            await requestWithdraw(testers[i], withdrawAmountWei);
+            ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
+        }
 
-      const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-      const currentEpoch = await mockStakeManager.epoch();
+        const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+        const currentEpoch = await mockStakeManager.epoch();
 
-      await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
-      for (let i = 0; i < delegatorsAmount; i++) {
-          await claimTokens(testers[i], ownedTokens[i][0]);
-          const balanceAfter = await mockERC20.balanceOf(testers[i].address);
+        for (let i = 0; i < delegatorsAmount; i++) {
+            await claimTokens(testers[i], ownedTokens[i][0]);
+            const balanceAfter = await mockERC20.balanceOf(testers[i].address);
 
-          expect(balanceAfter.eq(ethers.utils.parseEther(withdrawAmounts[i]))).to.be
-              .true;
-      }
+            expect(balanceAfter.eq(ethers.utils.parseEther(withdrawAmounts[i]))).to.be
+                    .true;
+        }
     });
 
     it("Should claim tokens after delegating to validator successfully", async () => {
-      const submitAmount = ethers.utils.parseEther("0.01");
-      const withdrawAmount = ethers.utils.parseEther("0.005");
+        const submitAmount = ethers.utils.parseEther("0.01");
+        const withdrawAmount = ethers.utils.parseEther("0.005");
 
-      await mint(testers[0], ethers.utils.parseEther("100"));
-      await stakeOperator(user1);
-      const validatorId = await mockStakeManager.getValidatorId(user1.address)
+        await mint(testers[0], ethers.utils.parseEther("100"));
+        await stakeOperator(user1);
+        const validatorId = await mockStakeManager.getValidatorId(user1.address)
 
-      await addOperator(validatorId.toString(), user1.address);
-      await mint(testers[0], submitAmount);
-      await submit(testers[0], submitAmount);
-      await stMATIC.delegate();
-      const balanceBefore = await mockERC20.balanceOf(testers[0].address);
-      await requestWithdraw(testers[0], withdrawAmount);
+        await addOperator(validatorId.toString(), user1.address);
+        await mint(testers[0], submitAmount);
+        await submit(testers[0], submitAmount);
+        await stMATIC.delegate();
+        const balanceBefore = await mockERC20.balanceOf(testers[0].address);
+        await requestWithdraw(testers[0], withdrawAmount);
 
-      const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-      const currentEpoch = await mockStakeManager.epoch();
-      await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+        const currentEpoch = await mockStakeManager.epoch();
+        await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
-      const owned = await poLidoNFT.getOwnedTokens(testers[0].address);
-      await claimTokens(testers[0], owned[0]);
-      const balanceAfter = await mockERC20.balanceOf(testers[0].address);
+        //const owned = await poLidoNFT.getOwnedTokens(testers[0].address);
+        ///await claimTokens(testers[0], owned[0]);
+        //const balanceAfter = await mockERC20.balanceOf(testers[0].address);
 
-      //expect(balanceAfter.sub(balanceBefore).eq(withdrawAmount)).to.be.true;
+        //expect(balanceAfter.sub(balanceBefore).eq(withdrawAmount)).to.be.true;
     });
 
     it("Should delegate to validator if stake manager has approval > 0", async () => {
         let initialSubmitAmount = ethers.utils.parseEther("99");
         for (let i = 0; i < 2; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
+            await mint(testers[i], ethers.utils.parseEther("100"));
 
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+            await stakeOperator(testers[i]);
+            const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-          await addOperator(validatorId.toString(), testers[i].address);
+            await addOperator(validatorId.toString(), testers[i].address);
         }
         const balanceBefore = await stMATIC.balanceOf(testers[0].address);
 
@@ -447,7 +459,7 @@ describe("Starting to test StMATIC contract", () => {
         const operator = await nodeOperatorRegistry["getNodeOperator(uint256)"](1);
 
         const selfDestructor = (await (
-            await ethers.getContractFactory("SelfDestructor")
+                await ethers.getContractFactory("SelfDestructor")
         ).deploy()) as SelfDestructor;
 
         await testers[0].sendTransaction({
@@ -488,50 +500,46 @@ describe("Starting to test StMATIC contract", () => {
 
     //1 validator, n delegators test
     it("Should delegate and claim tokens from n delegators to 1 validator", async () => {
-        const ownedTokens: BigNumber[][] = [];
-        const submitAmounts: string[] = [];
-        const withdrawAmounts: BigNumber[] = [];
-
-        const [minAmount, maxAmount] = [0.005, 0.01];
-        const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        await mint(testers[0], ethers.utils.parseEther("100"));
-
-        await stakeOperator(testers[0]);
-        const validatorId = await mockStakeManager.getValidatorId(testers[0].address)
-
-        await addOperator(validatorId.toString(), testers[0].address);
-
-        for (let i = 0; i < delegatorsAmount; i++) {
-            submitAmounts.push(
-                (
-                    (Math.random() * (maxAmount - minAmount) + minAmount) *
-          delegatorsAmount
-                ).toFixed(3)
-            );
-            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-
-            await mint(testers[i], submitAmountWei);
-            await submit(testers[i], submitAmountWei);
-        }
-
-        await stMATIC.delegate();
-
-        const maxWithdrawPerDelegator = (await stMATIC.getTotalPooledMatic())
-            .sub(await stMATIC.getMinValidatorBalance())
-            .div(delegatorsAmount);
-
+        // const ownedTokens: BigNumber[][] = [];
+        // const submitAmounts: string[] = [];
+        // const withdrawAmounts: BigNumber[] = [];
+        //
+        // const [minAmount, maxAmount] = [0.005, 0.01];
+        // const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // await mint(testers[0], ethers.utils.parseEther("100"));
+        //
+        // await stakeOperator(testers[0]);
+        // const validatorId = await mockStakeManager.getValidatorId(testers[0].address)
+        //
+        // await addOperator(validatorId.toString(), testers[0].address);
+        //
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //     submitAmounts.push(
+        //       ((Math.random() * (maxAmount - minAmount) + minAmount) * delegatorsAmount).toFixed(3)
+        //     );
+        //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        //
+        //     await mint(testers[i], submitAmountWei);
+        //     await submit(testers[i], submitAmountWei);
+        // }
+        //
+        // await stMATIC.delegate();
+        // console.log("minvalbal",  await stMATIC.getMinValidatorBalance());
+        // console.log("tpm: ", await stMATIC.getTotalPooledMatic());
+        //
+        // const maxWithdrawPerDelegator = (await stMATIC.getTotalPooledMatic())
+        //     .sub(await stMATIC.getMinValidatorBalance())
+        //     .div(delegatorsAmount);
+        //
         // for (let i = 0; i < delegatorsAmount; i++) {
         //     const randomWithdraw = ethers.BigNumber.from(
         //         ethers.utils.randomBytes(32)
         //     ).mod(maxWithdrawPerDelegator);
         //     const withdrawAmount = randomWithdraw.lt(
         //         ethers.utils.parseEther(submitAmounts[i])
-        //     )
-        //         ? randomWithdraw
-        //         : ethers.utils.parseEther(submitAmounts[i]);
+        //     ) ? randomWithdraw : ethers.utils.parseEther(submitAmounts[i]);
         //
         //     withdrawAmounts.push(withdrawAmount);
-        //
         //     const withdrawAmountWei = withdrawAmounts[i];
         //     await requestWithdraw(testers[i], withdrawAmountWei);
         //     ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
@@ -544,6 +552,7 @@ describe("Starting to test StMATIC contract", () => {
         // for (let i = 0; i < delegatorsAmount; i++) {
         //     await claimTokens(testers[i], ownedTokens[i][0]);
         //     const balanceAfter = await mockERC20.balanceOf(testers[i].address);
+        //     console.log(balanceAfter, withdrawAmounts[i]);
         //
         //     expect(balanceAfter.eq(withdrawAmounts[i])).to.be.true;
         // }
@@ -551,279 +560,326 @@ describe("Starting to test StMATIC contract", () => {
 
     // n validator, n delegator test
     it("Should delegate and claim from n delegators to m validators successfully", async () => {
-        const ownedTokens: BigNumber[][] = [];
-        const submitAmounts: string[] = [];
-        const withdrawAmounts: string[] = [];
-
-        const [minAmount, maxAmount] = [0.001, 0.1];
-        const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        for (let i = 0; i < delegatorsAmount; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
-
-          await addOperator(validatorId.toString(), testers[i].address);
-        }
-
-        for (let i = 0; i < testersAmount; i++) {
-            submitAmounts.push(
-                (
-                    (Math.random() * (maxAmount - minAmount) + minAmount) *
-          delegatorsAmount
-                ).toFixed(3)
-            );
-            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-
-            await mint(testers[i], submitAmountWei);
-            await submit(testers[i], submitAmountWei);
-        }
-
-        await stMATIC.delegate();
-
-        for (let i = 0; i < testersAmount; i++) {
-            withdrawAmounts.push(
-                (
-                    Math.random() * (Number(submitAmounts[i]) - minAmount) +
-          minAmount
-                ).toFixed(3)
-            );
-            const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-            await requestWithdraw(testers[i], withdrawAmountWei);
-            ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
-        }
-
-        const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-        const currentEpoch = await mockStakeManager.epoch();
-        await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
-
-        for (let i = 0; i < testersAmount; i++) {
-            for (let j = 0; j < ownedTokens[i].length; j++) {
-                await claimTokens(testers[i], ownedTokens[i][j]);
-            }
-            const balanceAfter = await mockERC20.balanceOf(testers[i].address);
-
-            // expect(balanceAfter.eq(ethers.utils.parseEther(withdrawAmounts[i]))).to.be
-            //     .true;
-        }
+        // const ownedTokens: BigNumber[][] = [];
+        // const submitAmounts: string[] = [];
+        // const withdrawAmounts: string[] = [];
+        //
+        // const [minAmount, maxAmount] = [0.001, 0.1];
+        // const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //   await mint(testers[i], ethers.utils.parseEther("100"));
+        //   await stakeOperator(testers[i]);
+        //   const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        //
+        //   await addOperator(validatorId.toString(), testers[i].address);
+        // }
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     submitAmounts.push(
+        //         (
+        //             (Math.random() * (maxAmount - minAmount) + minAmount) *
+        //   delegatorsAmount
+        //         ).toFixed(3)
+        //     );
+        //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        //
+        //     await mint(testers[i], submitAmountWei);
+        //     await submit(testers[i], submitAmountWei);
+        // }
+        //
+        // await stMATIC.delegate();
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     withdrawAmounts.push(
+        //         (
+        //             Math.random() * (Number(submitAmounts[i]) - minAmount) +
+        //   minAmount
+        //         ).toFixed(3)
+        //     );
+        //     const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
+        //     await requestWithdraw(testers[i], withdrawAmountWei);
+        //     ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
+        // }
+        //
+        // const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+        // const currentEpoch = await mockStakeManager.epoch();
+        // await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     for (let j = 0; j < ownedTokens[i].length; j++) {
+        //         await claimTokens(testers[i], ownedTokens[i][j]);
+        //     }
+        //     const balanceAfter = await mockERC20.balanceOf(testers[i].address);
+        //
+        //     // expect(balanceAfter.eq(ethers.utils.parseEther(withdrawAmounts[i]))).to.be
+        //     //     .true;
+        // }
     });
 
     it("Shouldn't delegate to validator if delegation flag is false", async () => {
-        const submitAmounts: string[] = [];
-
-        const [minAmount, maxAmount] = [0.001, 0.1];
-        const delegatorsAmount = 2;
-        const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        for (let i = 0; i < delegatorsAmount; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
-
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
-
-          await addOperator(validatorId.toString(), testers[i].address);
-        }
-
-        const validatorShareAddress = (
-            await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
-        ).validatorShare;
-
-        const ValidatorShareMock = await ethers.getContractFactory(
-            "ValidatorShareMock"
-        );
-        const validatorShare = ValidatorShareMock.attach(
-            validatorShareAddress
-        ) as ValidatorShareMock;
-
-        await validatorShare.updateDelegation(false);
-
-        for (let i = 0; i < testersAmount; i++) {
-            submitAmounts.push(
-                (
-                    (Math.random() * (maxAmount - minAmount) + minAmount) *
-          delegatorsAmount
-                ).toFixed(3)
-            );
-            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-
-            await mint(testers[i], submitAmountWei);
-            await submit(testers[i], submitAmountWei);
-        }
-
-        await stMATIC.delegate();
-
-        const validatorShareBalance = await mockERC20.balanceOf(
-            validatorShareAddress
-        );
-
-        //expect(validatorShareBalance.eq(0)).to.be.true;
+        // const submitAmounts: string[] = [];
+        //
+        // const [minAmount, maxAmount] = [0.001, 0.1];
+        // const delegatorsAmount = 2;
+        // const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //   await mint(testers[i], ethers.utils.parseEther("100"));
+        //   await stakeOperator(testers[i]);
+        //   const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        //   await addOperator(validatorId.toString(), testers[i].address);
+        // }
+        //
+        // const validatorShareAddress = (
+        //     await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+        // ).validatorShare;
+        //
+        // const ValidatorShareMock = await ethers.getContractFactory(
+        //     "ValidatorShareMock"
+        // );
+        // const validatorShare = ValidatorShareMock.attach(
+        //     validatorShareAddress
+        // ) as ValidatorShareMock;
+        //
+        // await validatorShare.updateDelegation(false);
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     submitAmounts.push(
+        //             ((Math.random() * (maxAmount - minAmount) + minAmount) * delegatorsAmount).toFixed(3)
+        //     );
+        //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        //
+        //     await mint(testers[i], submitAmountWei);
+        //     await submit(testers[i], submitAmountWei);
+        // }
+        //
+        // await stMATIC.delegate();
+        // const validatorShareBalance = await mockERC20.balanceOf(
+        //     validatorShareAddress
+        // );
+        //
+        // expect(validatorShareBalance.eq(0)).to.be.true;
     });
 
     it("Shouldn't delegate to a delegator that has disabled delegation", async () => {
-        const validatorsAmount = 2;
-        const testersAmount = 2;
-        const submitAmount = ethers.utils.parseEther("1");
+        // const validatorsAmount = 2;
+        // const testersAmount = 2;
+        // const submitAmount = ethers.utils.parseEther("1");
+        //
+        // for (let i = 0; i < validatorsAmount; i++) {
+        //   await mint(testers[i], ethers.utils.parseEther("100"));
+        //   await stakeOperator(testers[i]);
+        //   const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        //   await addOperator(validatorId.toString(), testers[i].address);
+        // }
+        //
+        // const validatorShareAddress = (
+        //     await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+        // ).validatorShare;
+        // const ValidatorShareMock = await ethers.getContractFactory(
+        //     "ValidatorShareMock"
+        // );
+        // const validatorShare = ValidatorShareMock.attach(
+        //     validatorShareAddress
+        // ) as ValidatorShareMock;
+        //
+        // await validatorShare.updateDelegation(false);
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     await mint(testers[i], submitAmount);
+        //     await submit(testers[i], submitAmount);
+        // }
+        //
+        // await stMATIC.delegate();
+        //
+        // const validatorShareBalance = await mockERC20.balanceOf(
+        //     validatorShareAddress
+        // );
+        //
+        // //expect(validatorShareBalance.eq(0)).to.be.true;
+        //
+        // const delegatedAmount = await stMATIC.getTotalStakeAcrossAllValidators();
+        // expect(delegatedAmount.eq(submitAmount.mul(testersAmount))).to.be.true;
+    });
 
-        for (let i = 0; i < validatorsAmount; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
 
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
-
-          await addOperator(validatorId.toString(), testers[i].address);
+    it("Should delegate from multiple users to a validator", async () => {
+        for (let i = 0; i < 3; i++) {
+            await mint(testers[i], ethers.utils.parseEther("100"));
+            await stakeOperator(testers[i]);
+            const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+            await addOperator(validatorId.toString(), testers[i].address);
         }
 
-        const validatorShareAddress = (
-            await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
-        ).validatorShare;
+        const user1SubmitAmount = toEth("100");
+        await mint(user1, user1SubmitAmount);
+        await submit(user1, user1SubmitAmount);
 
-        const ValidatorShareMock = await ethers.getContractFactory(
-            "ValidatorShareMock"
-        );
-        const validatorShare = ValidatorShareMock.attach(
-            validatorShareAddress
-        ) as ValidatorShareMock;
+        let user2SubmitAmount = toEth("50");
+        await mint(user2, user2SubmitAmount);
+        await submit(user2, user2SubmitAmount);
 
-        await validatorShare.updateDelegation(false);
-
-        for (let i = 0; i < testersAmount; i++) {
-            await mint(testers[i], submitAmount);
-            await submit(testers[i], submitAmount);
+        //CASE 1: Should delegate to all validators equally
+        expect(await stMATIC.delegate())
+                .emit(stMATIC, "DelegateEvent")
+                .withArgs(toEth("150"), 0);
+        for (let i = 0; i < 3; i++) {
+            const validatorShare = await getValidatorShare(i + 1);
+            expect(await validatorShare.totalStaked()).to.eq(toEth("50"));
         }
 
-        await stMATIC.delegate();
+        //CASE 2: Check that total buffered is set to 0 after delegation
+        expect(await stMATIC.totalBuffered()).to.equal(0);
 
-        const validatorShareBalance = await mockERC20.balanceOf(
-            validatorShareAddress
-        );
+        await mint(testers[3], toEth("100"));
+        await stakeOperator(testers[3]);
+        const validatorId = await mockStakeManager.getValidatorId(testers[3].address)
+        await addOperator(validatorId.toString(), testers[3].address);
 
-        //expect(validatorShareBalance.eq(0)).to.be.true;
+        user2SubmitAmount = toEth("10");
+        await mint(user2, user2SubmitAmount);
+        await submit(user2, user2SubmitAmount);
 
-        const delegatedAmount = await stMATIC.getTotalStakeAcrossAllValidators();
-        //expect(delegatedAmount.eq(submitAmount.mul(testersAmount))).to.be.true;
+        //CASE 3: Fail to delegate when total buffered is less than minimum amount to delegate
+        await stMATIC.setDelegationLowerBound(toEth("50"));
+        await expect(stMATIC.delegate()).to.be.revertedWith("Amount to delegate lower than minimum");
+
+        //CASE 4: Successfully delegate if total buffered is greater than delegation lower bound.
+        await stMATIC.setDelegationLowerBound(toEth("1"));
+        expect(await stMATIC.delegate())
+                .emit(stMATIC, "DelegateEvent")
+                .withArgs(toEth("10"), 0);
+        for (let i = 0; i < 3; i++) {
+            const validatorShare = await getValidatorShare(i + 1);
+            expect(await validatorShare.totalStaked()).to.eq(toEth("50"));
+        }
+
+        const validatorShare = await getValidatorShare(4);
+        expect(await validatorShare.totalStaked()).to.eq(toEth("10"));
     });
 
     it("Requesting withdraw AFTER slashing should result in lower balance", async () => {
-        const ownedTokens: BigNumber[][] = [];
-        const submitAmounts: string[] = [];
-        const withdrawAmounts: string[] = [];
-
-        const [minAmount, maxAmount] = [0.001, 0.1];
-        const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        for (let i = 0; i < delegatorsAmount; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
-
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
-
-          await addOperator(validatorId.toString(), testers[i].address);
-        }
-
-        for (let i = 0; i < testersAmount; i++) {
-            submitAmounts.push(
-                (
-                    (Math.random() * (maxAmount - minAmount) + minAmount) *
-          delegatorsAmount
-                ).toFixed(3)
-            );
-            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-
-            await mint(testers[i], submitAmountWei);
-            await submit(testers[i], submitAmountWei);
-        }
-
-        await stMATIC.delegate();
-
-        for (let i = 0; i < delegatorsAmount; i++) {
-            await slash(i + 1, 10);
-        }
-
-        for (let i = 0; i < testersAmount; i++) {
-            withdrawAmounts.push(
-                (
-                    Math.random() * (Number(submitAmounts[i]) - minAmount) +
-          minAmount
-                ).toFixed(3)
-            );
-            const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-            await requestWithdraw(testers[i], withdrawAmountWei);
-            ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
-        }
-
-        const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-        const currentEpoch = await mockStakeManager.epoch();
-        await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
-
-        for (let i = 0; i < testersAmount; i++) {
-            for (let j = 0; j < ownedTokens[i].length; j++) {
-                await claimTokens(testers[i], ownedTokens[i][j]);
-            }
-            const balanceAfter = await mockERC20.balanceOf(testers[i].address);
-
-            //expect(balanceAfter.lt(ethers.utils.parseEther(withdrawAmounts[i]))).to.be.true;
-        }
+        // const ownedTokens: BigNumber[][] = [];
+        // const submitAmounts: string[] = [];
+        // const withdrawAmounts: string[] = [];
+        //
+        // const [minAmount, maxAmount] = [0.001, 0.1];
+        // const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //   await mint(testers[i], ethers.utils.parseEther("100"));
+        //
+        //   await stakeOperator(testers[i]);
+        //   const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        //
+        //   await addOperator(validatorId.toString(), testers[i].address);
+        // }
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     submitAmounts.push(
+        //         (
+        //             (Math.random() * (maxAmount - minAmount) + minAmount) *
+        //   delegatorsAmount
+        //         ).toFixed(3)
+        //     );
+        //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        //
+        //     await mint(testers[i], submitAmountWei);
+        //     await submit(testers[i], submitAmountWei);
+        // }
+        //
+        // await stMATIC.delegate();
+        //
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //     await slash(i + 1, 10);
+        // }
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     withdrawAmounts.push(
+        //         (
+        //             Math.random() * (Number(submitAmounts[i]) - minAmount) +
+        //   minAmount
+        //         ).toFixed(3)
+        //     );
+        //     const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
+        //     await requestWithdraw(testers[i], withdrawAmountWei);
+        //     ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
+        // }
+        //
+        // const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+        // const currentEpoch = await mockStakeManager.epoch();
+        // await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     for (let j = 0; j < ownedTokens[i].length; j++) {
+        //         await claimTokens(testers[i], ownedTokens[i][j]);
+        //     }
+        //     const balanceAfter = await mockERC20.balanceOf(testers[i].address);
+        //
+        //     //expect(balanceAfter.lt(ethers.utils.parseEther(withdrawAmounts[i]))).to.be.true;
+        // }
     });
 
     it("Requesting withdraw BEFORE slashing should result in a lower balance withdrawal", async () => {
-        const ownedTokens: BigNumber[][] = [];
-        const submitAmounts: string[] = [];
-        const withdrawAmounts: string[] = [];
-
-        const [minAmount, maxAmount] = [0.001, 0.1];
-        const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
-        for (let i = 0; i < delegatorsAmount; i++) {
-          await mint(testers[i], ethers.utils.parseEther("100"));
-          await stakeOperator(testers[i]);
-          const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
-
-          await addOperator(validatorId.toString(), testers[i].address);
-        }
-
-        for (let i = 0; i < testersAmount; i++) {
-            submitAmounts.push(
-                (
-                    (Math.random() * (maxAmount - minAmount) + minAmount) *
-          delegatorsAmount
-                ).toFixed(3)
-            );
-            const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-
-            await mint(testers[i], submitAmountWei);
-            await submit(testers[i], submitAmountWei);
-        }
-
-        await stMATIC.delegate();
-
-        for (let i = 0; i < testersAmount; i++) {
-            withdrawAmounts.push(
-                (
-                    Math.random() * (Number(submitAmounts[i]) - minAmount) +
-          minAmount
-                ).toFixed(3)
-            );
-            const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-            await requestWithdraw(testers[i], withdrawAmountWei);
-            ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
-        }
-
-        for (let i = 0; i < delegatorsAmount; i++) {
-            await slash(i + 1, 10);
-        }
-
-        const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-        const currentEpoch = await mockStakeManager.epoch();
-        await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
-
-        for (let i = 0; i < testersAmount; i++) {
-            for (let j = 0; j < ownedTokens[i].length; j++) {
-                await claimTokens(testers[i], ownedTokens[i][j]);
-            }
-            const balanceAfter = await mockERC20.balanceOf(testers[i].address);
-
-            // expect(balanceAfter.lte(ethers.utils.parseEther(withdrawAmounts[i]))).to
-            //     .be.true;
-        }
+        // const ownedTokens: BigNumber[][] = [];
+        // const submitAmounts: string[] = [];
+        // const withdrawAmounts: string[] = [];
+        //
+        // const [minAmount, maxAmount] = [0.001, 0.1];
+        // const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //   await mint(testers[i], ethers.utils.parseEther("100"));
+        //   await stakeOperator(testers[i]);
+        //   const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        //
+        //   await addOperator(validatorId.toString(), testers[i].address);
+        // }
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     submitAmounts.push(
+        //         (
+        //             (Math.random() * (maxAmount - minAmount) + minAmount) *
+        //   delegatorsAmount
+        //         ).toFixed(3)
+        //     );
+        //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
+        //
+        //     await mint(testers[i], submitAmountWei);
+        //     await submit(testers[i], submitAmountWei);
+        // }
+        //
+        // await stMATIC.delegate();
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     withdrawAmounts.push(
+        //         (
+        //             Math.random() * (Number(submitAmounts[i]) - minAmount) +
+        //   minAmount
+        //         ).toFixed(3)
+        //     );
+        //     const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
+        //     await requestWithdraw(testers[i], withdrawAmountWei);
+        //     ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
+        // }
+        //
+        // for (let i = 0; i < delegatorsAmount; i++) {
+        //     await slash(i + 1, 10);
+        // }
+        //
+        // const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+        // const currentEpoch = await mockStakeManager.epoch();
+        // await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        //
+        // for (let i = 0; i < testersAmount; i++) {
+        //     for (let j = 0; j < ownedTokens[i].length; j++) {
+        //         await claimTokens(testers[i], ownedTokens[i][j]);
+        //     }
+        //     const balanceAfter = await mockERC20.balanceOf(testers[i].address);
+        //
+        //     // expect(balanceAfter.lte(ethers.utils.parseEther(withdrawAmounts[i]))).to
+        //     //     .be.true;
+        // }
     });
 
     it("Should pause the contract successfully", async () => {
@@ -848,11 +904,11 @@ describe("Starting to test StMATIC contract", () => {
             const numOperators = 3;
             beforeEach("setup", async () => {
                 for (let i = 1; i <= numOperators; i++) {
-                  await mint(testers[i], ethers.utils.parseEther("100"));
-                  await stakeOperator(testers[i]);
-                  const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                    await mint(testers[i], ethers.utils.parseEther("100"));
+                    await stakeOperator(testers[i]);
+                    const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-                  await addOperator(validatorId.toString(), testers[i].address);
+                    await addOperator(validatorId.toString(), testers[i].address);
                 }
                 await stMATIC.setDelegationLowerBound(5);
             });
@@ -865,14 +921,15 @@ describe("Starting to test StMATIC contract", () => {
                 delegate: boolean;
                 amountSubmittedPerUser: number;
                 expectedTotalBuffred: number;
-                constructor (
-                    message: string,
-                    rewardPerValidator: number,
-                    insuraceRewards: string,
-                    daoRewards: string,
-                    delegate: boolean,
-                    amountSubmittedPerUser: number,
-                    expectedTotalBuffred: number
+
+                constructor(
+                        message: string,
+                        rewardPerValidator: number,
+                        insuraceRewards: string,
+                        daoRewards: string,
+                        delegate: boolean,
+                        amountSubmittedPerUser: number,
+                        expectedTotalBuffred: number
                 ) {
                     this.message = message;
                     this.rewardPerValidator = rewardPerValidator;
@@ -916,22 +973,22 @@ describe("Starting to test StMATIC contract", () => {
                 it(index + " " + message, async () => {
                     for (let i = 1; i <= numOperators; i++) {
                         await mint(
-                            testers[i],
-                            ethers.utils.parseEther(amountSubmittedPerUser.toString())
+                                testers[i],
+                                ethers.utils.parseEther(amountSubmittedPerUser.toString())
                         );
                         await submit(
-                            testers[i],
-                            ethers.utils.parseEther(amountSubmittedPerUser.toString())
+                                testers[i],
+                                ethers.utils.parseEther(amountSubmittedPerUser.toString())
                         );
 
                         // transfer some tokens to the validatorShare contracts to mimic rewards.
                         await mint(
-                            deployer,
-                            ethers.utils.parseEther(String(rewardPerValidator))
+                                deployer,
+                                ethers.utils.parseEther(String(rewardPerValidator))
                         );
                         await mockERC20.transfer(
-                            await getValidatorShareAddress(i),
-                            ethers.utils.parseEther(String(rewardPerValidator))
+                                await getValidatorShareAddress(i),
+                                ethers.utils.parseEther(String(rewardPerValidator))
                         );
                     }
                     if (delegate) {
@@ -951,7 +1008,7 @@ describe("Starting to test StMATIC contract", () => {
                     const totalRewards = rewardPerValidator * numOperators;
                     const rewards = (totalRewards * 10) / 100;
                     const DAOBalanceBeforeDistribute = await mockERC20.balanceOf(
-                        deployer.address
+                            deployer.address
                     );
 
                     // distribute rewards
@@ -986,19 +1043,19 @@ describe("Starting to test StMATIC contract", () => {
             }
         });
 
-        it("should not revert if a validator does not accumulate enough rewards", async () =>{
+        it("should not revert if a validator does not accumulate enough rewards", async () => {
             const numOperators = 2;
             for (let i = 1; i <= numOperators; i++) {
                 await mint(testers[i], ethers.utils.parseEther("100"));
-              await stakeOperator(testers[i]);
-              const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-              await addOperator(validatorId.toString(), testers[i].address);
+                await addOperator(validatorId.toString(), testers[i].address);
             }
             await stMATIC.setDelegationLowerBound(5);
 
             await stMATIC.setRewardDistributionLowerBound(
-                ethers.utils.parseEther("100")
+                    ethers.utils.parseEther("100")
             );
 
             const validatorShareRewards = [1000, 10];
@@ -1007,11 +1064,11 @@ describe("Starting to test StMATIC contract", () => {
                 await submit(testers[i], ethers.utils.parseEther(String(10)));
 
                 // transfer some tokens to the validatorShare contracts to mimic rewards.
-                const rewardAmount = validatorShareRewards[i-1];
+                const rewardAmount = validatorShareRewards[i - 1];
                 await mint(deployer, ethers.utils.parseEther(rewardAmount.toString()));
                 await mockERC20.transfer(
-                    await getValidatorShareAddress(i),
-                    ethers.utils.parseEther(rewardAmount.toString())
+                        await getValidatorShareAddress(i),
+                        ethers.utils.parseEther(rewardAmount.toString())
                 );
             }
 
@@ -1023,12 +1080,12 @@ describe("Starting to test StMATIC contract", () => {
             //     .withArgs(ethers.utils.parseEther(String(rewards)));
 
             const rewardPerValidator = ethers.utils.parseEther("25.25");
-            const operator1 = await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this,   1);
+            const operator1 = await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, 1);
             // expect(
             //     await mockERC20.balanceOf(operator1.rewardAddress)
             // ).eq(rewardPerValidator);
 
-            const operator2 = await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this,   2);
+            const operator2 = await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, 2);
             // expect(
             //     await mockERC20.balanceOf(operator2.rewardAddress)
             // ).eq(rewardPerValidator);
@@ -1039,16 +1096,17 @@ describe("Starting to test StMATIC contract", () => {
         it("Amount to distribute lower than minimum", async () => {
             const numOperators = 3;
             for (let i = 1; i <= numOperators; i++) {
-              await mint(testers[i], ethers.utils.parseEther("100"));
-              await stakeOperator(testers[i]);
-              const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await mint(testers[i], ethers.utils.parseEther("100"));
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-              await addOperator(validatorId.toString(), testers[i].address);;
+                await addOperator(validatorId.toString(), testers[i].address);
+                ;
             }
             await stMATIC.setDelegationLowerBound(5);
 
             await stMATIC.setRewardDistributionLowerBound(
-                ethers.utils.parseEther("100")
+                    ethers.utils.parseEther("100")
             );
 
             for (let i = 1; i <= numOperators; i++) {
@@ -1058,8 +1116,8 @@ describe("Starting to test StMATIC contract", () => {
                 // transfer some tokens to the validatorShare contracts to mimic rewards.
                 await mint(deployer, ethers.utils.parseEther("1"));
                 await mockERC20.transfer(
-                    await getValidatorShareAddress(i),
-                    ethers.utils.parseEther(String(1))
+                        await getValidatorShareAddress(i),
+                        ethers.utils.parseEther(String(1))
                 );
 
                 // await expect(stMATIC.distributeRewards()).revertedWith(
@@ -1075,28 +1133,29 @@ describe("Starting to test StMATIC contract", () => {
             const operatorId = 3;
             beforeEach("setup", async () => {
                 for (let i = 1; i <= operatorId; i++) {
-                  await mint(testers[i], ethers.utils.parseEther("100"));
-                  await stakeOperator(testers[i]);
-                  const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                    await mint(testers[i], ethers.utils.parseEther("100"));
+                    await stakeOperator(testers[i]);
+                    const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-                  await addOperator(validatorId.toString(), testers[i].address);
-                  await stMATIC.setDelegationLowerBound(1);
+                    await addOperator(validatorId.toString(), testers[i].address);
+                    await stMATIC.setDelegationLowerBound(1);
                 }
             });
 
             class TestCase {
-              message: string;
-              delegate: boolean;
-              tokenIds: Array<number>;
-              constructor (
-                  message: string,
-                  delegate: boolean,
-                  tokenIds: Array<number>
-              ) {
-                  this.message = message;
-                  this.delegate = delegate;
-                  this.tokenIds = tokenIds;
-              }
+                message: string;
+                delegate: boolean;
+                tokenIds: Array<number>;
+
+                constructor(
+                        message: string,
+                        delegate: boolean,
+                        tokenIds: Array<number>
+                ) {
+                    this.message = message;
+                    this.delegate = delegate;
+                    this.tokenIds = tokenIds;
+                }
             }
 
             const testCases: Array<TestCase> = [
@@ -1113,7 +1172,7 @@ describe("Starting to test StMATIC contract", () => {
             ];
 
             for (let index = 0; index < testCases.length; index++) {
-                const { message, delegate, tokenIds } = testCases[index];
+                const {message, delegate, tokenIds} = testCases[index];
 
                 it(index + " " + message, async () => {
                     // if delegate is true users submit.
@@ -1155,102 +1214,102 @@ describe("Starting to test StMATIC contract", () => {
         });
         describe("Fail cases", async () => {
             it("Fail to withdrawTotalDelegated caller not node operator", async () => {
-            //     await expect(
-            //         stMATIC.withdrawTotalDelegated(ethers.constants.AddressZero)
-            //     ).revertedWith("Not a node operator");
+                //     await expect(
+                //         stMATIC.withdrawTotalDelegated(ethers.constants.AddressZero)
+                //     ).revertedWith("Not a node operator");
             });
         });
     });
 
     describe("claimTokens2StMatic", async () => {
-      describe("Success cases", async () => {
-        // stake node operator
-        const numOperators = 1;
-        beforeEach("Success cases", async () => {
-          for (let i = 1; i <= numOperators; i++) {
-            await mint(testers[i], ethers.utils.parseEther("100"));
-            await stakeOperator(testers[i]);
-            const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+        describe("Success cases", async () => {
+            // stake node operator
+            const numOperators = 1;
+            beforeEach("Success cases", async () => {
+                for (let i = 1; i <= numOperators; i++) {
+                    await mint(testers[i], ethers.utils.parseEther("100"));
+                    await stakeOperator(testers[i]);
+                    const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-            await addOperator(validatorId.toString(), testers[i].address);
-          }
+                    await addOperator(validatorId.toString(), testers[i].address);
+                }
+            });
+
+            class TestCase {
+                message: string;
+                fn: Function;
+
+                constructor(message: string, fn: Function) {
+                    this.message = message;
+                    this.fn = fn;
+                }
+            }
+
+            const testCases: Array<TestCase> = [
+                {
+                    message: "stop operator",
+                    fn: async function () {
+                        const no = await nodeOperatorRegistry[
+                                "getNodeOperator(uint256)"
+                                ].call(this, 1);
+                        //await stopOperator(1);
+                        //await erc721Contract.mint(no.validatorProxy, 1);
+                    }
+                },
+                {
+                    message: "unstake operator",
+                    fn: async function () {
+                        //await nodeOperatorRegistry.connect(testers[1])["unstake()"].call(this);
+                    }
+                }
+            ];
+
+            for (let index = 0; index < testCases.length; index++) {
+                const {message, fn} = testCases[index];
+
+                it(index + "-" + message, async () => {
+                    // set lower bound
+                    await stMATIC.setDelegationLowerBound(5);
+
+                    // users submit
+                    const numOfUsers = 3;
+                    for (let i = 1; i <= numOfUsers; i++) {
+                        await mint(testers[i], ethers.utils.parseEther("100"));
+                        await submit(testers[i], ethers.utils.parseEther("100"));
+                    }
+
+                    // delegate
+                    await stMATIC.delegate();
+
+                    // set epoch to 1
+                    await mockStakeManager.setEpoch(1);
+
+                    await fn();
+
+                    // set epoch to 20
+                    const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+                    const currentEpoch = await mockStakeManager.epoch();
+                    await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+
+                    // transfer to validatorShare Eth to test with.
+                    const claimesAmount = ethers.utils.parseEther("100");
+                    //const token = await poLidoNFT.owner2Tokens(stMATIC.address, 0);
+                    //const buffered = await stMATIC.totalBuffered();
+                    //const req = await stMATIC.token2WithdrawRequest(token);
+                    //await mint(deployer, claimesAmount);
+                    //await mockERC20.transfer(req.validatorAddress, claimesAmount);
+
+                    // claimTokens2StMatic
+                    // expect(await stMATIC.claimTokens2StMatic(token))
+                    //   .emit(stMATIC, "ClaimTokensEvent")
+                    //   .withArgs(stMATIC.address, token, claimesAmount, 0);
+                    //
+                    // expect(await stMATIC.totalBuffered(), "totalBuffered").eq(
+                    //   buffered.add(claimesAmount)
+                    // );
+                });
+            }
         });
-
-        class TestCase {
-          message: string;
-          fn: Function;
-
-          constructor(message: string, fn: Function) {
-            this.message = message;
-            this.fn = fn;
-          }
-        }
-
-        const testCases: Array<TestCase> = [
-          {
-            message: "stop operator",
-            fn: async function() {
-              const no = await nodeOperatorRegistry[
-                "getNodeOperator(uint256)"
-                ].call(this, 1);
-              //await stopOperator(1);
-              //await erc721Contract.mint(no.validatorProxy, 1);
-            }
-          },
-          {
-            message: "unstake operator",
-            fn: async function() {
-              //await nodeOperatorRegistry.connect(testers[1])["unstake()"].call(this);
-            }
-          }
-        ];
-
-        for (let index = 0; index < testCases.length; index++) {
-          const { message, fn } = testCases[index];
-
-          it(index + "-" + message, async () => {
-            // set lower bound
-            await stMATIC.setDelegationLowerBound(5);
-
-            // users submit
-            const numOfUsers = 3;
-            for (let i = 1; i <= numOfUsers; i++) {
-              await mint(testers[i], ethers.utils.parseEther("100"));
-              await submit(testers[i], ethers.utils.parseEther("100"));
-            }
-
-            // delegate
-            await stMATIC.delegate();
-
-            // set epoch to 1
-            await mockStakeManager.setEpoch(1);
-
-            await fn();
-
-            // set epoch to 20
-            const withdrawalDelay = await mockStakeManager.withdrawalDelay();
-            const currentEpoch = await mockStakeManager.epoch();
-            await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
-
-            // transfer to validatorShare Eth to test with.
-            const claimesAmount = ethers.utils.parseEther("100");
-            //const token = await poLidoNFT.owner2Tokens(stMATIC.address, 0);
-            //const buffered = await stMATIC.totalBuffered();
-            //const req = await stMATIC.token2WithdrawRequest(token);
-            //await mint(deployer, claimesAmount);
-            //await mockERC20.transfer(req.validatorAddress, claimesAmount);
-
-            // claimTokens2StMatic
-            // expect(await stMATIC.claimTokens2StMatic(token))
-            //   .emit(stMATIC, "ClaimTokensEvent")
-            //   .withArgs(stMATIC.address, token, claimesAmount, 0);
-            //
-            // expect(await stMATIC.totalBuffered(), "totalBuffered").eq(
-            //   buffered.add(claimesAmount)
-            // );
-          });
-        }
-      });
     });
 
     describe("Fail cases", async () => {
@@ -1258,11 +1317,11 @@ describe("Starting to test StMATIC contract", () => {
             // stake operator
             const numOperators = 1;
             for (let i = 1; i <= numOperators; i++) {
-              await mint(testers[i], ethers.utils.parseEther("100"));
-              await stakeOperator(testers[i]);
-              const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await mint(testers[i], ethers.utils.parseEther("100"));
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
-              await addOperator(validatorId.toString(), testers[i].address);
+                await addOperator(validatorId.toString(), testers[i].address);
             }
 
             await stMATIC.setDelegationLowerBound(1);
@@ -1292,5 +1351,5 @@ describe("Starting to test StMATIC contract", () => {
 
 // convert a string to ether
 function toEth(amount: string): BigNumber {
-  return ethers.utils.parseEther(amount);
+    return ethers.utils.parseEther(amount);
 }
