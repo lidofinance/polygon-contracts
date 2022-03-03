@@ -183,6 +183,7 @@ contract PoLidoNFT is
     function getOwnedTokens(address _address)
         external
         view
+        override
         returns (uint256[] memory)
     {
         return owner2Tokens[_address];

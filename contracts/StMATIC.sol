@@ -491,8 +491,8 @@ contract StMATIC is
         );
     }
 
-    function _calculatePendingBufferedTokens() returns (uint256 pendingBufferedTokens) {
-        uint256[] memory pendingWithdrawalIds = poLidoNFT.owner2Tokens(address (this));
+    function _calculatePendingBufferedTokens() private returns (uint256 pendingBufferedTokens) {
+        uint256[] memory pendingWithdrawalIds = poLidoNFT.getOwnedTokens(address (this));
         uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
 
         for(uint256 i = 0; i < pendingWithdrawalIdsLength;i++){
