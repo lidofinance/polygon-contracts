@@ -441,7 +441,7 @@ contract StMATIC is
              return;
          }
 
-        _creatWithdrawRequest(_validatorShare, stakedAmount);
+        _createWithdrawRequest(_validatorShare, stakedAmount);
          emit WithdrawTotalDelegatedEvent(_validatorShare, stakedAmount);
     }
 
@@ -462,24 +462,25 @@ contract StMATIC is
 
         uint256 activeOperatorsLength = activeNodeOperators.length;
 
-        //uint256 amountToReDelegate = totalBuffered - reservedFunds + pendingWithdrawal amiunt;
-        //if amountToReDelegate >= totalToWithdraw then return because this ie enough to rebalance the system
+        uint256 amountToReDelegate = totalBuffered - reservedFunds + _calculatePendingBufferedTokens();
+        if (amountToReDelegate >= totalToWithdraw) return;
+
         uint256 amountToWithdraw;
         for(uint256 i = 0; i < activeOperatorsLength; i++){
             if(operatorRatios[i] == 0) continue;
 
             amountToWithdraw = (operatorRatios[i] * totalToWithdraw ) / totalRatio;
-            _creatWithdrawRequest(activeNodeOperators[i].validatorShare, amountToWithdraw);
+            _createWithdrawRequest(activeNodeOperators[i].validatorShare, amountToWithdraw);
         }
 
     }
 
-    function _creatWithdrawRequest(address _validatorShare, uint256 amount) private {
+    function _createWithdrawRequest(address _validatorShare, uint256 amount) private {
         uint256 tokenId = poLidoNFT.mint(address(this));
         sellVoucher_new(_validatorShare, amount, type(uint256).max);
 
         token2WithdrawRequest[tokenId] = RequestWithdraw(
-            uint256(0),
+            amount,
             IValidatorShare(_validatorShare).unbondNonces(address(this)),
             stakeManager.epoch() + stakeManager.withdrawalDelay(),
             _validatorShare
@@ -488,6 +489,17 @@ contract StMATIC is
         fxStateRootTunnel.sendMessageToChild(
             abi.encode(totalSupply(), getTotalPooledMatic())
         );
+    }
+
+    function _calculatePendingBufferedTokens() returns (uint256 pendingBufferedTokens) {
+        uint256[] memory pendingWithdrawalIds = poLidoNFT.owner2Tokens(address (this));
+        uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
+
+        for(uint256 i = 0; i < pendingWithdrawalIdsLength;i++){
+            pendingBufferedTokens += token2WithdrawRequest[pendingWithdrawalIds[i]].amount2WithdrawFromStMATIC;
+        }
+
+        return pendingBufferedTokens;
     }
 
     /**

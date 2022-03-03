@@ -7,6 +7,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 /// @title PoLidoNFT interface.
 /// @author 2021 ShardLabs
 interface IPoLidoNFT is IERC721Upgradeable {
+    mapping(address => uint256[]) public owner2Tokens;
+
     function mint(address _to) external returns (uint256);
 
     function burn(uint256 _tokenId) external;
