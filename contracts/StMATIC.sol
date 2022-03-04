@@ -424,34 +424,65 @@ contract StMATIC is
      * @param _validatorShare - Address of the validator share that will be withdrawn
      */
     function withdrawTotalDelegated(address _validatorShare) external override {
-//         require(
-//             msg.sender == address(nodeOperatorRegistry),
-//             "Not a node operator"
-//         );
-//
-//         (uint256 stakedAmount, ) = getTotalStake(
-//             IValidatorShare(_validatorShare)
-//         );
-//
-//         if (stakedAmount == 0) {
-//             return;
-//         }
-//
-//         uint256 tokenId = poLidoNFT.mint(address(this));
-//         sellVoucher_new(_validatorShare, stakedAmount, type(uint256).max);
-//
-//         token2WithdrawRequest[tokenId] = RequestWithdraw(
-//             uint256(0),
-//             IValidatorShare(_validatorShare).unbondNonces(address(this)),
-//             stakeManager.epoch() + stakeManager.withdrawalDelay(),
-//             _validatorShare
-//         );
-//
-//         fxStateRootTunnel.sendMessageToChild(
-//             abi.encode(totalSupply(), getTotalPooledMatic())
-//         );
-//
-//         emit WithdrawTotalDelegatedEvent(_validatorShare, stakedAmount);
+         require(
+             msg.sender == address(nodeOperatorRegistry),
+             "Not a node operator"
+         );
+
+         (uint256 stakedAmount, ) = getTotalStake(IValidatorShare(_validatorShare));
+
+         if (stakedAmount == 0) {
+             return;
+         }
+
+        _createWithdrawRequest(_validatorShare, stakedAmount);
+         emit WithdrawTotalDelegatedEvent(_validatorShare, stakedAmount);
+    }
+
+    function rebalanceDelegatedTokens() external override {
+        uint256 amountToReDelegate = totalBuffered - reservedFunds + _calculatePendingBufferedTokens();
+        (
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio,
+            uint256 totalToWithdraw
+        ) = nodeOperatorRegistry.getValidatorsRebalanceAmount(amountToReDelegate);
+
+        uint256 amountToWithdraw;
+        uint256 activeOperatorsLength = activeNodeOperators.length;
+        for(uint256 i = 0; i < activeOperatorsLength; i++){
+            if(operatorRatios[i] == 0) continue;
+
+            amountToWithdraw = (operatorRatios[i] * totalToWithdraw ) / totalRatio;
+            _createWithdrawRequest(activeNodeOperators[i].validatorShare, amountToWithdraw);
+        }
+    }
+
+    function _createWithdrawRequest(address _validatorShare, uint256 amount) private {
+        uint256 tokenId = poLidoNFT.mint(address(this));
+        sellVoucher_new(_validatorShare, amount, type(uint256).max);
+
+        token2WithdrawRequest[tokenId] = RequestWithdraw(
+            amount,
+            IValidatorShare(_validatorShare).unbondNonces(address(this)),
+            stakeManager.epoch() + stakeManager.withdrawalDelay(),
+            _validatorShare
+        );
+
+        fxStateRootTunnel.sendMessageToChild(
+            abi.encode(totalSupply(), getTotalPooledMatic())
+        );
+    }
+
+    function _calculatePendingBufferedTokens() private returns (uint256 pendingBufferedTokens) {
+        uint256[] memory pendingWithdrawalIds = poLidoNFT.getOwnedTokens(address (this));
+        uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
+
+        for(uint256 i = 0; i < pendingWithdrawalIdsLength;i++){
+            pendingBufferedTokens += token2WithdrawRequest[pendingWithdrawalIds[i]].amount2WithdrawFromStMATIC;
+        }
+
+        return pendingBufferedTokens;
     }
 
     /**

@@ -17,4 +17,6 @@ interface IPoLidoNFT is IERC721Upgradeable {
         returns (bool);
 
     function setStMATIC(address _stMATIC) external;
+
+    function getOwnedTokens(address _address) external view returns (uint256[] memory);
 }
