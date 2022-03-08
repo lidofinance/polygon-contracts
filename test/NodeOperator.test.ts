@@ -1041,9 +1041,226 @@ describe("NodeOperator", function () {
                 })
             }
         })
+
+        it("getValidatorsRequestWithdraw when system is balanced", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("1000")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(0)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+            await checkRequestWithdraw("1", false, toEth("100"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("0"), toEth("0"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("0"),
+                totalValidatorToWithdrawFrom: 1,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when system is balanced and MinRequestWithdrawRange = 100%", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("1000")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(0)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(100)
+            await checkRequestWithdraw("1", false, toEth("3"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("0"), toEth("0"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("0"),
+                totalValidatorToWithdrawFrom: 3,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when system is not balanced", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("400")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(0)
+            await checkRequestWithdraw("1", false, toEth("100"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("600"), toEth("600"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("1200"),
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when system is not balanced with operator has zero", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("800")
+            const validator3Stake = toEth("0")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(0)
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("500"), toEth("300"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("800"),
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it.only("getValidatorsRequestWithdraw when system is balanced with MinRequestWithdrawDistanceThreshold = 50%", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("900")
+            const validator3Stake = toEth("500")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(50)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(25)
+
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("0"), toEth("0"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("0"),
+                totalValidatorToWithdrawFrom: 2,
+            })
+        })
+
+        it.only("getValidatorsRequestWithdraw when system is balanced with amount requested = 80%", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("900")
+            const validator3Stake = toEth("500")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setMinRequestWithdrawDistanceThreshold(20)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(25)
+
+            await checkRequestWithdraw("1", false, toEth("1920"), {
+                activeNodeOperatorsLength: 3,
+                operatorAmountCanBeRequested: [toEth("840"), toEth("740"), toEth("340")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalAmountCanBeRequested: toEth("1920"),
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
     });
 });
 
+async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: BigNumber, data: {
+    activeNodeOperatorsLength: number,
+    operatorAmountCanBeRequested: Array<BigNumber>,
+    rewardAddresses: Array<string>,
+    totalAmountCanBeRequested: BigNumber,
+    totalValidatorToWithdrawFrom: number,
+}) {
+    const res = await nodeOperatorRegistry.getValidatorsRequestWithdraw(withdrawAmount)
+    if (log) {
+        console.log(res)
+    }
+    expect(res.activeNodeOperators.length, `${id}--activeNodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.totalValidatorToWithdrawFrom, `${id}--totalValidatorToWithdrawFrom`).eq(data.totalValidatorToWithdrawFrom)
+
+    expect(res.operatorAmountCanBeRequested.length, `${id}--res.operatorAmountCanBeRequested.length`).eq(data.operatorAmountCanBeRequested.length)
+    for (let idx = 0; idx < res.operatorAmountCanBeRequested.length; idx++) {
+        expect(res.operatorAmountCanBeRequested[idx], `${id}--${idx}--operatorAmountCanBeRequested`).eq(data.operatorAmountCanBeRequested[idx])
+    }
+
+    expect(res.activeNodeOperators.length, `${id}--res.activeNodeOperators.length`).eq(data.rewardAddresses.length)
+    for (let idx = 0; idx < res.activeNodeOperators.length; idx++) {
+        expect(res.activeNodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
+    }
+    expect(res.totalValidatorToWithdrawFrom, `${id}--res.totalValidatorToWithdrawFrom.length`).eq(data.totalValidatorToWithdrawFrom)
+}
 
 async function checkGetValidatorRebalanceAmount(id: string, totalBuffered: BigNumber, data: {
     activeNodeOperatorsLength: number,
