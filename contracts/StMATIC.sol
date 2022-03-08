@@ -155,111 +155,111 @@ contract StMATIC is
      * @param _amount - Amount of StMATIC that is requested to withdraw
      */
     function requestWithdraw(uint256 _amount) external override whenNotPaused {
-         require(_amount > 0, "Invalid amount");
-
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos =
-        nodeOperatorRegistry.listWithdrawNodeOperators();
-
-         uint256 operatorInfosLength = operatorInfos.length;
-
-         uint256 tokenId;
-         (
-             uint256 totalAmount2WithdrawInMatic,
-             uint256 totalShares,
-             uint256 totalPooledMATIC
-         ) = convertStMaticToMatic(_amount);
-         uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
-
-         uint256 totalDelegated = getTotalStakeAcrossAllValidators();
-
-         uint256 minValidatorBalance = getMinValidatorBalance();
-
-         uint256 allowedAmount2RequestFromValidators = 0;
-
-         if (totalDelegated != 0) {
-             require(
-                 (totalDelegated + totalBuffered) >=
-                     currentAmount2WithdrawInMatic +
-                         minValidatorBalance *
-                         operatorInfosLength,
-                 "Too much to withdraw"
-             );
-             allowedAmount2RequestFromValidators =
-                 totalDelegated -
-                 minValidatorBalance *
-                 operatorInfosLength;
-         } else {
-             require(
-                 totalBuffered >= currentAmount2WithdrawInMatic,
-                 "Too much to withdraw"
-             );
-         }
-
-         while (currentAmount2WithdrawInMatic != 0) {
-             tokenId = poLidoNFT.mint(msg.sender);
-
-             if (allowedAmount2RequestFromValidators != 0) {
-                 if (lastWithdrawnValidatorId > operatorInfosLength - 1) {
-                     lastWithdrawnValidatorId = 0;
-                 }
-                 address validatorShare = operatorInfos[lastWithdrawnValidatorId]
-                     .validatorShare;
-
-                 (uint256 validatorBalance, ) = IValidatorShare(validatorShare)
-                     .getTotalStake(address(this));
-
-                 if (validatorBalance <= minValidatorBalance) {
-                     lastWithdrawnValidatorId++;
-                     continue;
-                 }
-
-                 uint256 allowedAmount2Withdraw = validatorBalance -
-                     minValidatorBalance;
-
-                 uint256 amount2WithdrawFromValidator = (allowedAmount2Withdraw <=
-                         currentAmount2WithdrawInMatic)
-                         ? allowedAmount2Withdraw
-                         : currentAmount2WithdrawInMatic;
-
-                 sellVoucher_new(
-                     validatorShare,
-                     amount2WithdrawFromValidator,
-                     type(uint256).max
-                 );
-
-                 token2WithdrawRequest[tokenId] = RequestWithdraw(
-                     0,
-                     IValidatorShare(validatorShare).unbondNonces(address(this)),
-                     stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                     validatorShare
-                 );
-
-                 allowedAmount2RequestFromValidators -= amount2WithdrawFromValidator;
-                 currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
-                 lastWithdrawnValidatorId++;
-             } else {
-                 token2WithdrawRequest[tokenId] = RequestWithdraw(
-                     currentAmount2WithdrawInMatic,
-                     0,
-                     stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                     address(0)
-                 );
-
-                 reservedFunds += currentAmount2WithdrawInMatic;
-                 currentAmount2WithdrawInMatic = 0;
-             }
-         }
-
-         _burn(msg.sender, _amount);
-
-         fxStateRootTunnel.sendMessageToChild(
-             abi.encode(
-                 totalShares - _amount,
-                 totalPooledMATIC - totalAmount2WithdrawInMatic
-             )
-         );
-
-        emit RequestWithdrawEvent(msg.sender, _amount);
+//         require(_amount > 0, "Invalid amount");
+//
+//        INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos =
+//        nodeOperatorRegistry.listWithdrawNodeOperators();
+//
+//         uint256 operatorInfosLength = operatorInfos.length;
+//
+//         uint256 tokenId;
+//         (
+//             uint256 totalAmount2WithdrawInMatic,
+//             uint256 totalShares,
+//             uint256 totalPooledMATIC
+//         ) = convertStMaticToMatic(_amount);
+//         uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
+//
+//         uint256 totalDelegated = getTotalStakeAcrossAllValidators();
+//
+//         uint256 minValidatorBalance = getMinValidatorBalance();
+//
+//         uint256 allowedAmount2RequestFromValidators = 0;
+//
+//         if (totalDelegated != 0) {
+//             require(
+//                 (totalDelegated + totalBuffered) >=
+//                     currentAmount2WithdrawInMatic +
+//                         minValidatorBalance *
+//                         operatorInfosLength,
+//                 "Too much to withdraw"
+//             );
+//             allowedAmount2RequestFromValidators =
+//                 totalDelegated -
+//                 minValidatorBalance *
+//                 operatorInfosLength;
+//         } else {
+//             require(
+//                 totalBuffered >= currentAmount2WithdrawInMatic,
+//                 "Too much to withdraw"
+//             );
+//         }
+//
+//         while (currentAmount2WithdrawInMatic != 0) {
+//             tokenId = poLidoNFT.mint(msg.sender);
+//
+//             if (allowedAmount2RequestFromValidators != 0) {
+//                 if (lastWithdrawnValidatorId > operatorInfosLength - 1) {
+//                     lastWithdrawnValidatorId = 0;
+//                 }
+//                 address validatorShare = operatorInfos[lastWithdrawnValidatorId]
+//                     .validatorShare;
+//
+//                 (uint256 validatorBalance, ) = IValidatorShare(validatorShare)
+//                     .getTotalStake(address(this));
+//
+//                 if (validatorBalance <= minValidatorBalance) {
+//                     lastWithdrawnValidatorId++;
+//                     continue;
+//                 }
+//
+//                 uint256 allowedAmount2Withdraw = validatorBalance -
+//                     minValidatorBalance;
+//
+//                 uint256 amount2WithdrawFromValidator = (allowedAmount2Withdraw <=
+//                         currentAmount2WithdrawInMatic)
+//                         ? allowedAmount2Withdraw
+//                         : currentAmount2WithdrawInMatic;
+//
+//                 sellVoucher_new(
+//                     validatorShare,
+//                     amount2WithdrawFromValidator,
+//                     type(uint256).max
+//                 );
+//
+//                 token2WithdrawRequest[tokenId] = RequestWithdraw(
+//                     0,
+//                     IValidatorShare(validatorShare).unbondNonces(address(this)),
+//                     stakeManager.epoch() + stakeManager.withdrawalDelay(),
+//                     validatorShare
+//                 );
+//
+//                 allowedAmount2RequestFromValidators -= amount2WithdrawFromValidator;
+//                 currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
+//                 lastWithdrawnValidatorId++;
+//             } else {
+//                 token2WithdrawRequest[tokenId] = RequestWithdraw(
+//                     currentAmount2WithdrawInMatic,
+//                     0,
+//                     stakeManager.epoch() + stakeManager.withdrawalDelay(),
+//                     address(0)
+//                 );
+//
+//                 reservedFunds += currentAmount2WithdrawInMatic;
+//                 currentAmount2WithdrawInMatic = 0;
+//             }
+//         }
+//
+//         _burn(msg.sender, _amount);
+//
+//         fxStateRootTunnel.sendMessageToChild(
+//             abi.encode(
+//                 totalShares - _amount,
+//                 totalPooledMATIC - totalAmount2WithdrawInMatic
+//             )
+//         );
+//
+//        emit RequestWithdrawEvent(msg.sender, _amount);
     }
 
     /**
@@ -319,49 +319,49 @@ contract StMATIC is
      * @param _tokenId - Id of the token that wants to be claimed
      */
     function claimTokens(uint256 _tokenId) external override whenNotPaused {
-         require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
-         RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
-
-         require(
-             stakeManager.epoch() >= usersRequest.requestEpoch,
-             "Not able to claim yet"
-         );
-
-         poLidoNFT.burn(_tokenId);
-
-         uint256 amountToClaim;
-
-         if (usersRequest.validatorAddress != address(0)) {
-             uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
-                 address(this)
-             );
-
-             unstakeClaimTokens_new(
-                 usersRequest.validatorAddress,
-                 usersRequest.validatorNonce
-             );
-
-             amountToClaim =
-                 IERC20Upgradeable(token).balanceOf(address(this)) -
-                 balanceBeforeClaim;
-         } else {
-             amountToClaim = usersRequest.amount2WithdrawFromStMATIC;
-
-             reservedFunds -= amountToClaim;
-             totalBuffered -= amountToClaim;
-         }
-
-         IERC20Upgradeable(token).safeTransfer(msg.sender, amountToClaim);
-
-         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
+//         require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
+//         RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
+//
+//         require(
+//             stakeManager.epoch() >= usersRequest.requestEpoch,
+//             "Not able to claim yet"
+//         );
+//
+//         poLidoNFT.burn(_tokenId);
+//
+//         uint256 amountToClaim;
+//
+//         if (usersRequest.validatorAddress != address(0)) {
+//             uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+//                 address(this)
+//             );
+//
+//             unstakeClaimTokens_new(
+//                 usersRequest.validatorAddress,
+//                 usersRequest.validatorNonce
+//             );
+//
+//             amountToClaim =
+//                 IERC20Upgradeable(token).balanceOf(address(this)) -
+//                 balanceBeforeClaim;
+//         } else {
+//             amountToClaim = usersRequest.amount2WithdrawFromStMATIC;
+//
+//             reservedFunds -= amountToClaim;
+//             totalBuffered -= amountToClaim;
+//         }
+//
+//         IERC20Upgradeable(token).safeTransfer(msg.sender, amountToClaim);
+//
+//         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
     }
 
     /**
      * @dev Distributes rewards claimed from validator shares based on fees defined in entityFee
      */
     function distributeRewards() external override whenNotPaused {
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos = nodeOperatorRegistry
-        .listDelegatedNodeOperators();
+        INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos =
+            nodeOperatorRegistry.listDelegatedNodeOperators();
 
          uint256 operatorInfosLength = operatorInfos.length;
 
@@ -474,7 +474,7 @@ contract StMATIC is
         );
     }
 
-    function _calculatePendingBufferedTokens() private returns (uint256 pendingBufferedTokens) {
+    function _calculatePendingBufferedTokens() private view returns (uint256 pendingBufferedTokens) {
         uint256[] memory pendingWithdrawalIds = poLidoNFT.getOwnedTokens(address (this));
         uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
 
@@ -495,41 +495,41 @@ contract StMATIC is
         override
         whenNotPaused
     {
-        RequestWithdraw storage lidoRequests = token2WithdrawRequest[_tokenId];
-
-        require(
-            poLidoNFT.ownerOf(_tokenId) == address(this),
-            "Not owner of the NFT"
-        );
-
-        poLidoNFT.burn(_tokenId);
-
-        require(
-            stakeManager.epoch() >= lidoRequests.requestEpoch,
-            "Not able to claim yet"
-        );
-
-        uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
-            address(this)
-        );
-
-        unstakeClaimTokens_new(
-            lidoRequests.validatorAddress,
-            lidoRequests.validatorNonce
-        );
-
-        uint256 claimedAmount = IERC20Upgradeable(token).balanceOf(
-            address(this)
-        ) - balanceBeforeClaim;
-
-        totalBuffered += claimedAmount;
-
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(totalSupply(), getTotalPooledMatic())
-        );
-
-        emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
-    }
+//        RequestWithdraw storage lidoRequests = token2WithdrawRequest[_tokenId];
+//
+//        require(
+//            poLidoNFT.ownerOf(_tokenId) == address(this),
+//            "Not owner of the NFT"
+//        );
+//
+//        poLidoNFT.burn(_tokenId);
+//
+//        require(
+//            stakeManager.epoch() >= lidoRequests.requestEpoch,
+//            "Not able to claim yet"
+//        );
+//
+//        uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+//            address(this)
+//        );
+//
+//        unstakeClaimTokens_new(
+//            lidoRequests.validatorAddress,
+//            lidoRequests.validatorNonce
+//        );
+//
+//        uint256 claimedAmount = IERC20Upgradeable(token).balanceOf(
+//            address(this)
+//        ) - balanceBeforeClaim;
+//
+//        totalBuffered += claimedAmount;
+//
+//        fxStateRootTunnel.sendMessageToChild(
+//            abi.encode(totalSupply(), getTotalPooledMatic())
+//        );
+//
+//        emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
+   }
 
     /**
      * @dev Flips the pause state
@@ -672,54 +672,89 @@ contract StMATIC is
 
     /**
      * @dev Function that converts arbitrary stMATIC to Matic
-     * @param _balance - Balance in stMATIC
-     * @return Balance in Matic, totalShares and totalPooledMATIC
+     * @param _amountInStMatic - Amount of stMATIC to convert to Matic
+     * @return amountInMatic - Amount of Matic after conversion,
+     * @return totalStMaticAmount - Total StMatic in the contract,
+     * @return totalPooledMatic - Total Matic in the staking pool
      */
-    function convertStMaticToMatic(uint256 _balance)
+    function convertStMaticToMatic(uint256 _amountInStMatic)
         public
         view
         override
         returns (
+            uint256 amountInMatic,
+            uint256 totalStMaticAmount,
+            uint256 totalPooledMatic
+        )
+    {
+        uint256 totalPooledMATIC = getTotalPooledMatic();
+        return _convertStMaticToMatic(_amountInStMatic, totalPooledMATIC);
+    }
+
+    /**
+     * @dev Function that converts arbitrary amount of stMatic to Matic
+     * @param _stMaticAmount - amount of stMatic to convert to Matic
+     * @return amountInMatic, totalStMaticAmount and totalPooledMatic
+     */
+    function _convertStMaticToMatic(uint256 _stMaticAmount, uint256 _totalPooledMatic)
+        private
+        view
+        returns(
             uint256,
             uint256,
             uint256
         )
     {
-        uint256 totalShares = totalSupply();
-        totalShares = totalShares == 0 ? 1 : totalShares;
+        uint256 totalStMaticAmount = totalSupply();
+        totalStMaticAmount = totalStMaticAmount == 0 ? 1 : totalStMaticAmount;
 
-        uint256 totalPooledMATIC = getTotalPooledMatic();
-        totalPooledMATIC = totalPooledMATIC == 0 ? 1 : totalPooledMATIC;
+        _totalPooledMatic = _totalPooledMatic == 0 ? 1 : _totalPooledMatic;
 
-        uint256 balanceInMATIC = (_balance * totalPooledMATIC) / totalShares;
+        uint256 amountInMatic = (_stMaticAmount * _totalPooledMatic) / totalStMaticAmount;
 
-        return (balanceInMATIC, totalShares, totalPooledMATIC);
+        return (amountInMatic, totalStMaticAmount, _totalPooledMatic);
     }
 
     /**
      * @dev Function that converts arbitrary Matic to stMATIC
-     * @param _balance - Balance in Matic
-     * @return Balance in stMATIC, totalShares and totalPooledMATIC
+     * @param _amountInMatic - Amount of Matic to convert to stMatic
+     * @return amountInStMatic - Amount of Matic to converted to stMatic
+     * @return totalStMaticAmount - Total amount of StMatic in the contract
+     * @return totalPooledMatic - Total amount of Matic in the staking pool
      */
-    function convertMaticToStMatic(uint256 _balance)
+    function convertMaticToStMatic(uint256 _amountInMatic)
         public
         view
         override
+        returns (
+            uint256 amountInStMatic,
+            uint256 totalStMaticAmount,
+            uint256 totalPooledMatic
+        )
+    {
+        uint256 totalPooledMatic = getTotalPooledMatic();
+        return _convertMaticToStMatic(_amountInMatic, totalPooledMatic);
+    }
+
+    /**
+     * @dev Function that converts arbitrary amount of Matic to stMatic
+     * @param _maticAmount - Amount in Matic to convert to stMatic
+     * @return amountInStMatic , totalStMaticAmount and totalPooledMatic
+     */
+    function _convertMaticToStMatic(uint256 _maticAmount, uint256 _totalPooledMatic)
+        private
+        view
         returns (
             uint256,
             uint256,
             uint256
         )
     {
-        uint256 totalShares = totalSupply();
-        totalShares = totalShares == 0 ? 1 : totalShares;
-
-        uint256 totalPooledMatic = getTotalPooledMatic();
-        totalPooledMatic = totalPooledMatic == 0 ? 1 : totalPooledMatic;
-
-        uint256 balanceInStMatic = (_balance * totalShares) / totalPooledMatic;
-
-        return (balanceInStMatic, totalShares, totalPooledMatic);
+        uint256 totalStMaticAmount = totalSupply();
+        totalStMaticAmount = totalStMaticAmount == 0 ? 1 : totalStMaticAmount;
+        _totalPooledMatic = _totalPooledMatic == 0 ? 1 : _totalPooledMatic;
+        uint256 amountInStMatic = (_maticAmount * totalStMaticAmount) / _totalPooledMatic;
+        return (amountInStMatic, totalStMaticAmount, _totalPooledMatic);
     }
 
     /**
