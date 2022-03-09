@@ -687,8 +687,13 @@ contract StMATIC is
             uint256 totalPooledMatic
         )
     {
+        totalStMaticAmount = totalSupply();
         uint256 totalPooledMATIC = getTotalPooledMatic();
-        return _convertStMaticToMatic(_amountInStMatic, totalPooledMATIC);
+        return (
+            _convertStMaticToMatic(_amountInStMatic, totalPooledMATIC),
+            totalStMaticAmount,
+            totalPooledMATIC
+        );
     }
 
     /**
@@ -700,19 +705,14 @@ contract StMATIC is
         private
         view
         returns(
-            uint256,
-            uint256,
             uint256
         )
     {
         uint256 totalStMaticAmount = totalSupply();
         totalStMaticAmount = totalStMaticAmount == 0 ? 1 : totalStMaticAmount;
-
         _totalPooledMatic = _totalPooledMatic == 0 ? 1 : _totalPooledMatic;
-
         uint256 amountInMatic = (_stMaticAmount * _totalPooledMatic) / totalStMaticAmount;
-
-        return (amountInMatic, totalStMaticAmount, _totalPooledMatic);
+        return amountInMatic;
     }
 
     /**
@@ -732,8 +732,13 @@ contract StMATIC is
             uint256 totalPooledMatic
         )
     {
+        totalStMaticAmount = totalSupply();
         uint256 totalPooledMatic = getTotalPooledMatic();
-        return _convertMaticToStMatic(_amountInMatic, totalPooledMatic);
+        return (
+            _convertMaticToStMatic(_amountInMatic, totalPooledMatic),
+            totalStMaticAmount,
+            totalPooledMatic
+        );
     }
 
     /**
@@ -745,8 +750,6 @@ contract StMATIC is
         private
         view
         returns (
-            uint256,
-            uint256,
             uint256
         )
     {
@@ -754,7 +757,7 @@ contract StMATIC is
         totalStMaticAmount = totalStMaticAmount == 0 ? 1 : totalStMaticAmount;
         _totalPooledMatic = _totalPooledMatic == 0 ? 1 : _totalPooledMatic;
         uint256 amountInStMatic = (_maticAmount * totalStMaticAmount) / _totalPooledMatic;
-        return (amountInStMatic, totalStMaticAmount, _totalPooledMatic);
+        return amountInStMatic;
     }
 
     /**
