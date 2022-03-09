@@ -474,30 +474,6 @@ describe("Starting to test StMATIC contract", () => {
         expect(balanceAfter.eq(balanceBefore)).to.be.true;
     });
 
-    it("Should update minValidatorBalance correctly", async () => {
-        const submitAmount = ethers.utils.parseEther("0.01");
-
-        await mint(testers[0], ethers.utils.parseEther("100"));
-        await stakeOperator(testers[0]);
-        const validatorId = await mockStakeManager.getValidatorId(testers[0].address)
-
-        await addOperator(validatorId.toString(), testers[0].address);
-
-        await mint(testers[0], submitAmount);
-        await submit(testers[0], submitAmount);
-        await stMATIC.delegate();
-
-        const minValidatorBalanceBefore = await stMATIC.getMinValidatorBalance();
-
-        await mint(testers[0], submitAmount.mul(2));
-        await submit(testers[0], submitAmount);
-        await stMATIC.delegate();
-
-        const minValidatorBalanceAfter = await stMATIC.getMinValidatorBalance();
-
-        //expect(!minValidatorBalanceBefore.eq(minValidatorBalanceAfter)).to.be.true;
-    });
-
     it("Should return the correct conversion amount for Matic and StMatic", async () => {
         for (let i = 0; i < 3; i++) {
             await mint(testers[i], ethers.utils.parseEther("100"));
@@ -789,7 +765,7 @@ describe("Starting to test StMATIC contract", () => {
     });
 
 
-    it("Should rebalance delegated tokens to validators", async () => {
+    it.only("Should rebalance delegated tokens to validators", async () => {
         for (let i = 0; i < 3; i++) {
             await mint(testers[i], ethers.utils.parseEther("100"));
             await stakeOperator(testers[i]);
@@ -825,9 +801,9 @@ describe("Starting to test StMATIC contract", () => {
         let totalWithdrawRequestAmount = toEth("0");
         let totalToWithdraw = toEth("18.75");
         for(let i = 0; i < pendingWithdrawalsId.length; i++){
-            const withdrawalRequest = await stMATIC.token2WithdrawRequest(pendingWithdrawalsId[i]);
+            const validatorShare = await getValidatorShare(i + 1);
             totalWithdrawRequestAmount = totalWithdrawRequestAmount
-                    .add(withdrawalRequest.amount2WithdrawFromStMATIC);
+                    .add((await validatorShare.totalWithdrawPoolShares()));
         }
 
         expect(totalWithdrawRequestAmount).to.equal(totalToWithdraw);

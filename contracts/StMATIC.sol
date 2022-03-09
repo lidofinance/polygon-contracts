@@ -463,7 +463,7 @@ contract StMATIC is
         sellVoucher_new(_validatorShare, amount, type(uint256).max);
 
         token2WithdrawRequest[tokenId] = RequestWithdraw(
-            amount,
+            0,
             IValidatorShare(_validatorShare).unbondNonces(address(this)),
             stakeManager.epoch() + stakeManager.withdrawalDelay(),
             _validatorShare
@@ -479,7 +479,7 @@ contract StMATIC is
         uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
 
         for(uint256 i = 0; i < pendingWithdrawalIdsLength;i++){
-            pendingBufferedTokens += token2WithdrawRequest[pendingWithdrawalIds[i]].amount2WithdrawFromStMATIC;
+            pendingBufferedTokens += _getMaticFromTokenId(pendingWithdrawalIds[i]);
         }
 
         return pendingBufferedTokens;
@@ -760,34 +760,6 @@ contract StMATIC is
         return amountInStMatic;
     }
 
-    /**
-     * @dev Function that calculates minimal allowed validator balance (lower bound)
-     * @return Minimal validator balance in MATIC
-     */
-    function getMinValidatorBalance() public view override returns (uint256) {
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators =
-            nodeOperatorRegistry.listDelegatedNodeOperators();
-
-        uint256 operatorsLength = nodeOperators.length;
-        uint256 minValidatorBalance = type(uint256).max;
-
-         for (uint256 i = 0; i < operatorsLength; i++) {
-             (uint256 validatorShare, ) = getTotalStake(
-                 IValidatorShare(nodeOperators[i].validatorShare)
-             );
-             // 10% of current validatorShare
-             uint256 currentMinValidatorBalance = validatorShare / 10;
-
-             if (
-                 currentMinValidatorBalance != 0 &&
-                 currentMinValidatorBalance < minValidatorBalance
-             ) {
-                 minValidatorBalance = currentMinValidatorBalance;
-             }
-         }
-
-        return minValidatorBalance;
-    }
 
     ////////////////////////////////////////////////////////////
     /////                                                    ///
@@ -938,6 +910,14 @@ contract StMATIC is
         override
         returns (uint256)
     {
+        return _getMaticFromTokenId(_tokenId);
+    }
+
+    function _getMaticFromTokenId(uint256 _tokenId)
+        private
+        view
+        returns (uint256)
+    {
         RequestWithdraw memory requestData = token2WithdrawRequest[_tokenId];
         IValidatorShare validatorShare = IValidatorShare(
             requestData.validatorAddress
@@ -946,7 +926,7 @@ contract StMATIC is
         uint256 exchangeRatePrecision = validatorId < 8 ? 100 : 10**29;
         uint256 withdrawExchangeRate = validatorShare.withdrawExchangeRate();
         IValidatorShare.DelegatorUnbond memory unbond = validatorShare
-            .unbonds_new(address(this), requestData.validatorNonce);
+        .unbonds_new(address(this), requestData.validatorNonce);
 
         return (withdrawExchangeRate * unbond.shares) / exchangeRatePrecision;
     }
