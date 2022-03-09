@@ -765,7 +765,7 @@ describe("Starting to test StMATIC contract", () => {
     });
 
 
-    it.only("Should rebalance delegated tokens to validators", async () => {
+    it("Should rebalance delegated tokens to validators", async () => {
         for (let i = 0; i < 3; i++) {
             await mint(testers[i], ethers.utils.parseEther("100"));
             await stakeOperator(testers[i]);
