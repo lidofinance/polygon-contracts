@@ -155,15 +155,15 @@ interface INodeOperatorRegistry {
     /// @notice Request withdraw algorithm.
     /// @param _withdrawAmount The amount to withdraw.
     /// @return activeNodeOperators all active node operators.
+    /// @return totalDelegated total amount delegated.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
-    /// @return totalAmountCanBeRequested the total amount that can requested when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
     function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
         external
         view returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256 totalDelegated,
             uint256[] memory operatorAmountCanBeRequested,
-            uint256 totalAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         );
     // ***********************************EVENTS***********************************

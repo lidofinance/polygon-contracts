@@ -595,7 +595,7 @@ contract NodeOperatorRegistry is
     /// @notice Returns operators info.
     /// @return activeNodeOperators all active node operators.
     /// @return stakePerOperator amount staked in each validator.
-    /// @return totalStaked the total amount staked in all validators.
+    /// @return totalDelegated the total amount delegated to all validators.
     /// @return minAmount the distance between the min and max amount staked in a validator.
     /// @return maxAmount the distance between the min and max amount staked in a validator.
     function _getValidatorsRequestWithdraw()
@@ -604,14 +604,12 @@ contract NodeOperatorRegistry is
         returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
             uint256[] memory stakePerOperator,
-            uint256 totalStaked,
+            uint256 totalDelegated,
             uint256 minAmount,
             uint256 maxAmount
         )
     {
         uint256 length = validatorIds.length;
-        require(length > 0, "Not enough operators to request withdraw");
-
         activeNodeOperators = new NodeOperatorRegistry[](length);
         stakePerOperator = new uint256[](length);
 
@@ -627,7 +625,7 @@ contract NodeOperatorRegistry is
                 .getTotalStake(address(stMATIC));
 
             stakePerOperator[i] = amount;
-            totalStaked += amount;
+            totalDelegated += amount;
 
             if (maxAmount < amount) {
                 maxAmount = amount;
@@ -648,20 +646,28 @@ contract NodeOperatorRegistry is
     /// @notice Request withdraw algorithm.
     /// @param _withdrawAmount The amount to withdraw.
     /// @return activeNodeOperators all active node operators.
+    /// @return totalDelegated total amount delegated.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
-    /// @return totalAmountCanBeRequested the total amount that can requested when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
     function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
         external
+        view
         override
-        view returns (
+        returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256 totalDelegated,
             uint256[] memory operatorAmountCanBeRequested,
-            uint256 totalAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         )
     {
-        uint256 totalStaked;
+        if (validatorIds.length == 0) {
+            return (
+                activeNodeOperators,
+                totalDelegated,
+                operatorAmountCanBeRequested,
+                totalValidatorToWithdrawFrom
+            );
+        }
         uint256[] memory stakePerOperator;
         uint256 minAmount;
         uint256 maxAmount;
@@ -669,17 +675,26 @@ contract NodeOperatorRegistry is
         (
             activeNodeOperators,
             stakePerOperator,
-            totalStaked,
+            totalDelegated,
             minAmount,
             maxAmount
         ) = _getValidatorsRequestWithdraw();
+
+        if (totalDelegated == 0) {
+            return (
+                activeNodeOperators,
+                totalDelegated,
+                operatorAmountCanBeRequested,
+                totalValidatorToWithdrawFrom
+            );
+        }
 
         uint256 length = activeNodeOperators.length;
         operatorAmountCanBeRequested = new uint256[](length);
         uint256 distanceThreshold = 100 - ((minAmount * 100) / maxAmount);
 
         uint256 withdrawAmountPercentage = (_withdrawAmount * 100) /
-            totalStaked;
+            totalDelegated;
         withdrawAmountPercentage = withdrawAmountPercentage == 0
             ? 1
             : withdrawAmountPercentage;
@@ -693,19 +708,20 @@ contract NodeOperatorRegistry is
                 ? length
                 : totalValidatorToWithdrawFrom;
         } else {
-            uint256 rebalanceTarget = (totalStaked - _withdrawAmount) / length;
+            uint256 rebalanceTarget = totalDelegated > _withdrawAmount
+                ? (totalDelegated - _withdrawAmount) / length
+                : 0;
+
             rebalanceTarget = rebalanceTarget > minAmount
                 ? minAmount
                 : rebalanceTarget;
             uint256 operatorRatioToRebalance;
-
             for (uint256 idx = 0; idx < length; idx++) {
                 operatorRatioToRebalance = stakePerOperator[idx] != 0 &&
                     stakePerOperator[idx] - rebalanceTarget > 0
                     ? stakePerOperator[idx] - rebalanceTarget
                     : 0;
                 operatorAmountCanBeRequested[idx] = operatorRatioToRebalance;
-                totalAmountCanBeRequested += operatorRatioToRebalance;
             }
         }
     }
