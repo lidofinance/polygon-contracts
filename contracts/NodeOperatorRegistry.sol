@@ -26,6 +26,12 @@ contract NodeOperatorRegistry is
     /// @notice stMatic interface.
     IStMATIC public stMATIC;
 
+    /// @notice Minimum request withdraw distance threshold.
+    uint8 public MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD;
+
+    /// @notice Minimum request withdraw range.
+    uint8 public MIN_REQUEST_WITHDRAW_RANGE;
+
     /// @notice Minimum delegation distance threshold.
     uint256 public MIN_DELEGATE_DISTANCE_THRESHOLD;
 
@@ -244,6 +250,33 @@ contract NodeOperatorRegistry is
             "Invalid minRebalanceDistanceThreshold"
         );
         MIN_REBALANCE_DISTANCE_THRESHOLD = _minRebalanceDistanceThreshold;
+    }
+
+    /// @notice set MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD
+    /// ONLY DAO can call this function
+    /// @param _minRequestWithdrawDistanceThreshold the min withdraw distance threshold.
+    function setMinRequestWithdrawDistanceThreshold(
+        uint8 _minRequestWithdrawDistanceThreshold
+    ) public userHasRole(DAO_ROLE) {
+        require(
+            _minRequestWithdrawDistanceThreshold <= 100,
+            "Invalid minRebalanceDistanceThreshold"
+        );
+        MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD = _minRequestWithdrawDistanceThreshold;
+    }
+
+    /// @notice set MIN_REQUEST_WITHDRAW_RANGE
+    /// ONLY DAO can call this function
+    /// @param _minRequestWithdrawRange the min request withdraw range.
+    function setMinRequestWithdrawRange(uint8 _minRequestWithdrawRange)
+        public
+        userHasRole(DAO_ROLE)
+    {
+        require(
+            _minRequestWithdrawRange <= 100,
+            "Invalid minRebalanceDistanceThreshold"
+        );
+        MIN_REQUEST_WITHDRAW_RANGE = _minRequestWithdrawRange;
     }
 
     /// @notice set MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE
@@ -467,7 +500,9 @@ contract NodeOperatorRegistry is
                     ? 0
                     : rebalanceTarget - stakePerOperator[idx];
 
-                if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
+                if (
+                    operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0
+                ) {
                     operatorRatioToDelegate = (rebalanceTarget * 100) /
                         stakePerOperator[idx] >=
                         MIN_DELEGATE_DISTANCE_THRESHOLD
@@ -552,7 +587,143 @@ contract NodeOperatorRegistry is
             : 0;
 
         require(totalToWithdraw > 0, "Zero total to withdraw");
-        totalToWithdraw = totalToWithdraw * MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE / 100;
+        totalToWithdraw =
+            (totalToWithdraw * MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE) /
+            100;
+    }
+
+    /// @notice Returns operators info.
+    /// @return activeNodeOperators all active node operators.
+    /// @return stakePerOperator amount staked in each validator.
+    /// @return totalDelegated the total amount delegated to all validators.
+    /// @return minAmount the distance between the min and max amount staked in a validator.
+    /// @return maxAmount the distance between the min and max amount staked in a validator.
+    function _getValidatorsRequestWithdraw()
+        private
+        view
+        returns (
+            NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256[] memory stakePerOperator,
+            uint256 totalDelegated,
+            uint256 minAmount,
+            uint256 maxAmount
+        )
+    {
+        uint256 length = validatorIds.length;
+        activeNodeOperators = new NodeOperatorRegistry[](length);
+        stakePerOperator = new uint256[](length);
+
+        uint256 validatorId;
+        IStakeManager.Validator memory validator;
+        NodeOperatorRegistryStatus status;
+
+        for (uint256 i = 0; i < length; i++) {
+            validatorId = validatorIds[i];
+            (status, validator) = _getOperatorStatusAndValidator(validatorId);
+            // Get the total staked tokens by the StMatic contract in a validatorShare.
+            (uint256 amount, ) = IValidatorShare(validator.contractAddress)
+                .getTotalStake(address(stMATIC));
+
+            stakePerOperator[i] = amount;
+            totalDelegated += amount;
+
+            if (maxAmount < amount) {
+                maxAmount = amount;
+            }
+
+            if ((minAmount > amount && amount != 0) || minAmount == 0) {
+                minAmount = amount;
+            }
+
+            activeNodeOperators[i] = NodeOperatorRegistry(
+                validator.contractAddress,
+                validatorIdToRewardAddress[validatorIds[i]]
+            );
+        }
+        minAmount = minAmount == 0 ? 1 : minAmount;
+    }
+
+    /// @notice Request withdraw algorithm.
+    /// @param _withdrawAmount The amount to withdraw.
+    /// @return activeNodeOperators all active node operators.
+    /// @return totalDelegated total amount delegated.
+    /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
+    /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
+    function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
+        external
+        view
+        override
+        returns (
+            NodeOperatorRegistry[] memory activeNodeOperators,
+            uint256 totalDelegated,
+            uint256[] memory operatorAmountCanBeRequested,
+            uint256 totalValidatorToWithdrawFrom
+        )
+    {
+        if (validatorIds.length == 0) {
+            return (
+                activeNodeOperators,
+                totalDelegated,
+                operatorAmountCanBeRequested,
+                totalValidatorToWithdrawFrom
+            );
+        }
+        uint256[] memory stakePerOperator;
+        uint256 minAmount;
+        uint256 maxAmount;
+
+        (
+            activeNodeOperators,
+            stakePerOperator,
+            totalDelegated,
+            minAmount,
+            maxAmount
+        ) = _getValidatorsRequestWithdraw();
+
+        if (totalDelegated == 0) {
+            return (
+                activeNodeOperators,
+                totalDelegated,
+                operatorAmountCanBeRequested,
+                totalValidatorToWithdrawFrom
+            );
+        }
+
+        uint256 length = activeNodeOperators.length;
+        operatorAmountCanBeRequested = new uint256[](length);
+        uint256 distanceThreshold = 100 - ((minAmount * 100) / maxAmount);
+
+        uint256 withdrawAmountPercentage = (_withdrawAmount * 100) /
+            totalDelegated;
+        withdrawAmountPercentage = withdrawAmountPercentage == 0
+            ? 1
+            : withdrawAmountPercentage;
+
+        if (distanceThreshold <= MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD) {
+            totalValidatorToWithdrawFrom =
+                ((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) /
+                    (100 / length)) +
+                1;
+            totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
+                ? length
+                : totalValidatorToWithdrawFrom;
+        } else {
+            uint256 rebalanceTarget = totalDelegated > _withdrawAmount
+                ? (totalDelegated - _withdrawAmount) / length
+                : 0;
+
+            rebalanceTarget = rebalanceTarget > minAmount
+                ? minAmount
+                : rebalanceTarget;
+            uint256 operatorRatioToRebalance;
+            for (uint256 idx = 0; idx < length; idx++) {
+                operatorRatioToRebalance = stakePerOperator[idx] != 0 &&
+                    stakePerOperator[idx] - rebalanceTarget > 0
+                    ? stakePerOperator[idx] - rebalanceTarget
+                    : 0;
+                operatorAmountCanBeRequested[idx] = operatorRatioToRebalance;
+            }
+        }
     }
 
     /// @notice Returns a node operator.
