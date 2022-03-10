@@ -188,7 +188,7 @@ describe("Starting to test StMATIC contract", () => {
 
         mockStakeManager = (await (
             await ethers.getContractFactory("StakeManagerMock")
-        ).deploy(mockERC20.address, erc721Contract.address)) as StakeManagerMock;
+        ).deploy(mockERC20.address)) as StakeManagerMock;
         await mockStakeManager.deployed();
 
 
@@ -197,7 +197,7 @@ describe("Starting to test StMATIC contract", () => {
             [
                 mockStakeManager.address,
                 mockERC20.address,
-                100
+                accounts[0].address
             ]
         )) as NodeOperatorRegistry;
         await nodeOperatorRegistry.deployed();
@@ -767,7 +767,7 @@ describe("Starting to test StMATIC contract", () => {
     });
 
 
-    it.only("Should rebalance delegated tokens to validators", async () => {
+    it("Should rebalance delegated tokens to validators", async () => {
         for (let i = 0; i < 3; i++) {
             await mint(testers[i], ethers.utils.parseEther("100"));
             await stakeOperator(testers[i]);

@@ -25,12 +25,14 @@ interface INodeOperatorRegistry {
     /// @param validatorId the validator id on stakeManager.
     /// @param validatorShare the validator share address of the validator.
     /// @param rewardAddress the reward address.
+    /// @param delegation delegation.
     /// @param status the status of the node operator in the stake manager.
     struct FullNodeOperatorRegistry {
         uint256 validatorId;
         uint256 commissionRate;
         address validatorShare;
         address rewardAddress;
+        bool delegation;
         NodeOperatorRegistryStatus status;
     }
 
@@ -64,7 +66,7 @@ interface INodeOperatorRegistry {
     /// @notice Set the new commission rate
     /// ONLY DAO can call this function
     /// @param newCommissionRate the new commission rate
-    function setCommissionRate(uint256 newCommissionRate) external;
+    function setCommissionRate(uint8 newCommissionRate) external;
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
@@ -123,22 +125,25 @@ interface INodeOperatorRegistry {
         );
 
     /// @notice Calculate the ratios to delegate to each validator.
-    /// @param _totalBuffred The total amount buffered in stMatic.
-    /// @return activeNodeOperators all active node operators.
+    /// @param _totalBuffered The total amount buffered in stMatic.
+    /// @return nodeOperators all active node operators.
+    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    function getValidatorsDelegationAmount(uint256 _totalBuffred)
+    function getValidatorsDelegationAmount(uint256 _totalBuffered)
         external
         view
         returns (
-            NodeOperatorRegistry[] memory activeNodeOperators,
+            NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         );
 
-    /// @notice Calculate the ratios to withdraw from each validator.
+    /// @notice Calculate the operator ratios to rebalance the system.
     /// @param _totalBuffered The total amount buffered in stMatic.
-    /// @return activeNodeOperators all active node operators.
+    /// @return nodeOperators all active node operators.
+    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
@@ -146,7 +151,8 @@ interface INodeOperatorRegistry {
         external
         view
         returns (
-            NodeOperatorRegistry[] memory activeNodeOperators,
+            NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
@@ -160,12 +166,14 @@ interface INodeOperatorRegistry {
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
     function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
         external
-        view returns (
+        view
+        returns (
             NodeOperatorRegistry[] memory activeNodeOperators,
             uint256 totalDelegated,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         );
+
     // ***********************************EVENTS***********************************
     /// @notice Add Node Operator event
     /// @param validatorId validator id.

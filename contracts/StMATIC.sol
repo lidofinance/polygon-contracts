@@ -304,10 +304,11 @@ contract StMATIC is
         (
             INodeOperatorRegistry.NodeOperatorRegistry[]
                 memory activeNodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
-        uint256 activeOperatorsLength = activeNodeOperators.length;
+        // uint256 activeOperatorsLength = activeNodeOperators.length;
 
         uint256 remainder;
         uint256 amountDelegated;
@@ -319,13 +320,13 @@ contract StMATIC is
             amountToDelegate
         );
 
-        for (uint256 i = 0; i < activeOperatorsLength; i++) {
+        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             uint256 amountToDelegatePerOperator;
 
             if (totalRatio == 0) {
                 amountToDelegatePerOperator =
                     amountToDelegate /
-                    activeOperatorsLength;
+                    totalActiveNodeOperator;
             } else {
                 if (operatorRatios[i] == 0) continue;
                 amountToDelegatePerOperator =
@@ -534,7 +535,8 @@ contract StMATIC is
             _calculatePendingBufferedTokens();
         (
             INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+                memory nodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
@@ -543,15 +545,15 @@ contract StMATIC is
             );
 
         uint256 amountToWithdraw;
-        uint256 activeOperatorsLength = activeNodeOperators.length;
-        for (uint256 i = 0; i < activeOperatorsLength; i++) {
+        // uint256 activeOperatorsLength = activeNodeOperators.length;
+        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             if (operatorRatios[i] == 0) continue;
 
             amountToWithdraw =
                 (operatorRatios[i] * totalToWithdraw) /
                 totalRatio;
             _createWithdrawRequest(
-                activeNodeOperators[i].validatorShare,
+                nodeOperators[i].validatorShare,
                 amountToWithdraw
             );
         }
