@@ -1487,7 +1487,7 @@ describe("NodeOperator", function () {
     })
 
     describe("Check Stats", async function () {
-        it.only("Should checkStats", async function () {
+        it("Should checkStats", async function () {
             await stakeOperator(user1)
             await stakeOperator(user3)
             await stakeOperator(user2)
@@ -1564,6 +1564,41 @@ describe("NodeOperator", function () {
                 ejectedNodeOperator: 0,
                 unstakedNodeOperator: 4,
             }, false)
+        })
+    })
+
+    describe("Roles", async function() {
+        it("Should check roles", async function () {
+            const DAO_ROLE = await nodeOperatorRegistry.DAO_ROLE()
+            const DEFAULT_ADMIN_ROLE = await nodeOperatorRegistry.DEFAULT_ADMIN_ROLE()
+            expect(await nodeOperatorRegistry.hasRole(DAO_ROLE, accounts[0].address), "1-DAO_ROLE").true
+            expect(await nodeOperatorRegistry.hasRole(DEFAULT_ADMIN_ROLE, accounts[0].address), "2-DEFAULT_ADMIN_ROLE").true
+        })
+
+        it("Should grant/revoke roles", async function () {
+            const DAO_ROLE = await nodeOperatorRegistry.DAO_ROLE()
+            const DEFAULT_ADMIN_ROLE = await nodeOperatorRegistry.DEFAULT_ADMIN_ROLE()
+            expect(await nodeOperatorRegistry.hasRole(DAO_ROLE, accounts[0].address), "1-DAO_ROLE").true
+            expect(await nodeOperatorRegistry.hasRole(DEFAULT_ADMIN_ROLE, accounts[0].address), "1-DEFAULT_ADMIN_ROLE").true
+            
+            await nodeOperatorRegistry.grantRole(DAO_ROLE, user1.address)
+            await nodeOperatorRegistry.grantRole(DEFAULT_ADMIN_ROLE, user2.address)
+            expect(await nodeOperatorRegistry.hasRole(DAO_ROLE, user1.address), "2-DAO_ROLE").true
+            expect(await nodeOperatorRegistry.hasRole(DEFAULT_ADMIN_ROLE, user2.address), "2-DEFAULT_ADMIN_ROLE").true
+            
+            await nodeOperatorRegistry.revokeRole(DEFAULT_ADMIN_ROLE, user2.address)
+            await nodeOperatorRegistry.revokeRole(DAO_ROLE, user1.address)
+            expect(await nodeOperatorRegistry.hasRole(DAO_ROLE, user1.address), "3-DAO_ROLE").false
+            expect(await nodeOperatorRegistry.hasRole(DEFAULT_ADMIN_ROLE, user2.address), "3-DEFAULT_ADMIN_ROLE").false
+        })
+        
+        it("Should fail grant/revoke roles", async function () {
+            const DAO_ROLE = await nodeOperatorRegistry.DAO_ROLE()
+            const DEFAULT_ADMIN_ROLE = await nodeOperatorRegistry.DEFAULT_ADMIN_ROLE()
+            expect(await nodeOperatorRegistry.hasRole(DEFAULT_ADMIN_ROLE, user1.address), "1-DEFAULT_ADMIN_ROLE").false
+            
+            await expect(nodeOperatorRegistry.connect(user1).grantRole(DEFAULT_ADMIN_ROLE, user2.address)).reverted
+            await expect(nodeOperatorRegistry.connect(user1).revokeRole(DEFAULT_ADMIN_ROLE, accounts[0].address)).reverted
         })
     })
 });

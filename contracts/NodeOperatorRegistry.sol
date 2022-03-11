@@ -26,12 +26,6 @@ contract NodeOperatorRegistry is
     /// @notice stMatic interface.
     IStMATIC public stMATIC;
 
-    /// @notice Minimum request withdraw distance threshold.
-    uint8 public MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD;
-
-    /// @notice Minimum request withdraw range.
-    uint8 public MIN_REQUEST_WITHDRAW_RANGE;
-
     /// @notice Minimum delegation distance threshold.
     uint256 public MIN_DELEGATE_DISTANCE_THRESHOLD;
 
@@ -43,6 +37,12 @@ contract NodeOperatorRegistry is
 
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
+
+    /// @notice Minimum request withdraw distance threshold.
+    uint8 public MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD;
+
+    /// @notice Minimum request withdraw range.
+    uint8 public MIN_REQUEST_WITHDRAW_RANGE;
 
     /// @notice the default commission rate for operators
     uint8 public DEFAULT_COMMISSION_RATE;
