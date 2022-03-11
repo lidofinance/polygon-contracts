@@ -35,6 +35,8 @@ contract NodeOperatorRegistry is
 
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
+    bytes32 public constant PAUSE_ROLE =
+        keccak256("LIDO_PAUSE_OPERATOR");
 
     /// @notice Minimum request withdraw distance threshold.
     uint8 public MIN_REQUEST_WITHDRAW_DISTANCE_THRESHOLD;
@@ -76,7 +78,9 @@ contract NodeOperatorRegistry is
         stMATIC = _stMATIC;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(PAUSE_ROLE, msg.sender);
         _setupRole(DAO_ROLE, _dao);
+        _setupRole(PAUSE_ROLE, _dao);
     }
 
     /// @notice Add a new node operator to the system.
@@ -150,7 +154,11 @@ contract NodeOperatorRegistry is
     /// @notice Remove a node operator from the system if it fails to meet certain conditions
     /// 1. If the commission of the Node Operator is less than the standard commission
     /// 2. If the Node Operator is either Unstaked or Ejected
-    function removeInvalidNodeOperator(uint256 validatorId) external override {
+    function removeInvalidNodeOperator(uint256 validatorId)
+        external
+        override
+        whenNotPaused
+    {
         address rewardAddress = validatorIdToRewardAddress[validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
 
@@ -304,6 +312,11 @@ contract NodeOperatorRegistry is
             "Invalid minDelegateDistanceThreshold"
         );
         MIN_DELEGATE_DISTANCE_THRESHOLD = _minDelegateDistanceThreshold;
+    }
+
+    /// @notice Allows to pause the contract.
+    function togglePause() external override userHasRole(PAUSE_ROLE) {
+        paused() ? _unpause() : _pause();
     }
 
     /// @notice List all the ACTIVE operators on the stakeManager.

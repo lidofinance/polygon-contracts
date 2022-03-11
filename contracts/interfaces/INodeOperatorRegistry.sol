@@ -78,6 +78,9 @@ interface INodeOperatorRegistry {
     /// @param _newRewardAddress the new reward address.
     function setRewardAddress(address _newRewardAddress) external;
 
+    /// @notice Allows to pause the contract.
+    function togglePause() external;
+
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.
     /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
