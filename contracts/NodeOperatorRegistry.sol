@@ -69,6 +69,11 @@ contract NodeOperatorRegistry is
         stakeManager = _stakeManager;
         stMATIC = _stMATIC;
 
+        DISTANCE_THRESHOLD = 100;
+        MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
+        DEFAULT_COMMISSION_RATE = 5;
+        MIN_REQUEST_WITHDRAW_RANGE = 15;
+
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(PAUSE_ROLE, msg.sender);
         _setupRole(DAO_ROLE, _dao);
@@ -251,10 +256,7 @@ contract NodeOperatorRegistry is
         uint256 _oldDistanceThreshold = DISTANCE_THRESHOLD;
         DISTANCE_THRESHOLD = _newDistanceThreshold;
 
-        emit SetDistanceThreshold(
-            _oldDistanceThreshold,
-            _newDistanceThreshold
-        );
+        emit SetDistanceThreshold(_oldDistanceThreshold, _newDistanceThreshold);
     }
 
     /// @notice set MIN_REQUEST_WITHDRAW_RANGE
@@ -271,7 +273,7 @@ contract NodeOperatorRegistry is
         );
         uint8 _oldMinRequestWithdrawRange = MIN_REQUEST_WITHDRAW_RANGE;
         MIN_REQUEST_WITHDRAW_RANGE = _newMinRequestWithdrawRange;
-        
+
         emit SetMinRequestWithdrawRange(
             _oldMinRequestWithdrawRange,
             _newMinRequestWithdrawRange
