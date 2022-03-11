@@ -21,8 +21,8 @@ interface INodeOperatorRegistry {
     }
 
     /// @notice The full node operator struct.
-    /// @param commission rate of each operator
     /// @param validatorId the validator id on stakeManager.
+    /// @param commissionRate rate of each operator
     /// @param validatorShare the validator share address of the validator.
     /// @param rewardAddress the reward address.
     /// @param delegation delegation.
@@ -46,20 +46,20 @@ interface INodeOperatorRegistry {
 
     /// @notice Add a new node operator to the system.
     /// ONLY DAO can execute this function.
-    /// @param _validatorId the validator id on stakeManager.
-    /// @param _rewardAddress the reward address.
-    function addNodeOperator(uint256 _validatorId, address _rewardAddress)
+    /// @param validatorId the validator id on stakeManager.
+    /// @param rewardAddress the reward address.
+    function addNodeOperator(uint256 validatorId, address rewardAddress)
         external;
 
-    /// @notice Remove a new node operator from the system.
+    /// @notice Remove a node operator from the system and withdraw total delegated tokens to it.
     /// ONLY DAO can execute this function.
     /// withdraw delegated tokens from it.
-    /// @param _validatorId the validator id on stakeManager.
-    function removeNodeOperator(uint256 _validatorId) external;
+    /// @param validatorId the validator id on stakeManager.
+    function removeNodeOperator(uint256 validatorId) external;
 
-    /// @notice Remove an invalid node operator from the system if it fails to meet certain conditions
-    /// 1. If the commission of the Node Operator is less than the standard commission
-    /// 2. If the Node Operator is either Unstaked or Ejected
+    /// @notice Remove a node operator from the system if it fails to meet certain conditions.
+    /// 1. If the commission of the Node Operator is less than the standard commission.
+    /// 2. If the Node Operator is either Unstaked or Ejected.
     /// @param validatorId the validator id on stakeManager.
     function removeInvalidNodeOperator(uint256 validatorId) external;
 
@@ -70,49 +70,137 @@ interface INodeOperatorRegistry {
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
-    /// @param _newStMatic new stMatic address.
-    function setStMaticAddress(address _newStMatic) external;
+    /// @param newStMatic new stMatic address.
+    function setStMaticAddress(address newStMatic) external;
 
     /// @notice Update reward address of a Node Operator.
     /// ONLY Operator owner can call this function
-    /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(address _newRewardAddress) external;
+    /// @param newRewardAddress the new reward address.
+    function setRewardAddress(address newRewardAddress) external;
+
+    /// @notice set DISTANCETHRESHOLD
+    /// ONLY DAO can call this function
+    /// @param distanceThreshold the min rebalance threshold to include
+    /// a validator in the delegation process.
+    function setDistanceThreshold(uint256 distanceThreshold) external;
+
+    /// @notice set MINREQUESTWITHDRAWRANGE
+    /// ONLY DAO can call this function
+    /// @param minRequestWithdrawRange the min request withdraw range.
+    function setMinRequestWithdrawRange(uint8 minRequestWithdrawRange) external;
+
+    /// @notice set MAXWITHDRAWPERCENTAGEPERREBALANCE
+    /// ONLY DAO can call this function
+    /// @param maxWithdrawPercentagePerRebalance the max withdraw percentage to
+    /// withdraw from a validator per rebalance.
+    function setMaxWithdrawPercentagePerRebalance(
+        uint256 maxWithdrawPercentagePerRebalance
+    ) external;
 
     /// @notice Allows to pause the contract.
     function togglePause() external;
 
-    /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
-    /// @notice UNSTAKED operators.
-    /// @return Returns a list of ACTIVE, JAILED or UNSTAKED node operator.
-    function listWithdrawNodeOperators()
-        external
-        view
-        returns (NodeOperatorRegistry[] memory);
-
     /// @notice List all the ACTIVE operators on the stakeManager.
-    /// @return Returns a list of ACTIVE node operator registry.
+    /// @return activeNodeOperators a list of ACTIVE node operator.
+    /// @return totalActiveNodeOperators total active node operators.
     function listDelegatedNodeOperators()
         external
         view
-        returns (NodeOperatorRegistry[] memory);
+        returns (NodeOperatorRegistry[] memory, uint256);
 
-    /// @notice Returns a node operator.
-    /// @param _validatorId the validator id on stakeManager.
-    /// @return Returns a node operator.
-    function getNodeOperator(uint256 _validatorId)
+    /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
+    /// @notice UNSTAKED operators.
+    /// @return nodeOperators a list of ACTIVE, JAILED or UNSTAKED node operator.
+    /// @return totalNodeOperators total number of node operators.
+    function listWithdrawNodeOperators()
         external
         view
-        returns (FullNodeOperatorRegistry memory);
+        returns (NodeOperatorRegistry[] memory, uint256);
 
-    /// @notice Returns a node operator.
-    /// @param _rewardAddress the reward address.
-    /// @return Returns a node operator.
-    function getNodeOperator(address _rewardAddress)
+    /// @notice  Calculate how total buffered should be delegated between the active validators,
+    /// depending on if the system is balanced or not. If validators are in EJECTED or UNSTAKED
+    /// status the function will revert.
+    /// @param totalBuffered The total amount buffered in stMatic.
+    /// @return nodeOperators all active node operators.
+    /// @return totalActiveNodeOperator total active node operators.
+    /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
+    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    ///  It will be calculated if the system is not balanced.
+    function getValidatorsDelegationAmount(uint256 totalBuffered)
         external
         view
-        returns (FullNodeOperatorRegistry memory);
+        returns (
+            NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalActiveNodeOperator,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio
+        );
 
-    /// @notice List all the node operator in the system.
+    /// @notice  Calculate how the system could be rebalanced depending on the current
+    /// buffered tokens. If validators are in EJECTED or UNSTAKED status the function will revert.
+    /// If the system is balanced the function will revert.
+    /// @notice Calculate the operator ratios to rebalance the system.
+    /// @param totalBuffered The total amount buffered in stMatic.
+    /// @return nodeOperators all active node operators.
+    /// @return totalActiveNodeOperator total active node operators.
+    /// @return operatorRatios is a list of operator's ratio.
+    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
+    /// @return totalToWithdraw the total amount to withdraw.
+    function getValidatorsRebalanceAmount(uint256 totalBuffered)
+        external
+        view
+        returns (
+            NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalActiveNodeOperator,
+            uint256[] memory operatorRatios,
+            uint256 totalRatio,
+            uint256 totalToWithdraw
+        );
+
+    /// @notice Calculate the validators to request withdrawal from depending if the system is balalnced or not.
+    /// @param withdrawAmount The amount to withdraw.
+    /// @return nodeOperators all node operators.
+    /// @return totalDelegated total amount delegated.
+    /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
+    /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
+    function getValidatorsRequestWithdraw(uint256 withdrawAmount)
+        external
+        view
+        returns (
+            NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalDelegated,
+            uint256[] memory operatorAmountCanBeRequested,
+            uint256 totalValidatorToWithdrawFrom
+        );
+
+    /// @notice Returns a node operator.
+    /// @param validatorId the validator id on stakeManager.
+    /// @return operatorStatus a node operator.
+    function getNodeOperator(uint256 validatorId)
+        external
+        view
+        returns (FullNodeOperatorRegistry memory operatorStatus);
+
+    /// @notice Returns a node operator.
+    /// @param rewardAddress the reward address.
+    /// @return operatorStatus a node operator.
+    function getNodeOperator(address rewardAddress)
+        external
+        view
+        returns (FullNodeOperatorRegistry memory operatorStatus);
+
+    /// @notice Returns a node operator status.
+    /// @param  validatorId is the id of the node operator.
+    /// @return operatorStatus Returns a node operator status.
+    function getNodeOperatorStatus(uint256 validatorId)
+        external
+        view
+        returns (NodeOperatorRegistryStatus operatorStatus);
+
+    /// @notice Return a list of all validator ids in the system.
+    function getValidatorIds() external view returns (uint256[] memory);
+
+    /// @notice List all the node operator statuses in the system.
     /// @return inactiveNodeOperator the number of inactive operators.
     /// @return activeNodeOperator the number of active operators.
     /// @return jailedNodeOperator the number of jailed operators.
@@ -127,56 +215,6 @@ interface INodeOperatorRegistry {
             uint256 jailedNodeOperator,
             uint256 ejectedNodeOperator,
             uint256 unstakedNodeOperator
-        );
-
-    /// @notice Calculate the ratios to delegate to each validator.
-    /// @param _totalBuffered The total amount buffered in stMatic.
-    /// @return nodeOperators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
-    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    function getValidatorsDelegationAmount(uint256 _totalBuffered)
-        external
-        view
-        returns (
-            NodeOperatorRegistry[] memory nodeOperators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
-            uint256 totalRatio
-        );
-
-    /// @notice Calculate the operator ratios to rebalance the system.
-    /// @param _totalBuffered The total amount buffered in stMatic.
-    /// @return nodeOperators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
-    /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
-    /// @return totalToWithdraw the total amount to withdraw.
-    function getValidatorsRebalanceAmount(uint256 _totalBuffered)
-        external
-        view
-        returns (
-            NodeOperatorRegistry[] memory nodeOperators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
-            uint256 totalRatio,
-            uint256 totalToWithdraw
-        );
-
-    /// @notice Request withdraw algorithm.
-    /// @param _withdrawAmount The amount to withdraw.
-    /// @return activeNodeOperators all active node operators.
-    /// @return totalDelegated total amount delegated.
-    /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
-    /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
-    function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
-        external
-        view
-        returns (
-            NodeOperatorRegistry[] memory activeNodeOperators,
-            uint256 totalDelegated,
-            uint256[] memory operatorAmountCanBeRequested,
-            uint256 totalValidatorToWithdrawFrom
         );
 
     // ***********************************EVENTS***********************************
@@ -216,5 +254,29 @@ interface INodeOperatorRegistry {
     event SetCommissionRate(
         uint256 oldCommissionRate,
         uint256 newCommissionRate
+    );
+
+    /// @notice Emit when the distance threshold is changed.
+    /// @param oldDistanceThreshold the old distance threshold.
+    /// @param newDistanceThreshold the new distance threshold.
+    event SetDistanceThreshold(
+        uint256 oldDistanceThreshold,
+        uint256 newDistanceThreshold
+    );
+
+    /// @notice Emit when the min request withdraw range is changed.
+    /// @param oldMinRequestWithdrawRange the old min request withdraw range.
+    /// @param newMinRequestWithdrawRange the new min request withdraw range.
+    event SetMinRequestWithdrawRange(
+        uint8 oldMinRequestWithdrawRange,
+        uint8 newMinRequestWithdrawRange
+    );
+
+    /// @notice Emit when the max withdraw percentage per rebalance is changed.
+    /// @param oldMaxWithdrawPercentagePerRebalance the old max withdraw percentage per rebalance.
+    /// @param newMaxWithdrawPercentagePerRebalance the new max withdraw percentage per rebalance.
+    event SetMaxWithdrawPercentagePerRebalance(
+        uint256 oldMaxWithdrawPercentagePerRebalance,
+        uint256 newMaxWithdrawPercentagePerRebalance
     );
 }
