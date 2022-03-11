@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/INodeOperatorRegistry.sol";
 import "./interfaces/IStMATIC.sol";
@@ -17,8 +16,7 @@ import "hardhat/console.sol";
 contract NodeOperatorRegistry is
     INodeOperatorRegistry,
     PausableUpgradeable,
-    AccessControlUpgradeable,
-    ReentrancyGuardUpgradeable
+    AccessControlUpgradeable
 {
     /// @notice stakeManager interface.
     IStakeManager public stakeManager;
@@ -73,7 +71,6 @@ contract NodeOperatorRegistry is
     ) external initializer {
         __Pausable_init();
         __AccessControl_init();
-        __ReentrancyGuard_init();
 
         stakeManager = _stakeManager;
         stMATIC = _stMATIC;
