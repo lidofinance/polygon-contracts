@@ -366,7 +366,7 @@ describe("NodeOperator", function () {
         it("should set the commission rate", async function () {
             expect(await nodeOperatorRegistry.setCommissionRate(10))
                 .emit(nodeOperatorRegistry, "SetCommissionRate")
-                .withArgs(0, 10)
+                .withArgs(5, 10)
         })
 
         it("should fail to set the commission rate", async function () {
@@ -1153,7 +1153,7 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setDistanceThreshold(100)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
-            await checkRequestWithdraw("1", false, toEth("100"), {
+            await checkRequestWithdraw("1", true, toEth("100"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
                 operatorAmountCanBeRequested: [],
@@ -1668,7 +1668,7 @@ describe("NodeOperator", function () {
             const newDistanceThreshold = 123
             expect(await nodeOperatorRegistry.setDistanceThreshold(newDistanceThreshold))
                 .emit(nodeOperatorRegistry, "SetDistanceThreshold")
-                .withArgs(0, newDistanceThreshold)
+                .withArgs(100, newDistanceThreshold)
         })
 
         it("Should fail set setDistanceThreshold", async function () {
@@ -1681,7 +1681,7 @@ describe("NodeOperator", function () {
             const newMinRequestWithdrawRange = 25
             expect(await nodeOperatorRegistry.setMinRequestWithdrawRange(newMinRequestWithdrawRange))
                 .emit(nodeOperatorRegistry, "SetMinRequestWithdrawRange")
-                .withArgs(0, newMinRequestWithdrawRange)
+                .withArgs(15, newMinRequestWithdrawRange)
         })
 
         it("Should fail setMinRequestWithdrawRange", async function () {
@@ -1694,7 +1694,7 @@ describe("NodeOperator", function () {
             const newMaxWithdrawPercentagePerRebalance = 80
             expect(await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(newMaxWithdrawPercentagePerRebalance))
                 .emit(nodeOperatorRegistry, "SetMaxWithdrawPercentagePerRebalance")
-                .withArgs(0, newMaxWithdrawPercentagePerRebalance)
+                .withArgs(20, newMaxWithdrawPercentagePerRebalance)
         })
 
         it("Should fail setMaxWithdrawPercentagePerRebalance", async function () {
