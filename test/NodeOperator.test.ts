@@ -86,6 +86,13 @@ describe("NodeOperator", function () {
             expect((await nodeOperatorRegistry.validatorIds(0))).eq(1)
             expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(user1.address)
             expect((await nodeOperatorRegistry.getValidatorIds()).length).eq(1)
+            await checkStats("1", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 1,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 0,
+                unstakedNodeOperator: 0,
+            }, false)
         });
 
         it("Should fail add a new operator", async function () {
@@ -160,6 +167,13 @@ describe("NodeOperator", function () {
             expect((await nodeOperatorRegistry.validatorIdToRewardAddress(2))).eq(user2.address)
             expect((await nodeOperatorRegistry.validatorIdToRewardAddress(3))).eq(user3.address)
 
+            await checkStats("1", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 3,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 0,
+                unstakedNodeOperator: 0,
+            }, false)
         });
 
         it("Should fail add a jailed operator", async function () {
@@ -1471,7 +1485,106 @@ describe("NodeOperator", function () {
             })
         })
     })
+
+    describe("Check Stats", async function () {
+        it.only("Should checkStats", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user3)
+            await stakeOperator(user2)
+            await stakeOperator(user4)
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+
+            await checkStats("1", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 4,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 0,
+                unstakedNodeOperator: 0,
+            }, false)
+
+            // unstake a validator
+            await stakeManagerMock.unstake(1)
+            await checkStats("2", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 3,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 1,
+                unstakedNodeOperator: 0,
+            }, false)
+
+            // slash a validator
+            await stakeManagerMock.slash(2)
+            await checkStats("3", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 2,
+                jailedNodeOperator: 1,
+                ejectedNodeOperator: 1,
+                unstakedNodeOperator: 0,
+            }, false)
+
+            // slash a validator
+            await stakeManagerMock.unstakeClaim(3)
+            await checkStats("4", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 1,
+                jailedNodeOperator: 1,
+                ejectedNodeOperator: 1,
+                unstakedNodeOperator: 1,
+            }, false)
+
+            // unstake a jailed validator
+            await stakeManagerMock.unstake(2)
+            await checkStats("5", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 1,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 2,
+                unstakedNodeOperator: 1,
+            }, false)
+
+            // claim all validators
+            await stakeManagerMock.unstakeClaim(1)
+            await stakeManagerMock.unstakeClaim(2)
+            await stakeManagerMock.unstakeClaim(4)
+            await checkStats("6", {
+                inactiveNodeOperator: 0,
+                activeNodeOperator: 0,
+                jailedNodeOperator: 0,
+                ejectedNodeOperator: 0,
+                unstakedNodeOperator: 4,
+            }, false)
+        })
+    })
 });
+
+async function checkStats(id: string, data: {
+    inactiveNodeOperator: number,
+    activeNodeOperator: number,
+    jailedNodeOperator: number,
+    ejectedNodeOperator: number,
+    unstakedNodeOperator: number,
+}, log: boolean) {
+    const res = await nodeOperatorRegistry.getStats()
+    if (log) {
+        console.log(res)
+    }
+    expect(res.inactiveNodeOperator, id + "--inactiveNodeOperator").eq(data.inactiveNodeOperator)
+    expect(res.activeNodeOperator, id + "--activeNodeOperator").eq(data.activeNodeOperator)
+    expect(res.jailedNodeOperator, id + "--jailedNodeOperator").eq(data.jailedNodeOperator)
+    expect(res.ejectedNodeOperator, id + "--ejectedNodeOperator").eq(data.ejectedNodeOperator)
+    expect(res.unstakedNodeOperator, id + "--unstakedNodeOperator").eq(data.unstakedNodeOperator)
+}
 
 async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: BigNumber, data: {
     activeNodeOperatorsLength: number,

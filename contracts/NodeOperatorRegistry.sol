@@ -495,7 +495,7 @@ contract NodeOperatorRegistry is
                 totalRatio
             );
         }
-        
+
         // If the system is not balanced calculate ratios
         operatorRatios = new uint256[](totalActiveNodeOperator);
         uint256 rebalanceTarget = (totalStaked + _totalBuffered) /
@@ -824,6 +824,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice List all the node operator in the system.
+    /// @return inactiveNodeOperator the number of inactive operators.
     /// @return activeNodeOperator the number of active operators.
     /// @return jailedNodeOperator the number of jailed operators.
     /// @return ejectedNodeOperator the number of ejected operators.
@@ -833,10 +834,31 @@ contract NodeOperatorRegistry is
         view
         override
         returns (
+            uint256 inactiveNodeOperator,
             uint256 activeNodeOperator,
             uint256 jailedNodeOperator,
             uint256 ejectedNodeOperator,
             uint256 unstakedNodeOperator
         )
-    {}
+    {
+        uint256[] memory memValidatorIds = validatorIds;
+        uint256 length = memValidatorIds.length;
+        for (uint256 idx = 0; idx < length; idx++) {
+            (
+                NodeOperatorRegistryStatus operatorStatus,
+
+            ) = _getOperatorStatusAndValidator(memValidatorIds[idx]);
+            if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
+                activeNodeOperator++;
+            } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
+                jailedNodeOperator++;
+            } else if (operatorStatus == NodeOperatorRegistryStatus.EJECTED) {
+                ejectedNodeOperator++;
+            } else if (operatorStatus == NodeOperatorRegistryStatus.UNSTAKED) {
+                unstakedNodeOperator++;
+            } else {
+                inactiveNodeOperator++;
+            }
+        }
+    }
 }

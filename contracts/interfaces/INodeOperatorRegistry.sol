@@ -109,7 +109,8 @@ interface INodeOperatorRegistry {
         view
         returns (FullNodeOperatorRegistry memory);
 
-    /// @notice List all the node operator registry in the system.
+    /// @notice List all the node operator in the system.
+    /// @return inactiveNodeOperator the number of inactive operators.
     /// @return activeNodeOperator the number of active operators.
     /// @return jailedNodeOperator the number of jailed operators.
     /// @return ejectedNodeOperator the number of ejected operators.
@@ -118,6 +119,7 @@ interface INodeOperatorRegistry {
         external
         view
         returns (
+            uint256 inactiveNodeOperator,
             uint256 activeNodeOperator,
             uint256 jailedNodeOperator,
             uint256 ejectedNodeOperator,
