@@ -308,10 +308,11 @@ contract StMATIC is
         (
             INodeOperatorRegistry.NodeOperatorRegistry[]
                 memory activeNodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
-        uint256 activeOperatorsLength = activeNodeOperators.length;
+        // uint256 activeOperatorsLength = activeNodeOperators.length;
 
         uint256 remainder;
         uint256 amountDelegated;
@@ -323,13 +324,13 @@ contract StMATIC is
             amountToDelegate
         );
 
-        for (uint256 i = 0; i < activeOperatorsLength; i++) {
+        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             uint256 amountToDelegatePerOperator;
 
             if (totalRatio == 0) {
                 amountToDelegatePerOperator =
                     amountToDelegate /
-                    activeOperatorsLength;
+                    totalActiveNodeOperator;
             } else {
                 if (operatorRatios[i] == 0) continue;
                 amountToDelegatePerOperator =
@@ -450,13 +451,12 @@ contract StMATIC is
      * @dev Distributes rewards claimed from validator shares based on fees defined in entityFee
      */
     function distributeRewards() external override whenNotPaused {
-        INodeOperatorRegistry.NodeOperatorRegistry[]
-            memory operatorInfos = nodeOperatorRegistry
-                .listDelegatedNodeOperators();
+        (
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos,
+            uint256 totalActiveOperatorInfos
+        ) = nodeOperatorRegistry.listDelegatedNodeOperators();
 
-        uint256 operatorInfosLength = operatorInfos.length;
-
-        for (uint256 i = 0; i < operatorInfosLength; i++) {
+        for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
             IValidatorShare validatorShare = IValidatorShare(
                 operatorInfos[i].validatorShare
             );
@@ -485,12 +485,12 @@ contract StMATIC is
         uint256 daoRewards = (totalRewards * entityFees.dao) / 100;
         uint256 insuranceRewards = (totalRewards * entityFees.insurance) / 100;
         uint256 operatorsRewards = (totalRewards * entityFees.operators) / 100;
-        uint256 operatorReward = operatorsRewards / operatorInfosLength;
+        uint256 operatorReward = operatorsRewards / totalActiveOperatorInfos;
 
         IERC20Upgradeable(token).safeTransfer(dao, daoRewards);
         IERC20Upgradeable(token).safeTransfer(insurance, insuranceRewards);
 
-        for (uint256 i = 0; i < operatorInfosLength; i++) {
+        for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
             IERC20Upgradeable(token).safeTransfer(
                 operatorInfos[i].rewardAddress,
                 operatorReward
@@ -537,8 +537,8 @@ contract StMATIC is
             reservedFunds +
             _calculatePendingBufferedTokens();
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
@@ -547,15 +547,15 @@ contract StMATIC is
             );
 
         uint256 amountToWithdraw;
-        uint256 activeOperatorsLength = activeNodeOperators.length;
-        for (uint256 i = 0; i < activeOperatorsLength; i++) {
+        // uint256 activeOperatorsLength = activeNodeOperators.length;
+        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             if (operatorRatios[i] == 0) continue;
 
             amountToWithdraw =
                 (operatorRatios[i] * totalToWithdraw) /
                 totalRatio;
             _createWithdrawRequest(
-                activeNodeOperators[i].validatorShare,
+                nodeOperators[i].validatorShare,
                 amountToWithdraw
             );
         }
@@ -761,11 +761,11 @@ contract StMATIC is
         returns (uint256)
     {
         uint256 totalStake;
-        INodeOperatorRegistry.NodeOperatorRegistry[]
-            memory nodeOperators = nodeOperatorRegistry
-                .listDelegatedNodeOperators();
+        (
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            uint256 operatorsLength
+        ) = nodeOperatorRegistry.listWithdrawNodeOperators();
 
-        uint256 operatorsLength = nodeOperators.length;
         for (uint256 i = 0; i < operatorsLength; i++) {
             (uint256 currValidatorShare, ) = getTotalStake(
                 IValidatorShare(nodeOperators[i].validatorShare)

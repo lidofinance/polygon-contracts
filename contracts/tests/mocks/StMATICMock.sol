@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: 2021 ShardLabs
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.7;
+import "hardhat/console.sol";
 
 contract StMATICMock {
     address public operator;
+    event WithdrawTotalDelegated();
 
     function setOperator(address _operator) public {
         operator = _operator;
@@ -13,5 +15,7 @@ contract StMATICMock {
         require(operator != address(0), "Operator address not set");
     }
 
-    function withdrawTotalDelegated(address) public {}
+    function withdrawTotalDelegated(address) public {
+        emit WithdrawTotalDelegated();
+    }
 }

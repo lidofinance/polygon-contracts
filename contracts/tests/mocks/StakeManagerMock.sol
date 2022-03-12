@@ -11,7 +11,6 @@ contract StakeManagerMock is IStakeManager {
     mapping(uint256 => IStakeManager.Validator) smValidators;
     struct State {
         address token;
-        address stakeNFT;
         uint256 id;
         mapping(address => uint256) validators;
         mapping(uint256 => address) Owners;
@@ -24,9 +23,8 @@ contract StakeManagerMock is IStakeManager {
 
     State private state;
 
-    constructor(address _token, address _stakeNFT) {
+    constructor(address _token) {
         state.token = _token;
-        state.stakeNFT = _stakeNFT;
     }
 
     function stakeFor(
@@ -167,10 +165,6 @@ contract StakeManagerMock is IStakeManager {
         returns (Validator memory)
     {
         return smValidators[_validatorId];
-    }
-
-    function NFTContract() external view returns (address) {
-        return state.stakeNFT;
     }
 
     /// @notice Returns the validator accumulated rewards on stake manager.

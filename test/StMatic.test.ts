@@ -188,7 +188,7 @@ describe("Starting to test StMATIC contract", () => {
 
         mockStakeManager = (await (
             await ethers.getContractFactory("StakeManagerMock")
-        ).deploy(mockERC20.address, erc721Contract.address)) as StakeManagerMock;
+        ).deploy(mockERC20.address)) as StakeManagerMock;
         await mockStakeManager.deployed();
 
 
@@ -197,7 +197,7 @@ describe("Starting to test StMATIC contract", () => {
             [
                 mockStakeManager.address,
                 mockERC20.address,
-                100
+                accounts[0].address
             ]
         )) as NodeOperatorRegistry;
         await nodeOperatorRegistry.deployed();
@@ -790,7 +790,7 @@ describe("Starting to test StMATIC contract", () => {
         const validatorId = await mockStakeManager.getValidatorId(testers[3].address)
         await addOperator(validatorId.toString(), testers[3].address);
 
-        await nodeOperatorRegistry.setMinRebalanceDistanceThreshold(100);
+        await nodeOperatorRegistry.setDistanceThreshold(100);
 
         const maxWithdrawPercentagePerRebalance = 50
         await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(maxWithdrawPercentagePerRebalance);
@@ -1789,7 +1789,7 @@ describe("Starting to test StMATIC contract", () => {
         if (log) {
             console.log(res)
         }
-        expect(res.length, "res.length").eq(requestWithdraw.length)
+        expect(res.length, tokenId + "--res.length").eq(requestWithdraw.length)
         for (let i = 0; i < requestWithdraw.length; i++) {
             expect(res[i].amount2WithdrawFromStMATIC, "amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
             expect(res[i].validatorNonce, "validatorNonce").eq(requestWithdraw[i].validatorNonce)
