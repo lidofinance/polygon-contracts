@@ -105,7 +105,7 @@ interface IStMATIC is IERC20Upgradeable {
 
     function distributeRewards() external;
 
-    function claimTokens2StMatic(uint256 _tokenId) external;
+    function claimTokensFromValidatorToContract(uint256 _tokenId) external;
 
     function togglePause() external;
 

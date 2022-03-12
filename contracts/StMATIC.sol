@@ -39,6 +39,10 @@ contract StMATIC is
         uint256 indexed _amountClaimed,
         uint256 _amountBurned
     );
+    event RebalanceDelegatedTokensEvent(
+        uint256 indexed amountToReDelegate,
+        uint256 indexed amountToWithdraw
+    );
 
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -555,6 +559,8 @@ contract StMATIC is
                 amountToWithdraw
             );
         }
+
+        emit RebalanceDelegatedTokensEvent(amountToReDelegate, amountToWithdraw);
     }
 
     function _createWithdrawRequest(address _validatorShare, uint256 amount)
@@ -599,7 +605,7 @@ contract StMATIC is
      * StMATIC contract
      * @param _tokenId - Id of the token that is supposed to be claimed
      */
-    function claimTokens2StMatic(uint256 _tokenId)
+    function claimTokensFromValidatorToContract(uint256 _tokenId)
         external
         override
         whenNotPaused
