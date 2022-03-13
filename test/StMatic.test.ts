@@ -511,34 +511,34 @@ describe("Starting to test StMATIC contract", () => {
         // const ownedTokens: BigNumber[][] = [];
         // const submitAmounts: string[] = [];
         // const withdrawAmounts: BigNumber[] = [];
-        
+
         // const [minAmount, maxAmount] = [0.005, 0.01];
         // const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
         // await mint(testers[0], ethers.utils.parseEther("100"));
-        
+
         // await stakeOperator(testers[0]);
         // const validatorId = await mockStakeManager.getValidatorId(testers[0].address)
-        
+
         // await addOperator(validatorId.toString(), testers[0].address);
-        
+
         // for (let i = 0; i < delegatorsAmount; i++) {
         //     submitAmounts.push(
         //       ((Math.random() * (maxAmount - minAmount) + minAmount) * delegatorsAmount).toFixed(3)
         //     );
         //     const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
-        
+
         //     await mint(testers[i], submitAmountWei);
         //     await submit(testers[i], submitAmountWei);
         // }
-        
+
         // await stMATIC.delegate();
         // console.log("minvalbal",  await stMATIC.getMinValidatorBalance());
         // console.log("tpm: ", await stMATIC.getTotalPooledMatic());
-        
+
         // const maxWithdrawPerDelegator = (await stMATIC.getTotalPooledMatic())
         //     .sub(await stMATIC.getMinValidatorBalance())
         //     .div(delegatorsAmount);
-        
+
         // for (let i = 0; i < delegatorsAmount; i++) {
         //     const randomWithdraw = ethers.BigNumber.from(
         //         ethers.utils.randomBytes(32)
@@ -546,22 +546,22 @@ describe("Starting to test StMATIC contract", () => {
         //     const withdrawAmount = randomWithdraw.lt(
         //         ethers.utils.parseEther(submitAmounts[i])
         //     ) ? randomWithdraw : ethers.utils.parseEther(submitAmounts[i]);
-        
+
         //     withdrawAmounts.push(withdrawAmount);
         //     const withdrawAmountWei = withdrawAmounts[i];
         //     await requestWithdraw(testers[i], withdrawAmountWei);
         //     ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
         // }
-        
+
         // const withdrawalDelay = await mockStakeManager.withdrawalDelay();
         // const currentEpoch = await mockStakeManager.epoch();
         // await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
-        
+
         // for (let i = 0; i < delegatorsAmount; i++) {
         //     await claimTokens(testers[i], ownedTokens[i][0]);
         //     const balanceAfter = await mockERC20.balanceOf(testers[i].address);
         //     console.log(balanceAfter, withdrawAmounts[i]);
-        
+
         //     expect(balanceAfter.eq(withdrawAmounts[i])).to.be.true;
         // }
     });
@@ -822,7 +822,7 @@ describe("Starting to test StMATIC contract", () => {
             validatorNonce: 0,
             validatorAddress: ethers.constants.AddressZero
         }], true)
-        
+
         expect(await stMATIC.balanceOf(testers[0].address)).eq(0)
         expect(await stMATIC.getTotalPooledMatic()).eq(0)
         expect(await stMATIC.reservedFunds()).eq(amount)
@@ -837,7 +837,7 @@ describe("Starting to test StMATIC contract", () => {
             const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
             await addOperator(validatorId.toString(), testers[i].address);
         }
-
+        await nodeOperatorRegistry.setMinRequestWithdrawRange(0)
         const amount = toEth("3000")
         await mint(testers[0], amount);
         await submit(testers[0], amount)
@@ -852,7 +852,7 @@ describe("Starting to test StMATIC contract", () => {
                 validatorNonce: 1,
             }
         ], false)
-
+        
         let totalPooled = amount.sub(requestAmount)
         expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
         expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -866,18 +866,18 @@ describe("Starting to test StMATIC contract", () => {
         await checkToken2WithdrawRequests(2, [
             {
                 amount2WithdrawFromStMATIC: toEth("0"),
+                validatorNonce: 1,
+            },
+            {
+                amount2WithdrawFromStMATIC: toEth("0"),
+                validatorNonce: 1,
+            },
+            {
+                amount2WithdrawFromStMATIC: toEth("0"),
                 validatorNonce: 2,
             },
-            {
-                amount2WithdrawFromStMATIC: toEth("0"),
-                validatorNonce: 1,
-            },
-            {
-                amount2WithdrawFromStMATIC: toEth("0"),
-                validatorNonce: 1,
-            },
         ], false)
-        
+
         totalPooled = totalPooled.sub(requestAmount)
         expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
         expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -899,7 +899,7 @@ describe("Starting to test StMATIC contract", () => {
                 validatorNonce: 2,
             }
         ], false)
-
+        
         totalPooled = totalPooled.sub(requestAmount)
         expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
         expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -918,7 +918,7 @@ describe("Starting to test StMATIC contract", () => {
                 validatorNonce: 2,
             }
         ], false)
-
+        
         totalPooled = totalPooled.sub(requestAmount)
         expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
         res = await poLidoNFT.getOwnedTokens(testers[0].address)
@@ -1050,15 +1050,15 @@ describe("Starting to test StMATIC contract", () => {
         await checkToken2WithdrawRequests(2, [
             {
                 amount2WithdrawFromStMATIC: toEth("0"),
+                validatorNonce: 1,
+            },
+            {
+                amount2WithdrawFromStMATIC: toEth("0"),
+                validatorNonce: 1,
+            },
+            {
+                amount2WithdrawFromStMATIC: toEth("0"),
                 validatorNonce: 2,
-            },
-            {
-                amount2WithdrawFromStMATIC: toEth("0"),
-                validatorNonce: 1,
-            },
-            {
-                amount2WithdrawFromStMATIC: toEth("0"),
-                validatorNonce: 1,
             },
             {
                 amount2WithdrawFromStMATIC: toEth("3000"),
@@ -1185,7 +1185,7 @@ describe("Starting to test StMATIC contract", () => {
             usersBalance[i] = await stMATIC.balanceOf(testers[i].address)
         }
     })
-    
+
     it("Requesting withdraw AFTER slashing should result in lower balance", async () => {
         const ownedTokens: BigNumber[][] = [];
         const submitAmounts: string[] = [];
@@ -1247,7 +1247,7 @@ describe("Starting to test StMATIC contract", () => {
             console.log("--------------")
             console.log(balanceAfter)
             console.log(balanceBefore)
-            
+
             console.log("--------------")
             // expect(balanceAfter).lessThan((ethers.utils.parseEther(withdrawAmounts[i])))
             //expect(balanceAfter.lt(ethers.utils.parseEther(withdrawAmounts[i]))).to.be.true;
@@ -1791,13 +1791,13 @@ describe("Starting to test StMATIC contract", () => {
         }
         expect(res.length, tokenId + "--res.length").eq(requestWithdraw.length)
         for (let i = 0; i < requestWithdraw.length; i++) {
-            expect(res[i].amount2WithdrawFromStMATIC, "amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
-            expect(res[i].validatorNonce, "validatorNonce").eq(requestWithdraw[i].validatorNonce)
-            expect(res[i].requestEpoch, "requestEpoch").not.eq(0)
+            expect(res[i].amount2WithdrawFromStMATIC, tokenId + "--amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
+            expect(res[i].validatorNonce, tokenId + "--validatorNonce").eq(requestWithdraw[i].validatorNonce)
+            expect(res[i].requestEpoch, tokenId + "--requestEpoch").not.eq(0)
             if (requestWithdraw[i].validatorAddress) {
-                expect(res[i].validatorAddress, "validatorAddress").eq(requestWithdraw[i].validatorAddress)
+                expect(res[i].validatorAddress, tokenId + "--validatorAddress").eq(requestWithdraw[i].validatorAddress)
             } else {
-                expect(res[i].validatorAddress, "validatorAddress").not.eq(ethers.constants.AddressZero)
+                expect(res[i].validatorAddress, tokenId + "--validatorAddress").not.eq(ethers.constants.AddressZero)
             }
         }
     }

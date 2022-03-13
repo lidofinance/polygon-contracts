@@ -14,7 +14,6 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IPoLidoNFT.sol";
 import "./interfaces/IFxStateRootTunnel.sol";
 import "./interfaces/IStMATIC.sol";
-import "hardhat/console.sol";
 
 contract StMATIC is
     IStMATIC,
@@ -164,6 +163,10 @@ contract StMATIC is
             INodeOperatorRegistry.NodeOperatorRegistry[]
                 memory activeNodeOperators,
             uint256 totalDelegated,
+            uint256 bigNodeOperatorLength,
+            uint256[] memory bigNodeOperatorIds,
+            uint256 smallNodeOperatorLength,
+            uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
@@ -173,98 +176,40 @@ contract StMATIC is
             _amount,
             totalPooledMatic
         );
-
         uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
         uint256 tokenId = poLidoNFT.mint(msg.sender);
 
-        console.log(
-            "currentAmount2WithdrawInMatic",
-            currentAmount2WithdrawInMatic
-        );
-        console.log("totalDelegated != 0", totalDelegated != 0);
-
         if (totalDelegated != 0) {
-            console.log(
-                "totalValidatorToWithdrawFrom != 0",
-                totalValidatorToWithdrawFrom != 0
-            );
-            console.log("totalDelegated", totalDelegated);
-            console.log("_amount", _amount);
             if (totalValidatorToWithdrawFrom != 0) {
-                uint256 totalAmount = totalDelegated >
-                    totalAmount2WithdrawInMatic
-                    ? totalAmount2WithdrawInMatic
-                    : totalDelegated;
-                uint256 amount2WithdrawFromValidator = totalAmount /
-                    totalValidatorToWithdrawFrom;
-
-                console.log("totalAmount", totalAmount);
-
-                for (
-                    uint256 idx = 0;
-                    idx < totalValidatorToWithdrawFrom;
-                    idx++
-                ) {
-                    address validatorShare = activeNodeOperators[idx]
-                        .validatorShare;
-
-                    sellVoucher_new(
-                        activeNodeOperators[idx].validatorShare,
-                        amount2WithdrawFromValidator,
-                        type(uint256).max
-                    );
-
-                    currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
-
-                    token2WithdrawRequests[tokenId].push(
-                        RequestWithdraw(
-                            0,
-                            IValidatorShare(validatorShare).unbondNonces(
-                                address(this)
-                            ),
-                            stakeManager.epoch() +
-                                stakeManager.withdrawalDelay(),
-                            validatorShare
-                        )
-                    );
-                }
+                currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
+                    tokenId,
+                    activeNodeOperators,
+                    totalAmount2WithdrawInMatic,
+                    totalValidatorToWithdrawFrom,
+                    totalDelegated,
+                    currentAmount2WithdrawInMatic
+                );
             } else {
-                uint256 activeNodeOperatorsLength = activeNodeOperators.length;
+                // request withdraw from big delegated validators
+                currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
+                    tokenId,
+                    activeNodeOperators,
+                    bigNodeOperatorLength,
+                    bigNodeOperatorIds,
+                    operatorAmountCanBeRequested,
+                    currentAmount2WithdrawInMatic
+                );
 
-                for (uint256 idx = 0; idx < activeNodeOperatorsLength; idx++) {
-                    uint256 amountCanBeRequested = operatorAmountCanBeRequested[
-                        idx
-                    ];
-                    if (amountCanBeRequested == 0) continue;
-
-                    uint256 amount2WithdrawFromValidator = amountCanBeRequested >
-                            currentAmount2WithdrawInMatic
-                            ? currentAmount2WithdrawInMatic
-                            : operatorAmountCanBeRequested[idx];
-
-                    address validatorShare = activeNodeOperators[idx]
-                        .validatorShare;
-
-                    sellVoucher_new(
-                        validatorShare,
-                        amount2WithdrawFromValidator,
-                        type(uint256).max
+                // request withdraw from small delegated validators
+                if (currentAmount2WithdrawInMatic != 0) {
+                    currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
+                        tokenId,
+                        activeNodeOperators,
+                        smallNodeOperatorLength,
+                        smallNodeOperatorIds,
+                        operatorAmountCanBeRequested,
+                        currentAmount2WithdrawInMatic
                     );
-
-                    token2WithdrawRequests[tokenId].push(
-                        RequestWithdraw(
-                            0,
-                            IValidatorShare(validatorShare).unbondNonces(
-                                address(this)
-                            ),
-                            stakeManager.epoch() +
-                                stakeManager.withdrawalDelay(),
-                            validatorShare
-                        )
-                    );
-
-                    currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
-                    if (currentAmount2WithdrawInMatic == 0) break;
                 }
             }
         }
@@ -289,6 +234,86 @@ contract StMATIC is
         );
 
         emit RequestWithdrawEvent(msg.sender, _amount);
+    }
+
+    /// @notice Request withdraw when system is balanced
+    function _requestWithdrawBalanced(
+        uint256 tokenId,
+        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        uint256 totalAmount2WithdrawInMatic,
+        uint256 totalValidatorToWithdrawFrom,
+        uint256 totalDelegated,
+        uint256 currentAmount2WithdrawInMatic
+    ) private returns (uint256) {
+        uint256 totalAmount = totalDelegated > totalAmount2WithdrawInMatic
+            ? totalAmount2WithdrawInMatic
+            : totalDelegated;
+        uint256 amount2WithdrawFromValidator = totalAmount /
+            totalValidatorToWithdrawFrom;
+
+        for (uint256 idx = 0; idx < totalValidatorToWithdrawFrom; idx++) {
+            address validatorShare = activeNodeOperators[idx].validatorShare;
+
+            sellVoucher_new(
+                validatorShare,
+                amount2WithdrawFromValidator,
+                type(uint256).max
+            );
+
+            currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
+
+            token2WithdrawRequests[tokenId].push(
+                RequestWithdraw(
+                    0,
+                    IValidatorShare(validatorShare).unbondNonces(address(this)),
+                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                    validatorShare
+                )
+            );
+        }
+        return currentAmount2WithdrawInMatic;
+    }
+
+    /// @notice Request withdraw when system is unbalanced
+    function _requestWithdrawUnbalanced(
+        uint256 tokenId,
+        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        uint256 nodeOperatorLength,
+        uint256[] memory nodeOperatorIds,
+        uint256[] memory operatorAmountCanBeRequested,
+        uint256 currentAmount2WithdrawInMatic
+    ) private returns (uint256) {
+        for (uint256 idx = 0; idx < nodeOperatorLength; idx++) {
+            uint256 id = nodeOperatorIds[idx];
+            uint256 amountCanBeRequested = operatorAmountCanBeRequested[id];
+            if (amountCanBeRequested == 0) continue;
+
+            uint256 amount2WithdrawFromValidator = amountCanBeRequested >
+                currentAmount2WithdrawInMatic
+                ? currentAmount2WithdrawInMatic
+                : operatorAmountCanBeRequested[id];
+
+            address validatorShare = activeNodeOperators[id].validatorShare;
+
+            sellVoucher_new(
+                validatorShare,
+                amount2WithdrawFromValidator,
+                type(uint256).max
+            );
+
+            token2WithdrawRequests[tokenId].push(
+                RequestWithdraw(
+                    0,
+                    IValidatorShare(validatorShare).unbondNonces(address(this)),
+                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                    validatorShare
+                )
+            );
+
+            currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
+            if (currentAmount2WithdrawInMatic == 0) break;
+        }
+        return currentAmount2WithdrawInMatic;
     }
 
     /**

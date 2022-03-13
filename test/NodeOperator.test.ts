@@ -1157,6 +1157,8 @@ describe("NodeOperator", function () {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
                 operatorAmountCanBeRequested: [],
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 1,
             })
@@ -1188,6 +1190,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("3"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 3,
@@ -1219,6 +1223,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("100"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
+                bigNodeOperatorIds: [0, 1],
+                smallNodeOperatorIds: [2],
                 operatorAmountCanBeRequested: [toEth("600"), toEth("600"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
@@ -1250,6 +1256,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("300"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("1800"),
+                bigNodeOperatorIds: [0, 1],
+                smallNodeOperatorIds: [2],
                 operatorAmountCanBeRequested: [toEth("500"), toEth("300"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
@@ -1283,6 +1291,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("300"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 2,
@@ -1316,6 +1326,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("1920"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
+                bigNodeOperatorIds: [0, 1],
+                smallNodeOperatorIds: [2],
                 operatorAmountCanBeRequested: [toEth("840"), toEth("740"), toEth("340")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
@@ -1351,6 +1363,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("300"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 2,
@@ -1386,6 +1400,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("900"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
+                bigNodeOperatorIds: [0, 1],
+                smallNodeOperatorIds: [2],
                 operatorAmountCanBeRequested: [toEth("500"), toEth("400"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
@@ -1396,6 +1412,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("100"), {
                 activeNodeOperatorsLength: 0,
                 totalDelegated: toEth("0"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [],
                 totalValidatorToWithdrawFrom: 0,
@@ -1429,6 +1447,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("100"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("0"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
@@ -1462,6 +1482,8 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("5000"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
+                bigNodeOperatorIds: [],
+                smallNodeOperatorIds: [],
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 3,
@@ -1494,8 +1516,50 @@ describe("NodeOperator", function () {
             await checkRequestWithdraw("1", false, toEth("10000"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
+                bigNodeOperatorIds: [0, 1],
+                smallNodeOperatorIds: [2],
                 operatorAmountCanBeRequested: [toEth("1000"), toEth("900"), toEth("500")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when withdraw more than delegated in not balanced system", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("200")
+            const validator2Stake = toEth("600")
+            const validator3Stake = toEth("1000")
+            const validator4Stake = toEth("1000")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(120)
+
+            await checkRequestWithdraw("1", false, toEth("10000"), {
+                activeNodeOperatorsLength: 4,
+                totalDelegated: toEth("2800"),
+                bigNodeOperatorIds: [2, 3],
+                smallNodeOperatorIds: [0, 1],
+                operatorAmountCanBeRequested: [toEth("200"), toEth("600"), toEth("1000"), toEth("1000")],
+                rewardAddresses: [user1.address, user2.address, user3.address, user4.address],
                 totalValidatorToWithdrawFrom: 0,
             })
         })
@@ -1727,6 +1791,8 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
     activeNodeOperatorsLength: number,
     operatorAmountCanBeRequested: Array<BigNumber>,
     totalDelegated: BigNumber,
+    bigNodeOperatorIds: Array<number>,
+    smallNodeOperatorIds: Array<number>,
     rewardAddresses: Array<string>,
     totalValidatorToWithdrawFrom: number,
 }) {
@@ -1735,6 +1801,17 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
         console.log(res)
     }
     expect(res.nodeOperators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.bigNodeOperatorLength, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
+    expect(res.smallNodeOperatorLength, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
+
+    for (let idx = 0; idx < res.bigNodeOperatorLength.toNumber(); idx++) {
+        expect(res.bigNodeOperatorIds[idx], `${id}--${idx}--bigNodeOperatorIds`).eq(data.bigNodeOperatorIds[idx])
+    }
+
+    for (let idx = 0; idx < res.smallNodeOperatorLength.toNumber(); idx++) {
+        expect(res.smallNodeOperatorIds[idx], `${id}--${idx}--smallNodeOperatorIds`).eq(data.smallNodeOperatorIds[idx])
+    }
+
     expect(res.totalValidatorToWithdrawFrom, `${id}--totalValidatorToWithdrawFrom`).eq(data.totalValidatorToWithdrawFrom)
     expect(res.totalDelegated, `${id}--totalDelegated`).eq(data.totalDelegated)
 
