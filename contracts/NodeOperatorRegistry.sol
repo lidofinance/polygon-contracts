@@ -647,6 +647,10 @@ contract NodeOperatorRegistry is
     /// @param _withdrawAmount The amount to withdraw.
     /// @return nodeOperators all node operators.
     /// @return totalDelegated total amount delegated.
+    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
+    /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
+    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
+    /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
     function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
@@ -656,6 +660,10 @@ contract NodeOperatorRegistry is
         returns (
             NodeOperatorRegistry[] memory nodeOperators,
             uint256 totalDelegated,
+            uint256 bigNodeOperatorLength,
+            uint256[] memory bigNodeOperatorIds,
+            uint256 smallNodeOperatorLength,
+            uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         )
@@ -664,6 +672,10 @@ contract NodeOperatorRegistry is
             return (
                 nodeOperators,
                 totalDelegated,
+                bigNodeOperatorLength,
+                bigNodeOperatorIds,
+                smallNodeOperatorLength,
+                smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
             );
@@ -684,17 +696,21 @@ contract NodeOperatorRegistry is
             return (
                 nodeOperators,
                 totalDelegated,
+                bigNodeOperatorLength,
+                bigNodeOperatorIds,
+                smallNodeOperatorLength,
+                smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
             );
         }
 
         uint256 length = nodeOperators.length;
-        uint256 distanceThreshold = (maxAmount * 100) / minAmount;
+        // uint256 distanceThreshold = (maxAmount * 100) / minAmount;
         uint256 withdrawAmountPercentage = (_withdrawAmount * 100) /
             totalDelegated;
 
-        if (distanceThreshold <= DISTANCE_THRESHOLD) {
+        if ((maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD) {
             totalValidatorToWithdrawFrom =
                 ((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) /
                     (100 / length)) +
@@ -706,6 +722,10 @@ contract NodeOperatorRegistry is
             return (
                 nodeOperators,
                 totalDelegated,
+                bigNodeOperatorLength,
+                bigNodeOperatorIds,
+                smallNodeOperatorLength,
+                smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
             );
@@ -722,9 +742,21 @@ contract NodeOperatorRegistry is
         rebalanceTarget = rebalanceTarget > minAmount
             ? minAmount
             : rebalanceTarget;
-        uint256 operatorRatioToRebalance;
+
+        uint256 averageTarget = totalDelegated / length;
+        bigNodeOperatorIds = new uint256[](length);
+        smallNodeOperatorIds = new uint256[](length);
+
         for (uint256 idx = 0; idx < length; idx++) {
-            operatorRatioToRebalance = stakePerOperator[idx] != 0 &&
+            if (stakePerOperator[idx] > averageTarget) {
+                bigNodeOperatorIds[bigNodeOperatorLength] = idx;
+                bigNodeOperatorLength++;
+            } else {
+                smallNodeOperatorIds[smallNodeOperatorLength] = idx;
+                smallNodeOperatorLength++;
+            }
+
+            uint256 operatorRatioToRebalance = stakePerOperator[idx] != 0 &&
                 stakePerOperator[idx] - rebalanceTarget > 0
                 ? stakePerOperator[idx] - rebalanceTarget
                 : 0;

@@ -158,17 +158,25 @@ interface INodeOperatorRegistry {
         );
 
     /// @notice Calculate the validators to request withdrawal from depending if the system is balalnced or not.
-    /// @param withdrawAmount The amount to withdraw.
+    /// @param _withdrawAmount The amount to withdraw.
     /// @return nodeOperators all node operators.
     /// @return totalDelegated total amount delegated.
+    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
+    /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
+    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
+    /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
-    function getValidatorsRequestWithdraw(uint256 withdrawAmount)
+    function getValidatorsRequestWithdraw(uint256 _withdrawAmount)
         external
         view
         returns (
             NodeOperatorRegistry[] memory nodeOperators,
             uint256 totalDelegated,
+            uint256 bigNodeOperatorLength,
+            uint256[] memory bigNodeOperatorIds,
+            uint256 smallNodeOperatorLength,
+            uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
         );
