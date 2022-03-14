@@ -73,6 +73,10 @@ describe("Starting to test StMATIC contract", () => {
     let getValidatorShare: (validatorId: BigNumberish) => Promise<ValidatorShareMock>
     let getValidatorShareAddress: (validatorId: BigNumberish) => Promise<string>;
 
+    let stopOperator: (id: BigNumberish) => Promise<void>;
+
+    let increaseStakeFor: (validatorId: BigNumber, amount: BigNumber) => Promise<void>
+
     before(async () => {
         accounts = await ethers.getSigners();
         signer = accounts[0];
@@ -1165,10 +1169,7 @@ describe("Starting to test StMATIC contract", () => {
             // request withdraw
             for (let i = 0; i < testersAmount; i++) {
                 withdrawAmounts.push(
-                        (
-                                Math.random() * (Number(submitAmounts[i]) - minAmount) +
-                                minAmount
-                        ).toFixed(3)
+                        (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
                 await requestWithdraw(testers[i], toEth(withdrawAmounts[i]));
                 expect(await stMATIC.balanceOf(testers[i].address), `${i}-BalanceOf`).eq(usersBalance[i].sub(toEth(withdrawAmounts[i])))
@@ -1678,13 +1679,13 @@ describe("Starting to test StMATIC contract", () => {
         if (log) {}
         expect(res.length, tokenId + "--res.length").eq(requestWithdraw.length)
         for (let i = 0; i < requestWithdraw.length; i++) {
-            expect(res[i].amount2WithdrawFromStMATIC, "amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
-            expect(res[i].validatorNonce, "validatorNonce").eq(requestWithdraw[i].validatorNonce)
-            expect(res[i].requestEpoch, "requestEpoch").not.eq(0)
+            expect(res[i].amount2WithdrawFromStMATIC, tokenId + "--amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
+            expect(res[i].validatorNonce, tokenId + "--validatorNonce").eq(requestWithdraw[i].validatorNonce)
+            expect(res[i].requestEpoch, tokenId + "--requestEpoch").not.eq(0)
             if (requestWithdraw[i].validatorAddress) {
-                expect(res[i].validatorAddress, "validatorAddress").eq(requestWithdraw[i].validatorAddress)
+                expect(res[i].validatorAddress, tokenId + "--validatorAddress").eq(requestWithdraw[i].validatorAddress)
             } else {
-                expect(res[i].validatorAddress, "validatorAddress").not.eq(ethers.constants.AddressZero)
+                expect(res[i].validatorAddress, tokenId + "--validatorAddress").not.eq(ethers.constants.AddressZero)
             }
         }
     }
