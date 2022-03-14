@@ -222,6 +222,9 @@ describe("NodeOperator", function () {
                 .emit(nodeOperatorRegistry, "RemoveNodeOperator")
                 .withArgs(validatorId, user1.address)
 
+            await expect(nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId))
+                    .revertedWith("Operator not found");
+
             expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(ethers.constants.AddressZero)
         });
 
@@ -300,6 +303,16 @@ describe("NodeOperator", function () {
     })
 
     describe("Remove Invalid Operator", async function () {
+        it("Should fail to remove an operator that does not exist", async function () {
+            // stake validators
+            await stakeOperator(user1)
+
+            const validatorId = 100
+            // revert remove operator which not exist
+            await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId))
+                    .revertedWith("Validator doesn't exist")
+        })
+
         it("should fully remove an invalid operator", async function () {
             // stake validators
             await stakeOperator(user1)
@@ -339,7 +352,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId3, user3.address)
         });
 
-        it("should fail to remove an invalid node operator", async function () {
+        it("should fail to remove an valid node operator", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
 
@@ -418,10 +431,11 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
                 .revertedWith("Unauthorized")
 
-            await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(ethers.constants.AddressZero))
-                .revertedWith("Unauthorized")
+            await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
+                .revertedWith("Invalid reward address")
         })
     })
+
     describe("List Delegated Node Operators", async function () {
         it("should return all active operators", async function () {
             await stakeOperator(user1);
@@ -438,12 +452,12 @@ describe("NodeOperator", function () {
 
             let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
             let allActiveOperators = res[0]
-            let totalActiveVaidators = res[1]
+            let totalActiveValidators = res[1]
             expect(allActiveOperators.length).to.equal(3);
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             expect(allActiveOperators.length).to.equal(3);
-            for (let idx = 0; idx < totalActiveVaidators.toNumber(); idx++) {
+            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -463,33 +477,33 @@ describe("NodeOperator", function () {
 
             let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
             let allActiveOperators = res[0]
-            let totalActiveVaidators = res[1]
+            let totalActiveValidators = res[1]
             expect(allActiveOperators.length).to.equal(3);
 
             let expectedRewardAddress = [user1.address, user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveVaidators.toNumber(); idx++) {
+            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.unstake(validatorId1);
             res = await nodeOperatorRegistry.listDelegatedNodeOperators();
             allActiveOperators = res[0]
-            totalActiveVaidators = res[1]
-            expect(totalActiveVaidators).to.equal(2);
+            totalActiveValidators = res[1]
+            expect(totalActiveValidators).to.equal(2);
 
             expectedRewardAddress = [user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveVaidators.toNumber(); idx++) {
+            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.slash(validatorId2);
             res = await nodeOperatorRegistry.listDelegatedNodeOperators();
             allActiveOperators = res[0]
-            totalActiveVaidators = res[1]
-            expect(totalActiveVaidators).to.equal(1);
+            totalActiveValidators = res[1]
+            expect(totalActiveValidators).to.equal(1);
 
             expectedRewardAddress = [user3.address];
-            for (let idx = 0; idx < totalActiveVaidators.toNumber(); idx++) {
+            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -507,13 +521,13 @@ describe("NodeOperator", function () {
             await stakeManagerMock.unstake(validatorId1);
             await stakeManagerMock.slash(validatorId2);
             const res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            const totalActiveVaidators = res[1]
-            expect(totalActiveVaidators).eq(0);
+            const totalActiveValidators = res[1]
+            expect(totalActiveValidators).eq(0);
         });
 
     })
 
-    describe("List Delegated Node Operators", async function () {
+    describe("List Withdraw Node Operators", async function () {
         it("should return an empty array if there is no withdrawal operator", async function () {
             await stakeOperator(user1)
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
@@ -616,9 +630,6 @@ describe("NodeOperator", function () {
             await stakeOperator(user2)
             await stakeOperator(user3)
 
-            const validator1Stake = toEth("0")
-            const validator2Stake = toEth("0")
-            const validator3Stake = toEth("0")
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
@@ -917,7 +928,6 @@ describe("NodeOperator", function () {
         });
     })
 
-
     describe("Get Validator Rebalance Amount", async function () {
         it("Should getValidatorsRebalanceAmount When not balanced", async function () {
             await stakeOperator(user1)
@@ -1000,10 +1010,6 @@ describe("NodeOperator", function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
-
-            const validator1Stake = toEth("0")
-            const validator2Stake = toEth("0")
-            const validator3Stake = toEth("0")
 
             let validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
@@ -1692,7 +1698,7 @@ describe("NodeOperator", function () {
     })
 
     describe("Pause Unpause", async function () {
-        it("Should pause/unpasue the contract", async function () {
+        it("Should pause/unpause the contract", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
 
@@ -1715,7 +1721,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.removeInvalidNodeOperator(2)
         })
 
-        it("Should fail pause/unpasue the contract", async function () {
+        it("Should fail pause/unpause the contract", async function () {
             const PAUSE_ROLE = await nodeOperatorRegistry.PAUSE_ROLE()
             expect(await nodeOperatorRegistry.paused()).false
             await expect(nodeOperatorRegistry.connect(user1).togglePause()).revertedWith("Unauthorized")
