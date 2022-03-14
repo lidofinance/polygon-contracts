@@ -537,14 +537,7 @@ describe("Starting to test StMATIC contract", () => {
             }
 
             await stMATIC.delegate();
-            const maxWithdrawPerDelegator = (await stMATIC.getTotalPooledMatic())
-                .sub(toEth("1"))//await stMATIC.getMinValidatorBalance())
-                .div(delegatorsAmount);
-
             for (let i = 0; i < delegatorsAmount; i++) {
-                // const randomWithdraw = ethers.BigNumber.from(
-                //     ethers.utils.randomBytes(32)
-                // ).mod(maxWithdrawPerDelegator);
                 const withdrawAmount = ethers.utils.parseEther(submitAmounts[i]);
 
                 withdrawAmounts.push(withdrawAmount);
@@ -574,7 +567,6 @@ describe("Starting to test StMATIC contract", () => {
             const delegatorsAmount = Math.floor(Math.random() * (10 - 1)) + 1;
             const testersAmount = Math.floor(Math.random() * (10 - 1)) + 1;
             for (let i = 0; i < delegatorsAmount; i++) {
-              //await mint(testers[i], ethers.utils.parseEther("100"));
               await stakeOperator(testers[i]);
               const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
 
