@@ -181,19 +181,7 @@ contract StMATIC is
         uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
         uint256 tokenId = poLidoNFT.mint(msg.sender);
 
-        console.log(
-            "currentAmount2WithdrawInMatic",
-            currentAmount2WithdrawInMatic
-        );
-        console.log("totalDelegated != 0", totalDelegated != 0);
-
         if (totalDelegated != 0) {
-            console.log(
-                "totalValidatorToWithdrawFrom != 0",
-                totalValidatorToWithdrawFrom != 0
-            );
-            console.log("totalDelegated", totalDelegated);
-            console.log("_amount", _amount);
             if (totalValidatorToWithdrawFrom != 0) {
                 uint256 totalAmount = totalDelegated >
                     totalAmount2WithdrawInMatic
@@ -201,8 +189,6 @@ contract StMATIC is
                     : totalDelegated;
                 uint256 amount2WithdrawFromValidator = totalAmount /
                     totalValidatorToWithdrawFrom;
-
-                console.log("totalAmount", totalAmount);
 
                 for (
                     uint256 idx = 0;
@@ -886,6 +872,36 @@ contract StMATIC is
         uint256 amountInStMatic = (_maticAmount * totalStMaticAmount) /
             _totalPooledMatic;
         return amountInStMatic;
+    }
+
+    /**
+     * @dev Function that calculates minimal allowed validator balance (lower bound)
+     * @return Minimal validator balance in MATIC
+     */
+    function getMinValidatorBalance() public view returns (uint256) {
+        (
+            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+        ) = nodeOperatorRegistry.listDelegatedNodeOperators();
+
+        uint256 operatorsLength = nodeOperators.length;
+        uint256 minValidatorBalance = type(uint256).max;
+
+        for (uint256 i = 0; i < operatorsLength; i++) {
+            (uint256 validatorShare, ) = getTotalStake(
+                IValidatorShare(nodeOperators[i].validatorShare)
+            );
+            // 10% of current validatorShare
+            uint256 currentMinValidatorBalance = validatorShare / 10;
+
+            if (
+                currentMinValidatorBalance != 0 &&
+                currentMinValidatorBalance < minValidatorBalance
+            ) {
+                minValidatorBalance = currentMinValidatorBalance;
+            }
+        }
+
+        return minValidatorBalance;
     }
 
     ////////////////////////////////////////////////////////////
