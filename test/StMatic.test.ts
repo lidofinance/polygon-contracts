@@ -15,7 +15,6 @@ import {
     ERC721Test
 } from "../typechain";
 import { describe } from "mocha";
-import {removeOperator} from "../scripts/tasks";
 
 describe("Starting to test StMATIC contract", () => {
     let deployer: SignerWithAddress;
@@ -539,16 +538,14 @@ describe("Starting to test StMATIC contract", () => {
 
             await stMATIC.delegate();
             const maxWithdrawPerDelegator = (await stMATIC.getTotalPooledMatic())
-                .sub(await stMATIC.getMinValidatorBalance())
+                .sub(toEth("1"))//await stMATIC.getMinValidatorBalance())
                 .div(delegatorsAmount);
 
             for (let i = 0; i < delegatorsAmount; i++) {
-                const randomWithdraw = ethers.BigNumber.from(
-                    ethers.utils.randomBytes(32)
-                ).mod(maxWithdrawPerDelegator);
-                const withdrawAmount = randomWithdraw.lt(
-                    ethers.utils.parseEther(submitAmounts[i])
-                ) ? randomWithdraw : ethers.utils.parseEther(submitAmounts[i]);
+                // const randomWithdraw = ethers.BigNumber.from(
+                //     ethers.utils.randomBytes(32)
+                // ).mod(maxWithdrawPerDelegator);
+                const withdrawAmount = ethers.utils.parseEther(submitAmounts[i]);
 
                 withdrawAmounts.push(withdrawAmount);
                 const withdrawAmountWei = withdrawAmounts[i];

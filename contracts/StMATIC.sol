@@ -624,7 +624,7 @@ contract StMATIC is
      * StMATIC contract
      * @param _tokenId - Id of the token that is supposed to be claimed
      */
-    function claimTokens2StMatic(uint256 _tokenId)
+    function claimTokensFromValidatorToContract(uint256 _tokenId)
         external
         override
         whenNotPaused
