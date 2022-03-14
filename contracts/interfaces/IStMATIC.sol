@@ -170,4 +170,22 @@ interface IStMATIC is IERC20Upgradeable {
     function flipSubmitHandler() external;
 
     function setVersion(string calldata _version) external;
+
+    event SubmitEvent(address indexed _from, uint256 indexed _amount);
+    event RequestWithdrawEvent(address indexed _from, uint256 indexed _amount);
+    event DistributeRewardsEvent(uint256 indexed _amount);
+    event WithdrawTotalDelegatedEvent(
+        address indexed _from,
+        uint256 indexed _amount
+    );
+    event DelegateEvent(
+        uint256 indexed _amountDelegated,
+        uint256 indexed _remainder
+    );
+    event ClaimTokensEvent(
+        address indexed _from,
+        uint256 indexed _id,
+        uint256 indexed _amountClaimed,
+        uint256 _amountBurned
+    );
 }

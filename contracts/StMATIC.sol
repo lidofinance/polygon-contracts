@@ -15,30 +15,14 @@ import "./interfaces/IPoLidoNFT.sol";
 import "./interfaces/IFxStateRootTunnel.sol";
 import "./interfaces/IStMATIC.sol";
 
+/// @title StMATIC
+/// @author 2021 ShardLabs.
 contract StMATIC is
     IStMATIC,
     ERC20Upgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable
 {
-    event SubmitEvent(address indexed _from, uint256 indexed _amount);
-    event RequestWithdrawEvent(address indexed _from, uint256 indexed _amount);
-    event DistributeRewardsEvent(uint256 indexed _amount);
-    event WithdrawTotalDelegatedEvent(
-        address indexed _from,
-        uint256 indexed _amount
-    );
-    event DelegateEvent(
-        uint256 indexed _amountDelegated,
-        uint256 indexed _remainder
-    );
-    event ClaimTokensEvent(
-        address indexed _from,
-        uint256 indexed _id,
-        uint256 indexed _amountClaimed,
-        uint256 _amountBurned
-    );
-
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     INodeOperatorRegistry public override nodeOperatorRegistry;
@@ -66,15 +50,14 @@ contract StMATIC is
 
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
 
-    /**
-     * @param _nodeOperatorRegistry - Address of the node operator registry
-     * @param _token - Address of MATIC token on Ethereum Mainnet
-     * @param _dao - Address of the DAO
-     * @param _insurance - Address of the insurance
-     * @param _stakeManager - Address of the stake manager
-     * @param _poLidoNFT - Address of the stMATIC NFT
-     * @param _fxStateRootTunnel - Address of the FxStateRootTunnel
-     */
+    
+    /// @param _nodeOperatorRegistry - Address of the node operator registry
+    /// @param _token - Address of MATIC token on Ethereum Mainnet
+    /// @param _dao - Address of the DAO
+    /// @param _insurance - Address of the insurance
+    /// @param _stakeManager - Address of the stake manager
+    /// @param _poLidoNFT - Address of the stMATIC NFT
+    /// @param _fxStateRootTunnel - Address of the FxStateRootTunnel
     function initialize(
         address _nodeOperatorRegistry,
         address _token,
@@ -105,12 +88,11 @@ contract StMATIC is
         submitHandler = true;
     }
 
-    /**
-     * @dev Send funds to StMATIC contract and mints StMATIC to msg.sender
-     * @notice Requires that msg.sender has approved _amount of MATIC to this contract
-     * @param _amount - Amount of MATIC sent from msg.sender to this contract
-     * @return Amount of StMATIC shares generated
-     */
+    
+    /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender
+    /// @notice Requires that msg.sender has approved _amount of MATIC to this contract
+    /// @param _amount - Amount of MATIC sent from msg.sender to this contract
+    /// @return Amount of StMATIC shares generated
     function submit(uint256 _amount)
         external
         override
@@ -151,10 +133,9 @@ contract StMATIC is
         return amountToMint;
     }
 
-    /**
-     * @dev Stores users request to withdraw into a RequestWithdraw struct
-     * @param _amount - Amount of StMATIC that is requested to withdraw
-     */
+    
+    /// @notice Stores users request to withdraw into a RequestWithdraw struct
+    /// @param _amount - Amount of StMATIC that is requested to withdraw
     function requestWithdraw(uint256 _amount) external override whenNotPaused {
         uint256 totalBalance = balanceOf(msg.sender);
         require(_amount > 0 && totalBalance >= _amount, "Invalid amount");
@@ -316,10 +297,8 @@ contract StMATIC is
         return currentAmount2WithdrawInMatic;
     }
 
-    /**
-     * @notice This will be included in the cron job
-     * @dev Delegates tokens to validator share contract
-     */
+    /// @notice This will be included in the cron job
+    /// @notice Delegates tokens to validator share contract
     function delegate() external override whenNotPaused {
         require(
             totalBuffered > delegationLowerBound + reservedFunds,
@@ -333,7 +312,6 @@ contract StMATIC is
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
-        // uint256 activeOperatorsLength = activeNodeOperators.length;
 
         uint256 remainder;
         uint256 amountDelegated;
@@ -348,6 +326,8 @@ contract StMATIC is
         for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             uint256 amountToDelegatePerOperator;
 
+            // If the total Ratio is equal to ZERO that means the systemis balanced so we
+            // distribute the buffered tokens equally between the validators
             if (totalRatio == 0) {
                 amountToDelegatePerOperator =
                     amountToDelegate /
@@ -374,11 +354,9 @@ contract StMATIC is
         emit DelegateEvent(amountDelegated, remainder);
     }
 
-    /**
-     * @dev Claims tokens from validator share and sends them to the
-     * user if his request is in the userToWithdrawRequest
-     * @param _tokenId - Id of the token that wants to be claimed
-     */
+    /// @notice Claims tokens from validator share and sends them to the
+    /// user if his request is in the userToWithdrawRequest
+    /// @param _tokenId - Id of the token that wants to be claimed
     function claimTokens(uint256 _tokenId) external override whenNotPaused {
         require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
 
@@ -387,10 +365,11 @@ contract StMATIC is
         } else if (token2WithdrawRequests[_tokenId].length != 0) {
             _claimTokensV2(_tokenId);
         } else {
-            revert("");
+            revert("Invalid claim token");
         }
     }
 
+    /// @notice Claims tokens v2
     function _claimTokensV2(uint256 _tokenId) private {
         RequestWithdraw[] memory usersRequest = token2WithdrawRequests[
             _tokenId
@@ -404,33 +383,34 @@ contract StMATIC is
         uint256 length = usersRequest.length;
         uint256 amountToClaim;
 
+        uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+            address(this)
+        );
+
         for (uint256 idx = 0; idx < length; idx++) {
             if (usersRequest[idx].validatorAddress != address(0)) {
-                uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
-                    address(this)
-                );
-
                 unstakeClaimTokens_new(
                     usersRequest[idx].validatorAddress,
                     usersRequest[idx].validatorNonce
                 );
-
-                amountToClaim =
-                    IERC20Upgradeable(token).balanceOf(address(this)) -
-                    balanceBeforeClaim;
             } else {
-                amountToClaim = usersRequest[idx].amount2WithdrawFromStMATIC;
-
-                reservedFunds -= amountToClaim;
-                totalBuffered -= amountToClaim;
+                uint256 _amountToClaim = usersRequest[idx].amount2WithdrawFromStMATIC;
+                reservedFunds -= _amountToClaim;
+                totalBuffered -= _amountToClaim;
+                amountToClaim += _amountToClaim;
             }
         }
+
+        amountToClaim +=
+            IERC20Upgradeable(token).balanceOf(address(this)) -
+            balanceBeforeClaim;
 
         IERC20Upgradeable(token).safeTransfer(msg.sender, amountToClaim);
 
         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
     }
 
+    /// @notice Claims tokens v1
     function _claimTokensV1(uint256 _tokenId) private {
         RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
 
@@ -468,9 +448,8 @@ contract StMATIC is
         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
     }
 
-    /**
-     * @dev Distributes rewards claimed from validator shares based on fees defined in entityFee
-     */
+    /// @notice Distributes rewards claimed from validator shares based on fees defined
+    /// in entityFee.
     function distributeRewards() external override whenNotPaused {
         (
             INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos,
@@ -530,11 +509,10 @@ contract StMATIC is
         emit DistributeRewardsEvent(totalDistributed);
     }
 
-    /**
-     * @notice Only NodeOperatorRegistry can call this function
-     * @dev Withdraws funds from unstaked validator
-     * @param _validatorShare - Address of the validator share that will be withdrawn
-     */
+    
+    /// @notice Only NodeOperatorRegistry can call this function
+    /// @notice Withdraws funds from unstaked validator
+    /// @param _validatorShare - Address of the validator share that will be withdrawn
     function withdrawTotalDelegated(address _validatorShare) external override {
         require(
             msg.sender == address(nodeOperatorRegistry),
@@ -552,7 +530,9 @@ contract StMATIC is
         _createWithdrawRequest(_validatorShare, stakedAmount);
         emit WithdrawTotalDelegatedEvent(_validatorShare, stakedAmount);
     }
-
+    
+    /// @notice Rebalane the system by request withdraw from the validators that contains
+    /// more token delegated to them. 
     function rebalanceDelegatedTokens() external override {
         uint256 amountToReDelegate = totalBuffered -
             reservedFunds +
@@ -568,7 +548,6 @@ contract StMATIC is
             );
 
         uint256 amountToWithdraw;
-        // uint256 activeOperatorsLength = activeNodeOperators.length;
         for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             if (operatorRatios[i] == 0) continue;
 
@@ -615,15 +594,13 @@ contract StMATIC is
                 pendingWithdrawalIds[i]
             );
         }
-
         return pendingBufferedTokens;
     }
 
-    /**
-     * @dev Claims tokens from validator share and sends them to the
-     * StMATIC contract
-     * @param _tokenId - Id of the token that is supposed to be claimed
-     */
+    
+    /// @notice Claims tokens from validator share and sends them to the
+    /// StMATIC contract
+    /// @param _tokenId - Id of the token that is supposed to be claimed
     function claimTokensFromValidatorToContract(uint256 _tokenId)
         external
         override
@@ -665,9 +642,8 @@ contract StMATIC is
         emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
     }
 
-    /**
-     * @dev Flips the pause state
-     */
+    
+    /// @notice Flips the pause state
     function togglePause() external override onlyRole(DEFAULT_ADMIN_ROLE) {
         paused() ? _unpause() : _pause();
     }
@@ -678,13 +654,12 @@ contract StMATIC is
     /////                                                    ///
     ////////////////////////////////////////////////////////////
 
-    /**
-     * @dev API for delegated buying vouchers from validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     * @param _amount - Amount of MATIC to use for buying vouchers
-     * @param _minSharesToMint - Minimum of shares that is bought with _amount of MATIC
-     * @return Actual amount of MATIC used to buy voucher, might differ from _amount because of _minSharesToMint
-     */
+    
+    /// @notice API for delegated buying vouchers from validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
+    /// @param _amount - Amount of MATIC to use for buying vouchers
+    /// @param _minSharesToMint - Minimum of shares that is bought with _amount of MATIC
+    /// @return Actual amount of MATIC used to buy voucher, might differ from _amount because of _minSharesToMint
     function buyVoucher(
         address _validatorShare,
         uint256 _amount,
@@ -698,19 +673,17 @@ contract StMATIC is
         return amountSpent;
     }
 
-    /**
-     * @dev API for delegated restaking rewards to validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     */
+    
+    /// @notice API for delegated restaking rewards to validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
     function restake(address _validatorShare) private {
         IValidatorShare(_validatorShare).restake();
     }
 
-    /**
-     * @dev API for delegated unstaking and claiming tokens from validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     * @param _unbondNonce - Unbond nonce
-     */
+    
+    /// @notice API for delegated unstaking and claiming tokens from validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
+    /// @param _unbondNonce - Unbond nonce
     function unstakeClaimTokens_new(
         address _validatorShare,
         uint256 _unbondNonce
@@ -718,12 +691,11 @@ contract StMATIC is
         IValidatorShare(_validatorShare).unstakeClaimTokens_new(_unbondNonce);
     }
 
-    /**
-     * @dev API for delegated selling vouchers from validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     * @param _claimAmount - Amount of MATIC to claim
-     * @param _maximumSharesToBurn - Maximum amount of shares to burn
-     */
+    
+    /// @notice API for delegated selling vouchers from validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
+    /// @param _claimAmount - Amount of MATIC to claim
+    /// @param _maximumSharesToBurn - Maximum amount of shares to burn
     function sellVoucher_new(
         address _validatorShare,
         uint256 _claimAmount,
@@ -735,11 +707,10 @@ contract StMATIC is
         );
     }
 
-    /**
-     * @dev API for getting total stake of this contract from validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     * @return Total stake of this contract and MATIC -> share exchange rate
-     */
+    
+    /// @notice API for getting total stake of this contract from validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
+    /// @return Total stake of this contract and MATIC -> share exchange rate
     function getTotalStake(IValidatorShare _validatorShare)
         public
         view
@@ -749,11 +720,10 @@ contract StMATIC is
         return _validatorShare.getTotalStake(address(this));
     }
 
-    /**
-     * @dev API for liquid rewards of this contract from validatorShare
-     * @param _validatorShare - Address of validatorShare contract
-     * @return Liquid rewards of this contract
-     */
+    
+    /// @notice API for liquid rewards of this contract from validatorShare
+    /// @param _validatorShare - Address of validatorShare contract
+    /// @return Liquid rewards of this contract
     function getLiquidRewards(IValidatorShare _validatorShare)
         external
         view
@@ -769,10 +739,9 @@ contract StMATIC is
     /////                                                    ///
     ////////////////////////////////////////////////////////////
 
-    /**
-     * @dev Helper function for that returns total pooled MATIC
-     * @return Total pooled MATIC
-     */
+    
+    /// @notice Helper function for that returns total pooled MATIC
+    /// @return Total pooled MATIC
     function getTotalStakeAcrossAllValidators()
         public
         view
@@ -796,10 +765,9 @@ contract StMATIC is
         return totalStake;
     }
 
-    /**
-     * @dev Function that calculates total pooled Matic
-     * @return Total pooled Matic
-     */
+    
+    /// @notice Function that calculates total pooled Matic
+    /// @return Total pooled Matic
     function getTotalPooledMatic() public view override returns (uint256) {
         uint256 totalStaked = getTotalStakeAcrossAllValidators();
         return totalStaked + totalBuffered - reservedFunds;
@@ -813,13 +781,12 @@ contract StMATIC is
         return _totalStaked + totalBuffered - reservedFunds;
     }
 
-    /**
-     * @dev Function that converts arbitrary stMATIC to Matic
-     * @param _amountInStMatic - Amount of stMATIC to convert to Matic
-     * @return amountInMatic - Amount of Matic after conversion,
-     * @return totalStMaticAmount - Total StMatic in the contract,
-     * @return totalPooledMatic - Total Matic in the staking pool
-     */
+    
+    /// @notice Function that converts arbitrary stMATIC to Matic
+    /// @param _amountInStMatic - Amount of stMATIC to convert to Matic
+    /// @return amountInMatic - Amount of Matic after conversion,
+    /// @return totalStMaticAmount - Total StMatic in the contract,
+    /// @return totalPooledMatic - Total Matic in the staking pool
     function convertStMaticToMatic(uint256 _amountInStMatic)
         public
         view
@@ -839,11 +806,10 @@ contract StMATIC is
         );
     }
 
-    /**
-     * @dev Function that converts arbitrary amount of stMatic to Matic
-     * @param _stMaticAmount - amount of stMatic to convert to Matic
-     * @return amountInMatic, totalStMaticAmount and totalPooledMatic
-     */
+    
+    /// @notice Function that converts arbitrary amount of stMatic to Matic
+    /// @param _stMaticAmount - amount of stMatic to convert to Matic
+    /// @return amountInMatic, totalStMaticAmount and totalPooledMatic
     function _convertStMaticToMatic(
         uint256 _stMaticAmount,
         uint256 _totalPooledMatic
@@ -856,13 +822,12 @@ contract StMATIC is
         return amountInMatic;
     }
 
-    /**
-     * @dev Function that converts arbitrary Matic to stMATIC
-     * @param _amountInMatic - Amount of Matic to convert to stMatic
-     * @return amountInStMatic - Amount of Matic to converted to stMatic
-     * @return totalStMaticAmount - Total amount of StMatic in the contract
-     * @return totalPooledMatic - Total amount of Matic in the staking pool
-     */
+    
+    /// @notice Function that converts arbitrary Matic to stMATIC
+    /// @param _amountInMatic - Amount of Matic to convert to stMatic
+    /// @return amountInStMatic - Amount of Matic to converted to stMatic
+    /// @return totalStMaticAmount - Total amount of StMatic in the contract
+    /// @return totalPooledMatic - Total amount of Matic in the staking pool
     function convertMaticToStMatic(uint256 _amountInMatic)
         public
         view
@@ -874,7 +839,7 @@ contract StMATIC is
         )
     {
         totalStMaticAmount = totalSupply();
-        uint256 totalPooledMatic = getTotalPooledMatic();
+        totalPooledMatic = getTotalPooledMatic();
         return (
             _convertMaticToStMatic(_amountInMatic, totalPooledMatic),
             totalStMaticAmount,
@@ -890,11 +855,10 @@ contract StMATIC is
         return token2WithdrawRequests[_tokenId];
     }
 
-    /**
-     * @dev Function that converts arbitrary amount of Matic to stMatic
-     * @param _maticAmount - Amount in Matic to convert to stMatic
-     * @return amountInStMatic , totalStMaticAmount and totalPooledMatic
-     */
+    
+    /// @notice Function that converts arbitrary amount of Matic to stMatic
+    /// @param _maticAmount - Amount in Matic to convert to stMatic
+    /// @return amountInStMatic , totalStMaticAmount and totalPooledMatic
     function _convertMaticToStMatic(
         uint256 _maticAmount,
         uint256 _totalPooledMatic
@@ -913,13 +877,12 @@ contract StMATIC is
     /////                                                    ///
     ////////////////////////////////////////////////////////////
 
-    /**
-     * @dev Function that sets entity fees
-     * @notice Callable only by dao
-     * @param _daoFee - DAO fee in %
-     * @param _operatorsFee - Operator fees in %
-     * @param _insuranceFee - Insurance fee in %
-     */
+    
+    /// @notice Function that sets entity fees
+    /// @notice Callable only by dao
+    /// @param _daoFee - DAO fee in %
+    /// @param _operatorsFee - Operator fees in %
+    /// @param _insuranceFee - Insurance fee in %
     function setFees(
         uint8 _daoFee,
         uint8 _operatorsFee,
@@ -934,22 +897,20 @@ contract StMATIC is
         entityFees.insurance = _insuranceFee;
     }
 
-    /**
-     * @dev Function that sets new dao address
-     * @notice Callable only by dao
-     * @param _address - New dao address
-     */
+    
+    /// @notice Function that sets new dao address
+    /// @notice Callable only by dao
+    /// @param _address - New dao address
     function setDaoAddress(address _address) external override onlyRole(DAO) {
         revokeRole(DAO, dao);
         dao = _address;
         _setupRole(DAO, dao);
     }
 
-    /**
-     * @dev Function that sets new insurance address
-     * @notice Callable only by dao
-     * @param _address - New insurance address
-     */
+    
+    /// @notice Function that sets new insurance address
+    /// @notice Callable only by dao
+    /// @param _address - New insurance address
     function setInsuranceAddress(address _address)
         external
         override
@@ -958,11 +919,10 @@ contract StMATIC is
         insurance = _address;
     }
 
-    /**
-     * @dev Function that sets new node operator address
-     * @notice Only callable by dao
-     * @param _address - New node operator address
-     */
+    
+    /// @notice Function that sets new node operator address
+    /// @notice Only callable by dao
+    /// @param _address - New node operator address
     function setNodeOperatorRegistryAddress(address _address)
         external
         override
@@ -971,11 +931,10 @@ contract StMATIC is
         nodeOperatorRegistry = INodeOperatorRegistry(_address);
     }
 
-    /**
-     * @dev Function that sets new lower bound for delegation
-     * @notice Only callable by dao
-     * @param _delegationLowerBound - New lower bound for delegation
-     */
+    
+    /// @notice Function that sets new lower bound for delegation
+    /// @notice Only callable by dao
+    /// @param _delegationLowerBound - New lower bound for delegation
     function setDelegationLowerBound(uint256 _delegationLowerBound)
         external
         override
@@ -984,29 +943,26 @@ contract StMATIC is
         delegationLowerBound = _delegationLowerBound;
     }
 
-    /**
-     * @dev Function that sets new lower bound for rewards distribution
-     * @notice Only callable by dao
-     * @param _rewardDistributionLowerBound - New lower bound for rewards distribution
-     */
+    
+    /// @notice Function that sets new lower bound for rewards distribution
+    /// @notice Only callable by dao
+    /// @param _rewardDistributionLowerBound - New lower bound for rewards distribution
     function setRewardDistributionLowerBound(
         uint256 _rewardDistributionLowerBound
     ) external override onlyRole(DAO) {
         rewardDistributionLowerBound = _rewardDistributionLowerBound;
     }
 
-    /**
-     * @dev Function that sets the poLidoNFT address
-     * @param _poLidoNFT new poLidoNFT address
-     */
+    
+    /// @notice Function that sets the poLidoNFT address
+    /// @param _poLidoNFT new poLidoNFT address
     function setPoLidoNFT(address _poLidoNFT) external override onlyRole(DAO) {
         poLidoNFT = IPoLidoNFT(_poLidoNFT);
     }
 
-    /**
-     * @dev Function that sets the fxStateRootTunnel address
-     * @param _fxStateRootTunnel address of fxStateRootTunnel
-     */
+    
+    /// @notice Function that sets the fxStateRootTunnel address
+    /// @param _fxStateRootTunnel address of fxStateRootTunnel
     function setFxStateRootTunnel(address _fxStateRootTunnel)
         external
         override
@@ -1015,10 +971,9 @@ contract StMATIC is
         fxStateRootTunnel = IFxStateRootTunnel(_fxStateRootTunnel);
     }
 
-    /**
-     * @dev Function that sets the submitThreshold
-     * @param _submitThreshold new value for submit threshold
-     */
+    
+    /// @notice Function that sets the submitThreshold
+    /// @param _submitThreshold new value for submit threshold
     function setSubmitThreshold(uint256 _submitThreshold)
         external
         override
@@ -1027,17 +982,15 @@ contract StMATIC is
         submitThreshold = _submitThreshold;
     }
 
-    /**
-     * @dev Function that sets the submitHandler value to its NOT value
-     */
+    
+    /// @notice Function that sets the submitHandler value to its NOT value
     function flipSubmitHandler() external override onlyRole(DAO) {
         submitHandler = !submitHandler;
     }
 
-    /**
-     * @dev Function that sets the new version
-     * @param _version - New version that will be set
-     */
+    
+    /// @notice Function that sets the new version
+    /// @param _version - New version that will be set
     function setVersion(string calldata _version)
         external
         override
@@ -1046,10 +999,9 @@ contract StMATIC is
         version = _version;
     }
 
-    /**
-     * @dev Function that retrieves the amount of matic that will be claimed from the NFT token
-     * @param _tokenId - Id of the PolidoNFT
-     */
+    
+    /// @notice Function that retrieves the amount of matic that will be claimed from the NFT token
+    /// @param _tokenId - Id of the PolidoNFT
     function getMaticFromTokenId(uint256 _tokenId)
         external
         view

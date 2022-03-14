@@ -821,12 +821,12 @@ describe("Starting to test StMATIC contract", () => {
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
                 await addOperator(validatorId.toString(), testers[i].address);
             }
-
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(0)
             const amount = toEth("3000")
             await mint(testers[0], amount);
             await submit(testers[0], amount)
             await stMATIC.delegate()
-
+    
             // balanced
             let requestAmount = toEth("300")
             await requestWithdraw(testers[0], requestAmount)
@@ -836,32 +836,32 @@ describe("Starting to test StMATIC contract", () => {
                     validatorNonce: 1,
                 }
             ], false)
-
+            
             let totalPooled = amount.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
             let res = await poLidoNFT.getOwnedTokens(testers[0].address)
             expect(res.length).eq(1)
             expect(res[0]).eq(1)
-
+    
             // unbalanced
             requestAmount = toEth("900")
             await requestWithdraw(testers[0], toEth("900"))
             await checkToken2WithdrawRequests(2, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
                     validatorNonce: 2,
                 },
-                {
-                    amount2WithdrawFromStMATIC: toEth("0"),
-                    validatorNonce: 1,
-                },
-                {
-                    amount2WithdrawFromStMATIC: toEth("0"),
-                    validatorNonce: 1,
-                },
             ], false)
-
+    
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -869,7 +869,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res.length).eq(2)
             expect(res[0]).eq(1)
             expect(res[1]).eq(2)
-
+    
             // balanced
             requestAmount = toEth("600")
             await requestWithdraw(testers[0], requestAmount)
@@ -883,7 +883,7 @@ describe("Starting to test StMATIC contract", () => {
                     validatorNonce: 2,
                 }
             ], false)
-
+            
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -892,7 +892,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[0]).eq(1)
             expect(res[1]).eq(2)
             expect(res[2]).eq(3)
-
+    
             // unbalanced
             requestAmount = toEth("300")
             await requestWithdraw(testers[0], requestAmount)
@@ -902,7 +902,7 @@ describe("Starting to test StMATIC contract", () => {
                     validatorNonce: 2,
                 }
             ], false)
-
+            
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
             res = await poLidoNFT.getOwnedTokens(testers[0].address)
@@ -911,7 +911,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[1]).eq(2)
             expect(res[2]).eq(3)
             expect(res[3]).eq(4)
-
+    
             // balanced
             requestAmount = toEth("900")
             await requestWithdraw(testers[0], requestAmount)
@@ -929,7 +929,7 @@ describe("Starting to test StMATIC contract", () => {
                     validatorNonce: 3,
                 }
             ], false)
-
+    
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -998,18 +998,18 @@ describe("Starting to test StMATIC contract", () => {
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
                 await addOperator(validatorId.toString(), testers[i].address);
             }
-
+    
             const amount = toEth("3000")
             let totalPooled = amount
             await mint(testers[0], amount);
             await submit(testers[0], amount)
-
+    
             await stMATIC.delegate()
-
+    
             await mint(testers[0], amount);
             await submit(testers[0], amount)
             totalPooled = totalPooled.add(amount)
-
+    
             // balanced
             let requestAmount = toEth("300")
             await requestWithdraw(testers[0], requestAmount)
@@ -1019,7 +1019,7 @@ describe("Starting to test StMATIC contract", () => {
                     validatorNonce: 1,
                 }
             ], false)
-
+    
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(totalPooled)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
@@ -1027,22 +1027,22 @@ describe("Starting to test StMATIC contract", () => {
             let res = await poLidoNFT.getOwnedTokens(testers[0].address)
             expect(res.length).eq(1)
             expect(res[0]).eq(1)
-
+    
             // unbalanced
             requestAmount = toEth("5700")
             await requestWithdraw(testers[0], requestAmount)
             await checkToken2WithdrawRequests(2, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
                     validatorNonce: 2,
-                },
-                {
-                    amount2WithdrawFromStMATIC: toEth("0"),
-                    validatorNonce: 1,
-                },
-                {
-                    amount2WithdrawFromStMATIC: toEth("0"),
-                    validatorNonce: 1,
                 },
                 {
                     amount2WithdrawFromStMATIC: toEth("3000"),
@@ -1050,7 +1050,7 @@ describe("Starting to test StMATIC contract", () => {
                     validatorAddress: ethers.constants.AddressZero
                 }
             ], false)
-
+    
             totalPooled = totalPooled.sub(requestAmount)
             expect(await stMATIC.balanceOf(testers[0].address)).eq(0)
             expect(await stMATIC.getTotalPooledMatic()).eq(totalPooled)
