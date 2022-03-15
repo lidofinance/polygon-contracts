@@ -24,7 +24,7 @@ contract PoLidoNFT is
     // this mapping stores the index of the tokenId in one of those arrays
     mapping(uint256 => uint256) public token2Index;
 
-    // maps the address to array of the tokens that are approved to this address
+    // maps an array of the tokens that are approved to this address
     mapping(address => uint256[]) public address2Approved;
     // token can be approved to only one address at the time, therefore tokenId is present in only one of those arrays in the mapping
     // this mapping stores the index of the tokenId in one of those arrays
@@ -122,7 +122,8 @@ contract PoLidoNFT is
             uint256[] storage ownerTokens = owner2Tokens[from];
 
             uint256 tokenIndex = token2Index[tokenId];
-            delete ownerTokens[tokenIndex];
+            ownerTokens[tokenIndex] = ownerTokens[ownerTokens.length - 1];
+            ownerTokens.pop();
 
             token2Index[tokenId] = 0;
 
@@ -211,8 +212,8 @@ contract PoLidoNFT is
             getApproved(_tokenId)
         ];
         uint256 approvedIndex = tokenId2ApprovedIndex[_tokenId];
-
-        delete approvedTokens[approvedIndex];
+        approvedTokens[approvedIndex] = approvedTokens[approvedTokens.length - 1];
+        approvedTokens.pop();
         tokenId2ApprovedIndex[_tokenId] = 0;
     }
 }
