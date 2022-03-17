@@ -899,7 +899,7 @@ describe("NodeOperator", function () {
                 .revertedWith("There are no active validator")
         })
 
-        it.only("Should fail getValidatorDelegationAmount when validators disable delegation", async function () {
+        it("Should fail getValidatorDelegationAmount when validators disable delegation", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
