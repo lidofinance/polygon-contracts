@@ -6,7 +6,7 @@ import {ethers, upgrades} from "hardhat";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {expect} from "chai";
 
-describe.only("PoLidoNFT Tests",() => {
+describe("PoLidoNFT Tests",() => {
     let poLidoNFT: PoLidoNFT;
     let accounts: SignerWithAddress[];
     let signer: SignerWithAddress;

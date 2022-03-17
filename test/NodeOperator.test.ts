@@ -211,6 +211,29 @@ describe("NodeOperator", function () {
         })
     })
 
+    describe("Exit Node Operator Registry", async function() {
+        it("should successfully exit the node operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            expect(await nodeOperatorRegistry.connect(user1).exitNodeOperatorRegistry())
+                    .emit(stMATICMock, "WithdrawTotalDelegated")
+                    .emit(nodeOperatorRegistry, "ExitNodeOperator")
+                    .withArgs(validatorId, user1.address);
+
+        });
+
+        it("should fail to exit the node operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            await expect( nodeOperatorRegistry.exitNodeOperatorRegistry())
+                    .revertedWith( "Unauthorized");
+
+        });
+    })
     describe("Remove Operator", async function () {
         it("Should remove an operator", async function () {
             await stakeOperator(user1)

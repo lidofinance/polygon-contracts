@@ -127,6 +127,20 @@ contract NodeOperatorRegistry is
         emit AddNodeOperator(_validatorId, _rewardAddress);
     }
 
+    /// @notice Exit the node operator registry
+    /// ONLY the owner of the node operator can call this function
+    function exitNodeOperatorRegistry() external override {
+        uint256 validatorId = validatorRewardAddressToId[msg.sender];
+        address rewardAddress = validatorIdToRewardAddress[validatorId];
+        require(rewardAddress == msg.sender, "Unauthorized");
+
+        IStakeManager.Validator memory validator = stakeManager.validators(
+            validatorId
+        );
+        _removeOperator(validatorId, validator.contractAddress, rewardAddress);
+        emit ExitNodeOperator(validatorId, rewardAddress);
+    }
+
     /// @notice Remove a node operator from the system and withdraw total delegated tokens to it.
     /// ONLY DAO can execute this function.
     /// withdraw delegated tokens from it.

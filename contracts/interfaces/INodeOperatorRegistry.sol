@@ -51,6 +51,10 @@ interface INodeOperatorRegistry {
     function addNodeOperator(uint256 validatorId, address rewardAddress)
         external;
 
+    /// @notice Exit the node operator registry
+    /// ONLY the owner of the node operator can call this function
+    function exitNodeOperatorRegistry() external;
+
     /// @notice Remove a node operator from the system and withdraw total delegated tokens to it.
     /// ONLY DAO can execute this function.
     /// withdraw delegated tokens from it.
@@ -286,5 +290,13 @@ interface INodeOperatorRegistry {
     event SetMaxWithdrawPercentagePerRebalance(
         uint256 oldMaxWithdrawPercentagePerRebalance,
         uint256 newMaxWithdrawPercentagePerRebalance
+    );
+
+    /// @notice Emit when the node operator exits the registry
+    /// @param validatorId node operator id
+    /// @param rewardAddress node operator reward address
+    event ExitNodeOperator(
+        uint256 validatorId,
+        address rewardAddress
     );
 }
