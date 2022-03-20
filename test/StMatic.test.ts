@@ -482,7 +482,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(balanceAfter.eq(balanceBefore)).to.be.true;
         });
 
-        it("Should return the correct conversion amount for Matic and StMatic after delegation", async () => {
+        it.only("Should return the correct conversion amount for Matic and StMatic after delegation", async () => {
             for (let i = 0; i < 3; i++) {
                 await mint(testers[i], ethers.utils.parseEther("100"));
                 await stakeOperator(testers[i]);
@@ -509,7 +509,7 @@ describe("Starting to test StMATIC contract", () => {
             const maticToStMatic = await stMATIC.convertMaticToStMatic(100);
             expect(maticToStMatic.amountInStMatic).to.equal(100);
             expect(maticToStMatic.totalPooledMatic).to.equal(toEth("200"));
-            expect(maticToStMatic.totalStMaticAmount).to.equal(toEth("200"));
+            expect(maticToStMatic.totalStMaticSupply).to.equal(toEth("200"));
         });
 
         //1 validator, n delegators test
@@ -1586,7 +1586,7 @@ describe("Starting to test StMATIC contract", () => {
             await addOperator(validatorId.toString(), testers[0].address);
         });
 
-        it("should successfully claim tokens from validator to StMatic contract", async function(){
+        it.only("should successfully claim tokens from validator to StMatic contract", async function(){
             const amountToDelegate = toEth("100");
             for (let i = 1; i <= 3; i++) {
                 await mint(testers[i], amountToDelegate);

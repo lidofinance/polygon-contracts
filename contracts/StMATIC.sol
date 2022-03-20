@@ -135,8 +135,10 @@ contract StMATIC is
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
     function requestWithdraw(uint256 _amount) external override whenNotPaused {
-        uint256 totalBalance = balanceOf(msg.sender);
-        require(_amount > 0 && totalBalance >= _amount, "Invalid amount");
+        require(
+            _amount > 0 && balanceOf(msg.sender) >= _amount,
+            "Invalid amount"
+        );
 
         (
             INodeOperatorRegistry.NodeOperatorRegistry[]
@@ -155,6 +157,19 @@ contract StMATIC is
             _amount,
             totalPooledMatic
         );
+
+        if (totalDelegated != 0) {
+            require(
+                (totalDelegated + totalBuffered) >= totalAmount2WithdrawInMatic,
+                "Too much to withdraw"
+            );
+        } else {
+            require(
+                totalBuffered >= totalAmount2WithdrawInMatic,
+                "Too much to withdraw"
+            );
+        }
+
         uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
         uint256 tokenId = poLidoNFT.mint(msg.sender);
 
@@ -209,7 +224,10 @@ contract StMATIC is
         _burn(msg.sender, _amount);
 
         fxStateRootTunnel.sendMessageToChild(
-            abi.encode(totalBalance - _amount, totalPooledMatic)
+            abi.encode(
+                totalSupply(),
+                totalPooledMatic - totalAmount2WithdrawInMatic
+            )
         );
 
         emit RequestWithdrawEvent(msg.sender, _amount);
@@ -996,6 +1014,9 @@ contract StMATIC is
         returns (uint256)
     {
         RequestWithdraw memory requestData = token2WithdrawRequest[_tokenId];
+        if (requestData.validatorAddress == address(0)) {
+            return requestData.amount2WithdrawFromStMATIC;
+        }
         IValidatorShare validatorShare = IValidatorShare(
             requestData.validatorAddress
         );
