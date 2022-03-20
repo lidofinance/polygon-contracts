@@ -211,6 +211,29 @@ describe("NodeOperator", function () {
         })
     })
 
+    describe("Exit Node Operator Registry", async function() {
+        it("should successfully exit the node operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            expect(await nodeOperatorRegistry.connect(user1).exitNodeOperatorRegistry())
+                    .emit(stMATICMock, "WithdrawTotalDelegated")
+                    .emit(nodeOperatorRegistry, "ExitNodeOperator")
+                    .withArgs(validatorId, user1.address);
+
+        });
+
+        it("should fail to exit the node operator", async function() {
+            await stakeOperator(user1)
+            const validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+
+            await expect( nodeOperatorRegistry.exitNodeOperatorRegistry())
+                    .revertedWith( "Unauthorized");
+
+        });
+    })
     describe("Remove Operator", async function () {
         it("Should remove an operator", async function () {
             await stakeOperator(user1)
@@ -876,6 +899,41 @@ describe("NodeOperator", function () {
                 .revertedWith("There are no active validator")
         })
 
+        it("Should fail getValidatorDelegationAmount when validators disable delegation", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            let validatorShare: ValidatorShareMock;
+            const validator1Stake = toEth("1200")
+            const validator2Stake = toEth("500")
+            const validator3Stake = toEth("100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            await expect(nodeOperatorRegistry.getValidatorsDelegationAmount(toEth("0")))
+                    .revertedWith("There are no active validator")
+        })
+
         it("Should fail getValidatorDelegationAmount", async function () {
             await expect(nodeOperatorRegistry.getValidatorsDelegationAmount(toEth("0")))
                 .revertedWith("Not enough operators to delegate")
@@ -916,7 +974,6 @@ describe("NodeOperator", function () {
                 .revertedWith("Could not calculate the stake data, an operator was UNSTAKED")
         });
     })
-
 
     describe("Get Validator Rebalance Amount", async function () {
         it("Should getValidatorsRebalanceAmount When not balanced", async function () {
@@ -988,6 +1045,54 @@ describe("NodeOperator", function () {
                 ],
                 totalToWithdraw: toEth("1500")
             })
+        })
+
+        it("Should not getValidatorsRebalanceAmount When validator delegation is false ", async function() {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            let validatorShare: ValidatorShareMock;
+            const validator1Stake = toEth("20000")
+            const validator2Stake = toEth("60000")
+            const validator3Stake = toEth("1000")
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await validatorShare.updateDelegation(false);
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+
+            await expect(checkgetValidatorsRebalanceAmount("case-1", toEth("0"), {
+                activeNodeOperatorsLength: 3,
+                totalRatio: toEth("33000"),
+                operatorRatios: [
+                    toEth("0"),
+                    toEth("33000"),
+                    toEth("0"),
+                ],
+                rewardAddresses: [
+                    user1.address, user2.address, user3.address
+                ],
+                totalToWithdraw: toEth("33000")
+            })).revertedWith("There are no active validator");
         })
 
         it("Should fail getValidatorsRebalanceAmount not enough operators", async function () {
