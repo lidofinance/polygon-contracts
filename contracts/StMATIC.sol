@@ -100,13 +100,6 @@ contract StMATIC is
     {
         require(_amount > 0, "Invalid amount");
 
-        if (submitHandler) {
-            require(
-                _amount + totalBuffered <= submitThreshold,
-                "Submit threshold reached"
-            );
-        }
-
         IERC20Upgradeable(token).safeTransferFrom(
             msg.sender,
             address(this),
