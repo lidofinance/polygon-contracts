@@ -1657,6 +1657,24 @@ describe("Starting to test StMATIC contract", () => {
             expect(await stMATIC.hasRole(daoRole, deployer.address), "After").false;
             expect(await stMATIC.hasRole(daoRole, newDAOAdress), "After").true;
         });
+
+        it("should set the insurance address", async () => {
+            expect(await stMATIC.setInsuranceAddress(user2.address))
+                    .emit(stMATIC, "SetInsuranceAddress")
+                    .withArgs(user2.address);
+        });
+
+        it("should set the Node Operator Registry address", async () => {
+            expect(await stMATIC.setNodeOperatorRegistryAddress(user1.address))
+                    .emit(stMATIC, "SetNodeOperatorRegistryAddress")
+                    .withArgs(user1.address);
+        });
+
+        it("should set the delegation lower bound", async () => {
+            expect(await stMATIC.setDelegationLowerBound(user3.address))
+                    .emit(stMATIC, "SetDelegationLowerBound")
+                    .withArgs(user3.address);
+        });
     });
 
     const checkToken2WithdrawRequests = async (

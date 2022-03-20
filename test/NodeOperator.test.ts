@@ -331,35 +331,24 @@ describe("NodeOperator", function () {
 
             const validatorId1 = await stakeManagerMock.getValidatorId(user1.address)
             const validatorId2 = await stakeManagerMock.getValidatorId(user2.address)
-            const validatorId3 = await stakeManagerMock.getValidatorId(user3.address)
 
             await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address)
-            await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address)
 
-            await nodeOperatorRegistry.setCommissionRate(10);
-
+            await stakeManagerMock.unstake(validatorId1);
             expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
                 .emit(stMATICMock, "WithdrawTotalDelegated")
                 .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
                 .withArgs(validatorId1, user1.address)
-            expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
-            expect(await nodeOperatorRegistry.validatorIds(1)).eq(2)
+            expect(await nodeOperatorRegistry.validatorIds(0)).eq(2)
 
+            await stakeManagerMock.slash(validatorId2);
             await stakeManagerMock.unstake(validatorId2);
+
             expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
                 .emit(stMATICMock, "WithdrawTotalDelegated")
                 .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
                 .withArgs(validatorId2, user2.address)
-            expect(await nodeOperatorRegistry.validatorIds(0)).eq(3)
-
-            await stakeManagerMock.slash(validatorId3);
-            await stakeManagerMock.unstake(validatorId3);
-
-            expect(await nodeOperatorRegistry.removeInvalidNodeOperator(validatorId3))
-                .emit(stMATICMock, "WithdrawTotalDelegated")
-                .emit(nodeOperatorRegistry, "RemoveInvalidNodeOperator")
-                .withArgs(validatorId3, user3.address)
         });
 
         it("should fail to remove an invalid node operator", async function () {

@@ -188,4 +188,7 @@ interface IStMATIC is IERC20Upgradeable {
         uint256 indexed _amountClaimed,
         uint256 _amountBurned
     );
+    event SetInsuranceAddress(address indexed _address);
+    event SetNodeOperatorRegistryAddress(address indexed _address);
+    event SetDelegationLowerBound(uint256 indexed _delegationLowerBound);
 }

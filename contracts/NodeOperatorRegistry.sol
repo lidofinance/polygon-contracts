@@ -163,8 +163,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Remove a node operator from the system if it fails to meet certain conditions.
-    /// 1. If the commission of the Node Operator is less than the standard commission.
-    /// 2. If the Node Operator is either Unstaked or Ejected.
+    /// If the Node Operator is either Unstaked or Ejected.
     /// @param _validatorId the validator id on stakeManager.
     function removeInvalidNodeOperator(uint256 _validatorId)
         external
@@ -181,8 +180,7 @@ contract NodeOperatorRegistry is
 
         require(
             operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
-                operatorStatus == NodeOperatorRegistryStatus.EJECTED ||
-                validator.commissionRate != DEFAULT_COMMISSION_RATE,
+                operatorStatus == NodeOperatorRegistryStatus.EJECTED,
             "Cannot remove valid operator."
         );
 
@@ -720,7 +718,6 @@ contract NodeOperatorRegistry is
         }
 
         uint256 length = nodeOperators.length;
-        // uint256 distanceThreshold = (maxAmount * 100) / minAmount;
         uint256 withdrawAmountPercentage = (_withdrawAmount * 100) /
             totalDelegated;
 
