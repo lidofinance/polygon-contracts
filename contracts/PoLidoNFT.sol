@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 
 import "./interfaces/IPoLidoNFT.sol";
+import "hardhat/console.sol";
 
 contract PoLidoNFT is
     IPoLidoNFT,
@@ -120,9 +121,14 @@ contract PoLidoNFT is
         // Burning
         else if (to == address(0)) {
             uint256[] storage ownerTokens = owner2Tokens[from];
-
+            uint256 length = ownerTokens.length;
             uint256 tokenIndex = token2Index[tokenId];
-            ownerTokens[tokenIndex] = ownerTokens[ownerTokens.length - 1];
+
+            if (tokenIndex != length - 1 && length != 1) {
+                uint256 t = ownerTokens[ownerTokens.length - 1];
+                token2Index[t] = tokenIndex;
+                ownerTokens[tokenIndex] = ownerTokens[ownerTokens.length - 1];
+            }
             ownerTokens.pop();
 
             token2Index[tokenId] = 0;
@@ -212,7 +218,12 @@ contract PoLidoNFT is
             getApproved(_tokenId)
         ];
         uint256 approvedIndex = tokenId2ApprovedIndex[_tokenId];
-        approvedTokens[approvedIndex] = approvedTokens[approvedTokens.length - 1];
+        uint256 length = approvedTokens.length;
+        if (approvedIndex != length - 1 && length != 1) {
+            uint256 t = approvedTokens[length - 1];
+            tokenId2ApprovedIndex[t] = approvedIndex;
+            approvedTokens[approvedIndex] = approvedTokens[approvedTokens.length - 1];
+        }
         approvedTokens.pop();
         tokenId2ApprovedIndex[_tokenId] = 0;
     }
