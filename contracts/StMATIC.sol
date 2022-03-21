@@ -545,7 +545,7 @@ contract StMATIC is
     function rebalanceDelegatedTokens() external override {
         uint256 amountToReDelegate = totalBuffered -
             reservedFunds +
-            _calculatePendingBufferedTokens();
+            calculatePendingBufferedTokens();
         (
             INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
             uint256 totalActiveNodeOperator,
@@ -582,14 +582,10 @@ contract StMATIC is
             stakeManager.epoch() + stakeManager.withdrawalDelay(),
             _validatorShare
         );
-
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(totalSupply(), getTotalPooledMatic())
-        );
     }
 
-    function _calculatePendingBufferedTokens()
-        private
+    function calculatePendingBufferedTokens()
+        public
         view
         returns (uint256 pendingBufferedTokens)
     {
@@ -599,8 +595,9 @@ contract StMATIC is
         uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
 
         for (uint256 i = 0; i < pendingWithdrawalIdsLength; i++) {
+            if (pendingWithdrawalIds[i] == 0) continue;
             pendingBufferedTokens += _getMaticFromTokenId(
-                pendingWithdrawalIds[i]
+                token2WithdrawRequest[pendingWithdrawalIds[i]]
             );
         }
         return pendingBufferedTokens;
@@ -780,7 +777,7 @@ contract StMATIC is
         return
             _totalStaked +
             totalBuffered +
-            _calculatePendingBufferedTokens() -
+            calculatePendingBufferedTokens() -
             reservedFunds;
     }
 
@@ -998,15 +995,26 @@ contract StMATIC is
         override
         returns (uint256)
     {
-        return _getMaticFromTokenId(_tokenId);
+        if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
+            return _getMaticFromTokenId(token2WithdrawRequest[_tokenId]);
+        } else if (token2WithdrawRequests[_tokenId].length != 0) {
+            RequestWithdraw[] memory requestsData = token2WithdrawRequests[
+                _tokenId
+            ];
+            uint256 totalMatic;
+            for (uint256 idx = 0; idx < requestsData.length; idx++) {
+                totalMatic += _getMaticFromTokenId(requestsData[idx]);
+            }
+            return totalMatic;
+        }
+        return 0;
     }
 
-    function _getMaticFromTokenId(uint256 _tokenId)
+    function _getMaticFromTokenId(RequestWithdraw memory requestData)
         private
         view
         returns (uint256)
     {
-        RequestWithdraw memory requestData = token2WithdrawRequest[_tokenId];
         if (requestData.validatorAddress == address(0)) {
             return requestData.amount2WithdrawFromStMATIC;
         }
