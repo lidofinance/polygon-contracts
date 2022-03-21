@@ -773,7 +773,7 @@ contract StMATIC is
     }
 
     function _getTotalPooledMatic(uint256 _totalStaked)
-        public
+        private
         view
         returns (uint256)
     {
