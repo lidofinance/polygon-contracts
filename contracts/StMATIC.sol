@@ -58,6 +58,7 @@ contract StMATIC is
     /// @param _stakeManager - Address of the stake manager
     /// @param _poLidoNFT - Address of the stMATIC NFT
     /// @param _fxStateRootTunnel - Address of the FxStateRootTunnel
+    /// @param _submitThreshold - Submit for submit function
     function initialize(
         address _nodeOperatorRegistry,
         address _token,
@@ -917,6 +918,7 @@ contract StMATIC is
         onlyRole(DAO)
     {
         insurance = _address;
+        emit SetInsuranceAddress(_address);
     }
 
     
@@ -929,6 +931,7 @@ contract StMATIC is
         onlyRole(DAO)
     {
         nodeOperatorRegistry = INodeOperatorRegistry(_address);
+        emit SetNodeOperatorRegistryAddress(_address);
     }
 
     
@@ -941,6 +944,7 @@ contract StMATIC is
         onlyRole(DAO)
     {
         delegationLowerBound = _delegationLowerBound;
+        emit SetDelegationLowerBound(_delegationLowerBound);
     }
 
     
