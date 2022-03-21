@@ -119,6 +119,15 @@ describe("PoLidoNFT Tests", () => {
     });
 
     describe("Setters", () => {
+        it("Should pause the contract successfully", async () => {
+            await poLidoNFT .togglePause();
+            await expect(poLidoNFT.mint(user1.address)).to.be.revertedWith("Pausable: paused");
+        });
+
+        it("Should fail pause the contract successfully", async () => {
+            await expect(poLidoNFT.connect(user2).togglePause()).reverted;
+        });
+
         it("should successfully set setStMATIC address", async () => {
             await poLidoNFT.setStMATIC(user2.address);
             expect(await poLidoNFT.stMATIC()).to.eq(user2.address);
