@@ -10,8 +10,6 @@ import {
     NodeOperatorRegistry,
     PoLidoNFT,
     StMATIC,
-    Validator,
-    ValidatorFactory
 } from "../typechain";
 import {
     CHECKPOINT_MANAGER,
@@ -30,16 +28,12 @@ type DeploymentData = {
   Dao: string;
   PoLidoNFT: string;
   StMATIC: string;
-  ValidatorFactory: string;
-  Validator: string;
   NodeOperatorRegistry: string;
   FxStateRootTunnel: string;
   FxStateChildTunnel: string;
 };
 
 type ContractNames =
-  | "Validator"
-  | "ValidatorFactory"
   | "NodeOperatorRegistry"
   | "PoLidoNFT"
   | "FxStateRootTunnel"
@@ -56,8 +50,6 @@ const childDeploymentOrder: ChildDeploymentOrder = {
 };
 
 const rootDeploymentOrder: RootDeploymentOrder = {
-    Validator: 0,
-    ValidatorFactory: 1,
     NodeOperatorRegistry: 2,
     PoLidoNFT: 3,
     FxStateRootTunnel: 4,
@@ -175,8 +167,6 @@ export class PoLidoDeployer
   };
 
   deploy = async () => {
-      await this.deployValidator();
-      await this.deployValidatorFactory();
       await this.deployNodeOperatorRegistry();
       await this.deployPoLidoNFT();
       await this.deployFxStateRootTunnel();
@@ -184,25 +174,14 @@ export class PoLidoDeployer
       await this.deployStMATIC();
   };
 
-  private deployValidator = async () => {
-      return this.rootDeployer.deployContract<Validator>("Validator");
-  };
 
-  private deployValidatorFactory = async () => {
-      return this.rootDeployer.deployProxy<ValidatorFactory>(
-          "ValidatorFactory",
-          this.data.Validator,
-          this.data.NodeOperatorRegistry
-      );
-  };
 
-  private deployNodeOperatorRegistry = async () => {
+  private deployNodeOperatorRegistry =  async () => {
       return this.rootDeployer.deployProxy<NodeOperatorRegistry>(
           "NodeOperatorRegistry",
-          this.data.ValidatorFactory,
           STAKE_MANAGER,
-          MATIC_TOKEN,
-          this.data.StMATIC
+          this.data.StMATIC,
+          DAO,
       );
   };
 

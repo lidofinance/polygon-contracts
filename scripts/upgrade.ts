@@ -1,7 +1,4 @@
 import hardhat, { ethers, upgrades } from "hardhat";
-import {
-    ValidatorFactory
-} from "../typechain";
 import fs from "fs";
 import path from "path";
 import { DeployDetails } from "./types";
@@ -42,22 +39,6 @@ const main = async () => {
     console.log("proxy:", nodeOperatorRegistry.address);
     console.log("Implementation:", nodeOperatorRegistryImplAddress);
 
-    const validatorFactoryAddress = DEPLOYMENT_DETAILS.validator_factory_proxy;
-    const validatorFactoryFactory = await ethers.getContractFactory("ValidatorFactory");
-    const validatorFactory = (await upgrades.upgradeProxy(validatorFactoryAddress, validatorFactoryFactory)) as ValidatorFactory;
-    const validatorFactoryImplAddress = await upgrades.erc1967.getImplementationAddress(
-        validatorFactory.address
-    );
-    console.log("ValidatorFactory upgraded");
-    console.log("proxy:", validatorFactory.address);
-    console.log("Implementation:", validatorFactoryImplAddress);
-
-    const validatorFactory = (await ethers.getContractAt("ValidatorFactory", validatorFactoryAddress)) as ValidatorFactory;
-    const validator = await (await ethers.getContractFactory("Validator")).deploy();
-    console.log("Validator implementation deployed:", validator.address);
-
-    console.log("update validator proxies implementation");
-    await validatorFactory.setValidatorImplementation(validator.address);
 
     console.log("Export to file...");
     const data = JSON.parse(fs.readFileSync(fileName, "utf8"));
