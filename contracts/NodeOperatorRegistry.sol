@@ -25,6 +25,9 @@ contract NodeOperatorRegistry is
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
     bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant ADD_NODE_OPERATOR_ROLE = keccak256("ADD_NODE_OPERATOR_ROLE");
+    bytes32 public constant REMOVE_NODE_OPERATOR_ROLE = keccak256("REMOVE_NODE_OPERATOR_ROLE");
+
 
     /// @notice The min amount to recognize the system as balanced.
     uint256 public DISTANCE_THRESHOLD;
@@ -78,6 +81,8 @@ contract NodeOperatorRegistry is
         _setupRole(PAUSE_ROLE, msg.sender);
         _setupRole(DAO_ROLE, _dao);
         _setupRole(PAUSE_ROLE, _dao);
+        _setupRole(ADD_NODE_OPERATOR_ROLE, _dao);
+        _setupRole(REMOVE_NODE_OPERATOR_ROLE, _dao);
     }
 
     /// @notice Add a new node operator to the system.
@@ -87,7 +92,7 @@ contract NodeOperatorRegistry is
     function addNodeOperator(uint256 _validatorId, address _rewardAddress)
         external
         override
-        userHasRole(DAO_ROLE)
+        userHasRole(ADD_NODE_OPERATOR_ROLE)
     {
         require(_validatorId != 0, "ValidatorId=0");
         require(
@@ -148,7 +153,7 @@ contract NodeOperatorRegistry is
     function removeNodeOperator(uint256 _validatorId)
         external
         override
-        userHasRole(DAO_ROLE)
+        userHasRole(REMOVE_NODE_OPERATOR_ROLE)
     {
         address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
