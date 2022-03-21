@@ -50,6 +50,8 @@ contract StMATIC is
 
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
 
+    bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+
     /// @param _nodeOperatorRegistry - Address of the node operator registry
     /// @param _token - Address of MATIC token on Ethereum Mainnet
     /// @param _dao - Address of the DAO
@@ -74,6 +76,7 @@ contract StMATIC is
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DAO, _dao);
+        _setupRole(PAUSE_ROLE, _dao);
 
         nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
@@ -648,7 +651,7 @@ contract StMATIC is
     }
 
     /// @notice Flips the pause state
-    function togglePause() external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function togglePause() external override onlyRole(PAUSE_ROLE) {
         paused() ? _unpause() : _pause();
     }
 
