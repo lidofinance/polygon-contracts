@@ -1820,7 +1820,7 @@ describe("Starting to test StMATIC contract", () => {
         });
     });
 
-    describe.only("Setters", function () {
+    describe("Setters", function () {
         it("Should pause the contract successfully", async () => {
             await stMATIC.togglePause();
             await expect(stMATIC.delegate()).to.be.revertedWith("Pausable: paused");
