@@ -1254,7 +1254,7 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setDistanceThreshold(100)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
-            await checkRequestWithdraw("1", true, toEth("100"), {
+            await checkRequestWithdraw("1", false, toEth("100"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
                 operatorAmountCanBeRequested: [],

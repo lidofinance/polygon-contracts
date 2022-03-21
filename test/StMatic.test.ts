@@ -1949,7 +1949,7 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate);
             const tokens = await poLidoNFT.getOwnedTokens(stMATIC.address);
-            expect((tokens).length).eq(3);
+            expect((tokens).length).eq(0);
         });
 
         it("should successfully claim tokens from validator to StMatic contract before slashing", async function () {
@@ -2043,7 +2043,7 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.mul(slashPecentage).div(100));
             const tokens = await poLidoNFT.getOwnedTokens(stMATIC.address);
-            expect((tokens).length).eq(3);
+            expect((tokens).length).eq(0);
         });
 
         it("should successfully claim tokens from validator to StMatic contract After Slashing", async function () {
@@ -2137,7 +2137,7 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.mul(slashPecentage).div(100));
             const tokens = await poLidoNFT.getOwnedTokens(stMATIC.address);
-            expect((tokens).length).eq(3);
+            expect((tokens).length).eq(0);
         });
     });
 
