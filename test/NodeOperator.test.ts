@@ -1265,6 +1265,40 @@ describe("NodeOperator", function () {
             })
         })
 
+        it("getValidatorsRequestWithdraw when system is balanced by setDistanceThreshold", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("1200")
+            const validator3Stake = toEth("1100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(125)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(25)
+            await checkRequestWithdraw("1", false, toEth("3150"), {
+                activeNodeOperatorsLength: 3,
+                totalDelegated: toEth("3300"),
+                operatorAmountCanBeRequested: [toEth("950"), toEth("1150"), toEth("1050")],
+                bigNodeOperatorIds: [1],
+                smallNodeOperatorIds: [0, 2],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
         it("getValidatorsRequestWithdraw when system is balanced and MinRequestWithdrawRange = 100%", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
@@ -1584,10 +1618,10 @@ describe("NodeOperator", function () {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("3000"),
                 bigNodeOperatorIds: [],
-                smallNodeOperatorIds: [],
-                operatorAmountCanBeRequested: [],
+                smallNodeOperatorIds: [0, 1, 2],
+                operatorAmountCanBeRequested: [toEth("1000"), toEth("1000"), toEth("1000")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
-                totalValidatorToWithdrawFrom: 3,
+                totalValidatorToWithdrawFrom: 0,
             })
         })
 

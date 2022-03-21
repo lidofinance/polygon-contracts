@@ -1826,6 +1826,10 @@ describe("Starting to test StMATIC contract", () => {
             await expect(stMATIC.delegate()).to.be.revertedWith("Pausable: paused");
         });
 
+        it("Should fail pause the contract successfully", async () => {
+            await expect(stMATIC.connect(user2).togglePause()).reverted;
+        });
+
         it("Update dao address", async () => {
             const newDAOAdress = testers[5].address;
 

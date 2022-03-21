@@ -721,15 +721,19 @@ contract NodeOperatorRegistry is
         uint256 withdrawAmountPercentage = (_withdrawAmount * 100) /
             totalDelegated;
 
-        if ((maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD) {
-            totalValidatorToWithdrawFrom =
-                ((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) /
-                    (100 / length)) +
-                1;
-            totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
-                ? length
-                : totalValidatorToWithdrawFrom;
+        totalValidatorToWithdrawFrom =
+            ((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) /
+                (100 / length)) +
+            1;
 
+        totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
+            ? length
+            : totalValidatorToWithdrawFrom;
+
+        if (
+            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD &&
+            minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount
+        ) {
             return (
                 nodeOperators,
                 totalDelegated,
@@ -741,7 +745,7 @@ contract NodeOperatorRegistry is
                 totalValidatorToWithdrawFrom
             );
         }
-
+        totalValidatorToWithdrawFrom = 0;
         operatorAmountCanBeRequested = new uint256[](length);
         withdrawAmountPercentage = withdrawAmountPercentage == 0
             ? 1

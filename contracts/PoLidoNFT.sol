@@ -227,4 +227,9 @@ contract PoLidoNFT is
         approvedTokens.pop();
         tokenId2ApprovedIndex[_tokenId] = 0;
     }
+
+    /// @notice Flips the pause state
+    function togglePause() external override onlyOwner {
+        paused() ? _unpause() : _pause();
+    }
 }
