@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 
 import "./interfaces/IPoLidoNFT.sol";
-import "hardhat/console.sol";
 
 /// @title PoLidoNFT.
 /// @author 2021 ShardLabs.
@@ -180,7 +179,7 @@ contract PoLidoNFT is
 
     /// @notice Set PoLidoNFT version
     /// @param _version - New version that will be set
-    function setVersion(string calldata _version) external onlyOwner {
+    function setVersion(string calldata _version) external override onlyOwner {
         version = _version;
     }
 

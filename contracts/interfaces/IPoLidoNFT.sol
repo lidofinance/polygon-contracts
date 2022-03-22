@@ -37,4 +37,8 @@ interface IPoLidoNFT is IERC721Upgradeable {
 
     /// @notice toggle pause/unpause the contract
     function togglePause() external;
+
+    /// @notice Allows to set new version.
+    /// @param _newVersion new contract version.
+    function setVersion(string calldata _newVersion) external;
 }

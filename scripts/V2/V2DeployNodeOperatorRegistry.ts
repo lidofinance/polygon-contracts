@@ -11,7 +11,7 @@ const main = async () => {
         [
             deployDetails.matic_stake_manager_proxy,
             deployDetails.stMATIC_proxy,
-            signer
+            signer.address
         ]);
     await nodeOperatorRegistry.deployed();
 
@@ -24,8 +24,8 @@ const main = async () => {
     console.log("Implementation:", nodeOperatorRegistryAddress);
 
     exportAddresses(filePath, {
-        lido_nft_proxy: nodeOperatorRegistry.address,
-        lido_nft_implementation: nodeOperatorRegistryAddress
+        node_operator_registry_proxy: nodeOperatorRegistry.address,
+        node_operator_registry_impl: nodeOperatorRegistryAddress
     });
 };
 

@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 import "./IValidatorShare.sol";
 import "./INodeOperatorRegistry.sol";
-import "./INodeOperatorRegistry.sol";
 import "./IStakeManager.sol";
 import "./IPoLidoNFT.sol";
 import "./IFxStateRootTunnel.sol";
@@ -37,7 +36,7 @@ interface IStMATIC is IERC20Upgradeable {
     }
 
     /// @notice node operator registry interface.
-    function nodeOperatorRegistry() external returns (INodeOperatorRegistry);
+    function nodeOperatorRegistry() external view returns (INodeOperatorRegistry);
 
     /// @notice The fee distribution.
     /// @return dao dao fee.
@@ -104,11 +103,15 @@ interface IStMATIC is IERC20Upgradeable {
             address
         );
 
+
     /// @notice DAO Role.
     function DAO() external view returns (bytes32);
 
     /// @notice PAUSE_ROLE Role.
     function PAUSE_ROLE() external view returns (bytes32);
+
+    /// @notice Protocol Fee.
+    function protocolFee() external view returns (uint8);
 
     /// @param _nodeOperatorRegistry - Address of the node operator registry
     /// @param _token - Address of MATIC token on Ethereum Mainnet
