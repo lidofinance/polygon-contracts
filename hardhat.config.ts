@@ -15,14 +15,17 @@ import {
     verify,
     getValidatorDetails
 } from "./scripts/tasks";
-import { OperatorArgs } from "./scripts/types";
-import { getPublicKey } from "./scripts/utils";
 import {
     DEPLOYER_PRIVATE_KEY,
     ETHERSCAN_API_KEY,
     ROOT_CHAIN_RPC,
     ROOT_GAS_LIMIT,
     ROOT_GAS_PRICE,
+    CHILD_CHAIN_RPC,
+    CHILD_GAS_LIMIT,
+    CHILD_GAS_PRICE,
+    DEFENDER_TEAM_API_KEY,
+    DEFENDER_TEAM_API_SECRET_KEY
 } from "./environment";
 
 task("verifyLido", "StMATIC contracts verification").setAction(
@@ -30,7 +33,6 @@ task("verifyLido", "StMATIC contracts verification").setAction(
         await verify(hre);
     }
 );
-
 
 task("getValidatorDetails", "Get validator details on Polygon stake manager")
     .addParam("id", "validator id")
@@ -65,6 +67,18 @@ const config: HardhatUserConfig = {
             accounts: [DEPLOYER_PRIVATE_KEY],
             gasPrice: Number(ROOT_GAS_PRICE),
             gas: Number(ROOT_GAS_LIMIT)
+        },
+        mumbai: {
+            url: CHILD_CHAIN_RPC,
+            accounts: [DEPLOYER_PRIVATE_KEY],
+            gasPrice: Number(CHILD_GAS_PRICE),
+            gas: Number(CHILD_GAS_LIMIT)
+        },
+        polygon: {
+            url: CHILD_CHAIN_RPC,
+            accounts: [DEPLOYER_PRIVATE_KEY],
+            gasPrice: Number(CHILD_GAS_PRICE),
+            gas: Number(CHILD_GAS_LIMIT)
         }
     },
     typechain: {
@@ -76,6 +90,10 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY
+    },
+    defender: {
+        apiKey: DEFENDER_TEAM_API_KEY,
+        apiSecret: DEFENDER_TEAM_API_SECRET_KEY
     }
 };
 

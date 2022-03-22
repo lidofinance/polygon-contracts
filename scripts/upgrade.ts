@@ -47,8 +47,6 @@ const main = async () => {
         lido_nft_implementation: lidoNFTImplAddress,
         stMATIC_implementation: stMATICImplAddress,
         node_operator_registry_implementation: nodeOperatorRegistryImplAddress
-        // validator_factory_implementation: validatorFactoryImplAddress,
-        // validator_implementation: validator.address
     }));
 
     console.log("Done!!");
