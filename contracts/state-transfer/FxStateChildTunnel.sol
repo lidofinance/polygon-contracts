@@ -4,9 +4,9 @@ pragma solidity ^0.8.7;
 
 import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseChildTunnel.sol";
 import "../interfaces/IFxStateChildTunnel.sol";
-/**
- * @title FxStateChildTunnel
- */
+
+/// @title FxStateChildTunnel contract.
+/// @author 2021 ShardLabs
 contract FxStateChildTunnel is IFxStateChildTunnel, FxBaseChildTunnel {
     uint256 public latestStateId;
     address public latestRootMessageSender;
@@ -26,10 +26,9 @@ contract FxStateChildTunnel is IFxStateChildTunnel, FxBaseChildTunnel {
         latestData = data;
     }
 
-    /**
-     * @dev Function that returns the amount of stMATIC and MATIC in the PoLido protocol
-     * @return First return value is the number of stMATIC present, second value is MATIC
-     */
+    
+    /// @dev Function that returns the amount of stMATIC and MATIC in the PoLido protocol
+    /// @return First return value is the number of stMATIC present, second value is MATIC
     function getReserves() external view override returns (uint256, uint256) {
         (uint256 stMATIC, uint256 MATIC) = abi.decode(
             latestData,
@@ -39,7 +38,7 @@ contract FxStateChildTunnel is IFxStateChildTunnel, FxBaseChildTunnel {
         return (stMATIC, MATIC);
     }
 
-    // set fxRootTunnel if not set already
+    /// @dev set fxRootTunnel if not set already
     function _setFxRootTunnel(address _fxRootTunnel) private {
         require(fxRootTunnel == address(0x0), "FxBaseChildTunnel: ROOT_TUNNEL_ALREADY_SET");
         fxRootTunnel = _fxRootTunnel;

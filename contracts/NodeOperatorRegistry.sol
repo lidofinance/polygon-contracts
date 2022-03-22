@@ -216,6 +216,12 @@ contract NodeOperatorRegistry is
         delete validatorRewardAddressToId[_rewardAddress];
     }
 
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***Setters***                      ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
+
     ///@notice Set default commission rate.
     /// ONLY DAO can call this function.
     ///@param _newCommissionRate new commission rate.
@@ -337,6 +343,12 @@ contract NodeOperatorRegistry is
     function togglePause() external override userHasRole(PAUSE_ROLE) {
         paused() ? _unpause() : _pause();
     }
+
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***Getters***                      ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.

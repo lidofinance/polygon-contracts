@@ -104,9 +104,9 @@ interface INodeOperatorRegistry {
     /// @notice Allows to pause the contract.
     function togglePause() external;
 
-    /// @notice Allows to pause the contract.
-    /// @param _version contract version.
-    function setVersion(string memory _version) external;
+    /// @notice Allows to set new version.
+    /// @param _newVersion new contract version.
+    function setVersion(string memory _newVersion) external;
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
@@ -233,7 +233,12 @@ interface INodeOperatorRegistry {
             uint256 unstakedNodeOperator
         );
 
-    // ***********************************EVENTS***********************************
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***EVENTS***                       ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
+
     /// @notice Add Node Operator event
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.

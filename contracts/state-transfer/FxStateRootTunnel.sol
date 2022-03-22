@@ -6,9 +6,8 @@ import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseRootTunnel.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IFxStateRootTunnel.sol";
 
-/**
- * @title FxStateRootTunnel
- */
+/// @title FxStateRootTunnel contract.
+/// @author 2021 ShardLabs
 contract FxStateRootTunnel is IFxStateRootTunnel, FxBaseRootTunnel, Ownable {
     bytes public latestData;
     address public stMATIC;
@@ -27,12 +26,16 @@ contract FxStateRootTunnel is IFxStateRootTunnel, FxBaseRootTunnel, Ownable {
         latestData = data;
     }
 
-    function sendMessageToChild(bytes memory message) public override {
+    /// @notice send message to child
+    /// @param _message message
+    function sendMessageToChild(bytes memory _message) public override {
         require(msg.sender == stMATIC, "Not stMATIC");
-        _sendMessageToChild(message);
+        _sendMessageToChild(_message);
     }
 
-    function setStMATIC(address _stMATIC) external override onlyOwner {
-        stMATIC = _stMATIC;
+    /// @notice Set stMatic address
+    /// @param _newStMATIC new address.
+    function setStMATIC(address _newStMATIC) external override onlyOwner {
+        stMATIC = _newStMATIC;
     }
 }
