@@ -28,9 +28,10 @@ contract NodeOperatorRegistry is
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
     bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
-    bytes32 public constant ADD_NODE_OPERATOR_ROLE = keccak256("ADD_NODE_OPERATOR_ROLE");
-    bytes32 public constant REMOVE_NODE_OPERATOR_ROLE = keccak256("REMOVE_NODE_OPERATOR_ROLE");
-
+    bytes32 public constant ADD_NODE_OPERATOR_ROLE =
+        keccak256("ADD_NODE_OPERATOR_ROLE");
+    bytes32 public constant REMOVE_NODE_OPERATOR_ROLE =
+        keccak256("REMOVE_NODE_OPERATOR_ROLE");
 
     /// @notice The min amount to recognize the system as balanced.
     uint256 public DISTANCE_THRESHOLD;
@@ -915,6 +916,47 @@ contract NodeOperatorRegistry is
         returns (uint256[] memory)
     {
         return validatorIds;
+    }
+
+    /// @notice Explain to an end user what this does
+    /// @return isBalanced if the system is balanced or not.
+    /// @return distanceThreshold the distance threshold
+    /// @return minAmount min amount delegated to a validator.
+    /// @return maxAmount max amount delegated to a validator.
+    function getProtocolStats()
+        external
+        override
+        view
+        returns (
+            bool isBalanced,
+            uint256 distanceThreshold,
+            uint256 minAmount,
+            uint256 maxAmount
+        )
+    {
+        uint256 length = validatorIds.length;
+        uint256 validatorId;
+        for (uint256 i = 0; i < length; i++) {
+            validatorId = validatorIds[i];
+            (
+                ,
+                IStakeManager.Validator memory validator
+            ) = _getOperatorStatusAndValidator(validatorId);
+
+            (uint256 amount, ) = IValidatorShare(validator.contractAddress)
+                .getTotalStake(address(stMATIC));
+            if (maxAmount < amount) {
+                maxAmount = amount;
+            }
+
+            if (minAmount > amount || minAmount == 0) {
+                minAmount = amount;
+            }
+        }
+
+        uint256 min = minAmount == 0 ? 1 : minAmount;
+        distanceThreshold = ((maxAmount * 100) / min);
+        isBalanced = distanceThreshold <= DISTANCE_THRESHOLD;
     }
 
     /// @notice List all the node operator statuses in the system.

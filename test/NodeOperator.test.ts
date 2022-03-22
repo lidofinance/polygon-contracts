@@ -211,26 +211,26 @@ describe("NodeOperator", function () {
         })
     })
 
-    describe("Exit Node Operator Registry", async function() {
-        it("should successfully exit the node operator", async function() {
+    describe("Exit Node Operator Registry", async function () {
+        it("should successfully exit the node operator", async function () {
             await stakeOperator(user1)
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
             expect(await nodeOperatorRegistry.connect(user1).exitNodeOperatorRegistry())
-                    .emit(stMATICMock, "WithdrawTotalDelegated")
-                    .emit(nodeOperatorRegistry, "ExitNodeOperator")
-                    .withArgs(validatorId, user1.address);
+                .emit(stMATICMock, "WithdrawTotalDelegated")
+                .emit(nodeOperatorRegistry, "ExitNodeOperator")
+                .withArgs(validatorId, user1.address);
 
         });
 
-        it("should fail to exit the node operator", async function() {
+        it("should fail to exit the node operator", async function () {
             await stakeOperator(user1)
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
-            await expect( nodeOperatorRegistry.exitNodeOperatorRegistry())
-                    .revertedWith( "Unauthorized");
+            await expect(nodeOperatorRegistry.exitNodeOperatorRegistry())
+                .revertedWith("Unauthorized");
 
         });
     })
@@ -246,7 +246,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId, user1.address)
 
             await expect(nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId))
-                    .revertedWith("Operator not found");
+                .revertedWith("Operator not found");
 
             expect((await nodeOperatorRegistry.validatorIdToRewardAddress(1))).eq(ethers.constants.AddressZero)
         });
@@ -333,7 +333,7 @@ describe("NodeOperator", function () {
             const validatorId = 100
             // revert remove operator which not exist
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId))
-                    .revertedWith("Validator doesn't exist")
+                .revertedWith("Validator doesn't exist")
         })
 
         it("should fully remove an invalid operator", async function () {
@@ -931,7 +931,7 @@ describe("NodeOperator", function () {
             await validatorShare.updateDelegation(false);
 
             await expect(nodeOperatorRegistry.getValidatorsDelegationAmount(toEth("0")))
-                    .revertedWith("There are no active validator")
+                .revertedWith("There are no active validator")
         })
 
         it("Should fail getValidatorDelegationAmount", async function () {
@@ -1047,7 +1047,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it("Should not getValidatorsRebalanceAmount When validator delegation is false ", async function() {
+        it("Should not getValidatorsRebalanceAmount When validator delegation is false ", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -1823,6 +1823,80 @@ describe("NodeOperator", function () {
 
             await expect(nodeOperatorRegistry.connect(user1).grantRole(DEFAULT_ADMIN_ROLE, user2.address)).reverted
             await expect(nodeOperatorRegistry.connect(user1).revokeRole(DEFAULT_ADMIN_ROLE, accounts[0].address)).reverted
+        })
+    })
+
+    describe("Get Protocol Stats", async function () {
+        it("Get Protocol Stats when protocol not balanced", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user3)
+            await stakeOperator(user2)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("200")
+            const validator2Stake = toEth("600")
+            const validator3Stake = toEth("1000")
+            const validator4Stake = toEth("900")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(120)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(false)
+            expect(res.maxAmount, "maxAmount").eq(validator3Stake)
+            expect(res.minAmount, "minAmount").eq(validator1Stake)
+            expect(res.distanceThreshold, "minAmount")
+                .eq(validator3Stake.mul(100).div(validator1Stake))
+        })
+
+        it("Get Protocol Stats when protocol is balanced", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user3)
+            await stakeOperator(user2)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("990")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("1050")
+            const validator4Stake = toEth("1000")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(120)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(true)
+            expect(res.maxAmount, "maxAmount").eq(validator3Stake)
+            expect(res.minAmount, "minAmount").eq(validator1Stake)
+            expect(res.distanceThreshold, "minAmount")
+                .eq(validator3Stake.mul(100).div(validator1Stake))
         })
     })
 
