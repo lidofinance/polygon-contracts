@@ -43,7 +43,13 @@ export const predictContractAddress = (address: string, nonce: number) => {
 };
 
 export const getUpgradeContext = (hre: HardhatRuntimeEnvironment) => {
-    const network = hre.network.name;
+    let network = hre.network.name;
+    if (network === "mainnet" || network == "polygon") {
+        network = "mainnet"
+    } else if (network === "testnet" || network == "mumbai") {
+        network = "testnet"
+    }
+
     const filePath = `${network}-deployment-info.json`;
     const deployDetails: DeployDetails = require(path.join("..", filePath));
 

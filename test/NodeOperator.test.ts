@@ -1902,7 +1902,7 @@ describe("NodeOperator", function () {
                 .revertedWith("Invalid maxWithdrawPercentagePerRebalance")
         })
 
-        it.only("Should set version", async function () {
+        it("Should set version", async function () {
             const oldVersion = "2.0.0"
             const newVersion = "2.0.1"
             expect(await nodeOperatorRegistry.setVersion(newVersion))
