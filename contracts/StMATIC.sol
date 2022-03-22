@@ -25,32 +25,67 @@ contract StMATIC is
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    /// @notice node operator registry interface.
     INodeOperatorRegistry public override nodeOperatorRegistry;
+
+    /// @notice The fee distribution.
     FeeDistribution public override entityFees;
+
+    /// @notice StakeManager interface.
     IStakeManager public override stakeManager;
+
+    /// @notice LidoNFT interface.
     IPoLidoNFT public override poLidoNFT;
+
+    /// @notice fxStateRootTunnel interface.
     IFxStateRootTunnel public override fxStateRootTunnel;
 
+    /// @notice contract version.
     string public override version;
+
+    /// @notice dao address.
     address public override dao;
+
+    /// @notice insurance address.
     address public override insurance;
+
+    /// @notice Matic ERC20 token.
     address public override token;
+
+    /// @notice Matic ERC20 token address NOT USED IN V2.
     uint256 public override lastWithdrawnValidatorId;
+
+    /// @notice total buffered Matic in the contract.
     uint256 public override totalBuffered;
+
+    /// @notice delegation lower bound.
     uint256 public override delegationLowerBound;
+
+    /// @notice reward distribution lower bound.
     uint256 public override rewardDistributionLowerBound;
+
+    /// @notice reserved funds in Matic.
     uint256 public override reservedFunds;
+
+    /// @notice submit threshold NOT USED in V2.
     uint256 public override submitThreshold;
 
+    /// @notice submit handler NOT USED in V2.
     bool public override submitHandler;
 
+    /// @notice token to WithdrawRequest mapping one-to-one.
     mapping(uint256 => RequestWithdraw) public override token2WithdrawRequest;
 
+    /// @notice DAO Role.
     bytes32 public constant override DAO = keccak256("DAO");
+    bytes32 public constant override PAUSE_ROLE =
+        keccak256("LIDO_PAUSE_OPERATOR");
 
+    /// @notice token to Array WithdrawRequest mapping one-to-many.
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
 
-    bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+    /// @notice protocol fee.
+    uint8 public protocolFee;
 
     /// @param _nodeOperatorRegistry - Address of the node operator registry
     /// @param _token - Address of MATIC token on Ethereum Mainnet
@@ -484,7 +519,7 @@ contract StMATIC is
 
         uint256 totalRewards = (
             (IERC20Upgradeable(token).balanceOf(address(this)) - totalBuffered)
-        ) / 10;
+        ) / protocolFee;
 
         require(
             totalRewards > rewardDistributionLowerBound,
@@ -893,15 +928,37 @@ contract StMATIC is
         entityFees.dao = _daoFee;
         entityFees.operators = _operatorsFee;
         entityFees.insurance = _insuranceFee;
+
+        emit SetFees(_daoFee, _operatorsFee, _insuranceFee);
+    }
+
+    /// @notice Function that sets protocol fee
+    /// @param _newProtocolFee - Insurance fee in %
+    function setProtocolFee(uint8 _newProtocolFee)
+        external
+        override
+        onlyRole(DAO)
+    {
+        require(
+            _newProtocolFee > 0 && _newProtocolFee <= 100,
+            "Invalid protcol fee"
+        );
+        uint8 oldProtocolFee = protocolFee;
+        protocolFee = _newProtocolFee;
+
+        emit SetProtocolFee(oldProtocolFee, _newProtocolFee);
     }
 
     /// @notice Function that sets new dao address
     /// @notice Callable only by dao
-    /// @param _address - New dao address
-    function setDaoAddress(address _address) external override onlyRole(DAO) {
+    /// @param _newDAO - New dao address
+    function setDaoAddress(address _newDAO) external override onlyRole(DAO) {
+        address oldDAO = dao;
         revokeRole(DAO, dao);
-        dao = _address;
+        dao = _newDAO;
         _setupRole(DAO, dao);
+
+        emit SetDaoAddress(oldDAO, _newDAO);
     }
 
     /// @notice Function that sets new insurance address
@@ -942,52 +999,48 @@ contract StMATIC is
 
     /// @notice Function that sets new lower bound for rewards distribution
     /// @notice Only callable by dao
-    /// @param _rewardDistributionLowerBound - New lower bound for rewards distribution
+    /// @param _newRewardDistributionLowerBound - New lower bound for rewards distribution
     function setRewardDistributionLowerBound(
-        uint256 _rewardDistributionLowerBound
+        uint256 _newRewardDistributionLowerBound
     ) external override onlyRole(DAO) {
-        rewardDistributionLowerBound = _rewardDistributionLowerBound;
+        uint256 oldRewardDistributionLowerBound = rewardDistributionLowerBound;
+        rewardDistributionLowerBound = _newRewardDistributionLowerBound;
+
+        emit SetRewardDistributionLowerBound(
+            oldRewardDistributionLowerBound,
+            _newRewardDistributionLowerBound
+        );
     }
 
     /// @notice Function that sets the poLidoNFT address
-    /// @param _poLidoNFT new poLidoNFT address
-    function setPoLidoNFT(address _poLidoNFT) external override onlyRole(DAO) {
-        poLidoNFT = IPoLidoNFT(_poLidoNFT);
+    /// @param _newLidoNFT new poLidoNFT address
+    function setPoLidoNFT(address _newLidoNFT) external override onlyRole(DAO) {
+        address oldPoLidoNFT = address(poLidoNFT);
+        poLidoNFT = IPoLidoNFT(_newLidoNFT);
+        emit SetLidoNFT(oldPoLidoNFT, _newLidoNFT);
     }
 
     /// @notice Function that sets the fxStateRootTunnel address
-    /// @param _fxStateRootTunnel address of fxStateRootTunnel
-    function setFxStateRootTunnel(address _fxStateRootTunnel)
+    /// @param _newFxStateRootTunnel address of fxStateRootTunnel
+    function setFxStateRootTunnel(address _newFxStateRootTunnel)
         external
         override
         onlyRole(DAO)
     {
-        fxStateRootTunnel = IFxStateRootTunnel(_fxStateRootTunnel);
-    }
+        address oldFxStateRootTunnel = address(fxStateRootTunnel);
+        fxStateRootTunnel = IFxStateRootTunnel(_newFxStateRootTunnel);
 
-    /// @notice Function that sets the submitThreshold
-    /// @param _submitThreshold new value for submit threshold
-    function setSubmitThreshold(uint256 _submitThreshold)
-        external
-        override
-        onlyRole(DAO)
-    {
-        submitThreshold = _submitThreshold;
-    }
-
-    /// @notice Function that sets the submitHandler value to its NOT value
-    function flipSubmitHandler() external override onlyRole(DAO) {
-        submitHandler = !submitHandler;
+        emit SetFxStateRootTunnel(oldFxStateRootTunnel, _newFxStateRootTunnel);
     }
 
     /// @notice Function that sets the new version
-    /// @param _version - New version that will be set
-    function setVersion(string calldata _version)
+    /// @param _newVersion - New version that will be set
+    function setVersion(string calldata _newVersion)
         external
         override
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyRole(DAO)
     {
-        version = _version;
+        version = _newVersion;
     }
 
     /// @notice Function that retrieves the amount of matic that will be claimed from the NFT token

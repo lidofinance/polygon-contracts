@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.7;
 
+/// @title Polygon validator share interface.
+/// @dev https://github.com/maticnetwork/contracts/blob/v0.3.0-backport/contracts/staking/validatorShare/ValidatorShare.sol
+/// @author 2021 ShardLabs
 interface IValidatorShare {
     struct DelegatorUnbond {
         uint256 shares;

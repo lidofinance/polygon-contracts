@@ -9,26 +9,34 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Pausab
 import "./interfaces/IPoLidoNFT.sol";
 import "hardhat/console.sol";
 
+/// @title PoLidoNFT.
+/// @author 2021 ShardLabs.
 contract PoLidoNFT is
     IPoLidoNFT,
     OwnableUpgradeable,
     ERC721Upgradeable,
     ERC721PausableUpgradeable
 {
+
+    /// @notice stMATIC address.
     address public stMATIC;
+
+    /// @notice tokenIdIndex.
     uint256 public tokenIdIndex;
+    
+    /// @notice version.
     string public version;
 
-    // maps the address to array of the owned tokens
+    /// @notice maps the address to array of the owned tokens
     mapping(address => uint256[]) public owner2Tokens;
-    // token can be owned by only one address at the time, therefore tokenId is present in only one of those arrays in the mapping
-    // this mapping stores the index of the tokenId in one of those arrays
+    /// @notice token can be owned by only one address at the time, therefore tokenId is present in only one of those arrays in the mapping
+    /// this mapping stores the index of the tokenId in one of those arrays
     mapping(uint256 => uint256) public token2Index;
 
-    // maps an array of the tokens that are approved to this address
+    /// @notice maps an array of the tokens that are approved to this address
     mapping(address => uint256[]) public address2Approved;
-    // token can be approved to only one address at the time, therefore tokenId is present in only one of those arrays in the mapping
-    // this mapping stores the index of the tokenId in one of those arrays
+    /// @notice token can be approved to only one address at the time, therefore tokenId is present in only one of those arrays in the mapping
+    /// this mapping stores the index of the tokenId in one of those arrays
     mapping(uint256 => uint256) public tokenId2ApprovedIndex;
 
     modifier isLido() {
@@ -50,11 +58,10 @@ contract PoLidoNFT is
         stMATIC = _stMATIC;
     }
 
-    /**
-     * @dev Increments the token supply and mints the token based on that index
-     * @param _to - Address that will be the owner of minted token
-     * @return Index of the minted token
-     */
+    
+    /// @notice Increments the token supply and mints the token based on that index
+    /// @param _to - Address that will be the owner of minted token
+    /// @return Index of the minted token
     function mint(address _to) external override isLido returns (uint256) {
         uint256 currentIndex = tokenIdIndex;
         currentIndex++;
@@ -66,19 +73,16 @@ contract PoLidoNFT is
         return currentIndex;
     }
 
-    /**
-     * @dev Burn the token with specified _tokenId
-     * @param _tokenId - Id of the token that will be burned
-     */
+    
+    /// @notice Burn the token with specified _tokenId
+    /// @param _tokenId - Id of the token that will be burned
     function burn(uint256 _tokenId) external override isLido {
         _burn(_tokenId);
     }
 
-    /**
-     * @notice Override of the approve function
-     * @param _to - Address that the token will be approved to
-     * @param _tokenId - Id of the token that will be approved to _to
-     */
+    /// @notice Override of the approve function
+    /// @param _to - Address that the token will be approved to
+    /// @param _tokenId - Id of the token that will be approved to _to
     function approve(address _to, uint256 _tokenId)
         public
         override(ERC721Upgradeable, IERC721Upgradeable)
@@ -154,11 +158,10 @@ contract PoLidoNFT is
         }
     }
 
-    /**
-     * @dev Check if the spender is the owner or is the tokenId approved to him
-     * @param _spender - Address that will be checked
-     * @param _tokenId - Token id that will be checked against _spender
-     */
+    
+    /// @notice Check if the spender is the owner or is the tokenId approved to him
+    /// @param _spender - Address that will be checked
+    /// @param _tokenId - Token id that will be checked against _spender
     function isApprovedOrOwner(address _spender, uint256 _tokenId)
         external
         view
@@ -168,10 +171,9 @@ contract PoLidoNFT is
         return _isApprovedOrOwner(_spender, _tokenId);
     }
 
-    /**
-     * @dev Set stMATIC contract address
-     * @param _stMATIC - address of the stMATIC contract
-     */
+    
+    /// @notice Set stMATIC contract address
+    /// @param _stMATIC - address of the stMATIC contract
     function setStMATIC(address _stMATIC) external override onlyOwner {
         stMATIC = _stMATIC;
     }
@@ -182,11 +184,10 @@ contract PoLidoNFT is
         version = _version;
     }
 
-    /**
-     * @dev Retrieve the array of owned tokens
-     * @param _address - Address for which the tokens will be retrieved
-     * @return - Array of owned tokens
-     */
+    
+    /// @notice Retrieve the array of owned tokens
+    /// @param _address - Address for which the tokens will be retrieved
+    /// @return - Array of owned tokens
     function getOwnedTokens(address _address)
         external
         view
@@ -196,11 +197,10 @@ contract PoLidoNFT is
         return owner2Tokens[_address];
     }
 
-    /**
-     * @dev Retrieve the array of approved tokens
-     * @param _address - Address for which the tokens will be retrieved
-     * @return - Array of approved tokens
-     */
+    
+    /// @notice Retrieve the array of approved tokens
+    /// @param _address - Address for which the tokens will be retrieved
+    /// @return - Array of approved tokens
     function getApprovedTokens(address _address)
         external
         view
@@ -209,10 +209,9 @@ contract PoLidoNFT is
         return address2Approved[_address];
     }
 
-    /**
-     * @dev Remove the tokenId from the specific users array of approved tokens
-     * @param _tokenId - Id of the token that will be removed
-     */
+    
+    /// @notice Remove the tokenId from the specific users array of approved tokens
+    /// @param _tokenId - Id of the token that will be removed
     function _removeApproval(uint256 _tokenId) internal {
         uint256[] storage approvedTokens = address2Approved[
             getApproved(_tokenId)

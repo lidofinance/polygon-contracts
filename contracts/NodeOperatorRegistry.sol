@@ -22,6 +22,9 @@ contract NodeOperatorRegistry is
     /// @notice stMatic interface.
     IStMATIC public stMATIC;
 
+    /// @notice contract version.
+    string public version;
+
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
     bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
@@ -83,6 +86,7 @@ contract NodeOperatorRegistry is
         _setupRole(PAUSE_ROLE, _dao);
         _setupRole(ADD_NODE_OPERATOR_ROLE, _dao);
         _setupRole(REMOVE_NODE_OPERATOR_ROLE, _dao);
+        version = "2.0.0";
     }
 
     /// @notice Add a new node operator to the system.
@@ -212,6 +216,12 @@ contract NodeOperatorRegistry is
         delete validatorRewardAddressToId[_rewardAddress];
     }
 
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***Setters***                      ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
+
     ///@notice Set default commission rate.
     /// ONLY DAO can call this function.
     ///@param _newCommissionRate new commission rate.
@@ -318,9 +328,27 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Allows to pause the contract.
+    /// @param _newVersion contract version.
+    function setVersion(string memory _newVersion)
+        external
+        override
+        userHasRole(DAO_ROLE)
+    {
+        string memory oldVersion = version;
+        version = _newVersion;
+        emit SetVersion(oldVersion, _newVersion);
+    }
+
+    /// @notice Allows to pause the contract.
     function togglePause() external override userHasRole(PAUSE_ROLE) {
         paused() ? _unpause() : _pause();
     }
+
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***Getters***                      ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.

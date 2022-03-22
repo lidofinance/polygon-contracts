@@ -1901,6 +1901,20 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(newMaxWithdrawPercentagePerRebalance))
                 .revertedWith("Invalid maxWithdrawPercentagePerRebalance")
         })
+
+        it.only("Should set version", async function () {
+            const oldVersion = "2.0.0"
+            const newVersion = "2.0.1"
+            expect(await nodeOperatorRegistry.setVersion(newVersion))
+                .emit(nodeOperatorRegistry, "SetVersion")
+                .withArgs(oldVersion, newVersion)
+        })
+
+        it("Should fail to set version", async function () {
+            const newVersion = "2.0.1"
+            await expect(nodeOperatorRegistry.connect(user2).setVersion(newVersion))
+                .revertedWith("Unauthorized")
+        })
     })
 });
 

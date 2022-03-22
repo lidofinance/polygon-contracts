@@ -104,6 +104,10 @@ interface INodeOperatorRegistry {
     /// @notice Allows to pause the contract.
     function togglePause() external;
 
+    /// @notice Allows to set new version.
+    /// @param _newVersion new contract version.
+    function setVersion(string memory _newVersion) external;
+
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
     /// @return totalActiveNodeOperators total active node operators.
@@ -229,7 +233,12 @@ interface INodeOperatorRegistry {
             uint256 unstakedNodeOperator
         );
 
-    // ***********************************EVENTS***********************************
+    ////////////////////////////////////////////////////////////
+    /////                                                    ///
+    /////                 ***EVENTS***                       ///
+    /////                                                    ///
+    ////////////////////////////////////////////////////////////
+
     /// @notice Add Node Operator event
     /// @param validatorId validator id.
     /// @param rewardAddress reward address.
@@ -292,11 +301,13 @@ interface INodeOperatorRegistry {
         uint256 newMaxWithdrawPercentagePerRebalance
     );
 
+    /// @notice Emit when set new version.
+    /// @param oldVersion the old version.
+    /// @param newVersion the new version.
+    event SetVersion(string oldVersion, string newVersion);
+
     /// @notice Emit when the node operator exits the registry
     /// @param validatorId node operator id
     /// @param rewardAddress node operator reward address
-    event ExitNodeOperator(
-        uint256 validatorId,
-        address rewardAddress
-    );
+    event ExitNodeOperator(uint256 validatorId, address rewardAddress);
 }

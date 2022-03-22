@@ -3,7 +3,12 @@
 pragma solidity 0.8.7;
 
 interface IFxStateRootTunnel {
-    function sendMessageToChild(bytes memory message) external;
 
-    function setStMATIC(address _stMATIC) external;
+    /// @notice send message to child
+    /// @param _message message
+    function sendMessageToChild(bytes memory _message) external;
+
+    /// @notice Set stMatic address.
+    /// @param _newStMATIC the new stMatic address.
+    function setStMATIC(address _newStMATIC) external;
 }
