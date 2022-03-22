@@ -5,7 +5,6 @@ pragma solidity 0.8.7;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../interfaces/IValidatorShare.sol";
 import "../../interfaces/IStakeManager.sol";
-import "hardhat/console.sol";
 
 contract ValidatorShareMock is IValidatorShare {
     address public token;

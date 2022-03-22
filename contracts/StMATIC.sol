@@ -85,7 +85,7 @@ contract StMATIC is
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
 
     /// @notice protocol fee.
-    uint8 public protocolFee;
+    uint8 public override protocolFee;
 
     /// @param _nodeOperatorRegistry - Address of the node operator registry
     /// @param _token - Address of MATIC token on Ethereum Mainnet
