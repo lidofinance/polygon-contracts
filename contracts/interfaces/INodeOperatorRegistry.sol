@@ -216,6 +216,21 @@ interface INodeOperatorRegistry {
     /// @notice Return a list of all validator ids in the system.
     function getValidatorIds() external view returns (uint256[] memory);
 
+    /// @notice Explain to an end user what this does
+    /// @return isBalanced if the system is balanced or not.
+    /// @return distanceThreshold the distance threshold
+    /// @return minAmount min amount delegated to a validator.
+    /// @return maxAmount max amount delegated to a validator.
+    function getProtocolStats()
+        external
+        view
+        returns (
+            bool isBalanced,
+            uint256 distanceThreshold,
+            uint256 minAmount,
+            uint256 maxAmount
+        );
+
     /// @notice List all the node operator statuses in the system.
     /// @return inactiveNodeOperator the number of inactive operators.
     /// @return activeNodeOperator the number of active operators.
