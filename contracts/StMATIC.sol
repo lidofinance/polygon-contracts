@@ -352,17 +352,20 @@ contract StMATIC is
             "Amount to delegate lower than minimum"
         );
 
+        uint256 amountToDelegate = totalBuffered - reservedFunds;
+
         (
             INodeOperatorRegistry.NodeOperatorRegistry[]
                 memory activeNodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
-        ) = nodeOperatorRegistry.getValidatorsDelegationAmount(totalBuffered);
+        ) = nodeOperatorRegistry.getValidatorsDelegationAmount(
+                amountToDelegate
+            );
 
         uint256 remainder;
         uint256 amountDelegated;
-        uint256 amountToDelegate = totalBuffered - reservedFunds;
 
         IERC20Upgradeable(token).safeApprove(address(stakeManager), 0);
         IERC20Upgradeable(token).safeApprove(

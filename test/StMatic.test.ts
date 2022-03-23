@@ -548,6 +548,48 @@ describe("Starting to test StMATIC contract", () => {
             expect(balanceAfter.sub(balanceBefore).eq(initialSubmitAmount.add(finalSubmitAmount))).to.be.true;
         });
 
+        it.only("Should delegate to validators", async () => {
+            await mint(user1, ethers.utils.parseEther("100"));
+            await stakeOperator(user1);
+            let validatorId = await mockStakeManager.getValidatorId(user1.address)
+            await addOperator(validatorId.toString(), user1.address);
+
+            let submitAmount = ethers.utils.parseEther("10");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            
+            await stMATIC.delegate()
+            
+            submitAmount = ethers.utils.parseEther("30");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+
+            await requestWithdraw(user1, ethers.utils.parseEther("20"))
+            expect(await stMATIC.reservedFunds()).eq(ethers.utils.parseEther("10"))
+            expect(await stMATIC.getTotalPooledMatic()).eq(ethers.utils.parseEther("20"))
+            
+            submitAmount = ethers.utils.parseEther("10");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            await stMATIC.delegate()
+
+            expect(await stMATIC.getTotalStakeAcrossAllValidators()).eq(ethers.utils.parseEther("30"))
+
+            await mint(user2, ethers.utils.parseEther("100"));
+            await stakeOperator(user2);
+            validatorId = await mockStakeManager.getValidatorId(user2.address)
+            await addOperator(validatorId.toString(), user2.address);
+
+            submitAmount = ethers.utils.parseEther("30");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            await stMATIC.delegate()
+
+            expect(await stMATIC.getTotalStakeAcrossAllValidators()).eq(submitAmount.mul(2))
+            expect(await stMATIC.reservedFunds()).eq(ethers.utils.parseEther("10"))
+            expect(await stMATIC.getTotalPooledMatic()).eq(ethers.utils.parseEther("60"))
+        })
+
         it("Should stay the same if an attacker sends matic to the validator", async () => {
             const submitAmount = ethers.utils.parseEther("0.01");
 
