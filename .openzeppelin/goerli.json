@@ -1501,7 +1501,7 @@
             "label": "nodeOperatorRegistry",
             "offset": 0,
             "slot": "251",
-            "type": "t_contract(INodeOperatorRegistry)12229",
+            "type": "t_contract(INodeOperatorRegistry)12230",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:29"
           },
@@ -1509,7 +1509,7 @@
             "label": "entityFees",
             "offset": 0,
             "slot": "252",
-            "type": "t_struct(FeeDistribution)12307_storage",
+            "type": "t_struct(FeeDistribution)12313_storage",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:32"
           },
@@ -1517,7 +1517,7 @@
             "label": "stakeManager",
             "offset": 0,
             "slot": "253",
-            "type": "t_contract(IStakeManager)12813",
+            "type": "t_contract(IStakeManager)12825",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:35"
           },
@@ -1525,7 +1525,7 @@
             "label": "poLidoNFT",
             "offset": 0,
             "slot": "254",
-            "type": "t_contract(IPoLidoNFT)12279",
+            "type": "t_contract(IPoLidoNFT)12286",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:38"
           },
@@ -1533,7 +1533,7 @@
             "label": "fxStateRootTunnel",
             "offset": 0,
             "slot": "255",
-            "type": "t_contract(IFxStateRootTunnel)11908",
+            "type": "t_contract(IFxStateRootTunnel)11909",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:41"
           },
@@ -1629,7 +1629,7 @@
             "label": "token2WithdrawRequest",
             "offset": 0,
             "slot": "267",
-            "type": "t_mapping(t_uint256,t_struct(RequestWithdraw)12300_storage)",
+            "type": "t_mapping(t_uint256,t_struct(RequestWithdraw)12306_storage)",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:77"
           },
@@ -1637,7 +1637,7 @@
             "label": "token2WithdrawRequests",
             "offset": 0,
             "slot": "268",
-            "type": "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12300_storage)dyn_storage)",
+            "type": "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage)",
             "contract": "StMATIC",
             "src": "contracts/StMATIC.sol:85"
           },
@@ -1655,7 +1655,7 @@
             "label": "address",
             "numberOfBytes": "20"
           },
-          "t_array(t_struct(RequestWithdraw)12300_storage)dyn_storage": {
+          "t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage": {
             "label": "struct IStMATIC.RequestWithdraw[]",
             "numberOfBytes": "32"
           },
@@ -1679,19 +1679,19 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_contract(IFxStateRootTunnel)11908": {
+          "t_contract(IFxStateRootTunnel)11909": {
             "label": "contract IFxStateRootTunnel",
             "numberOfBytes": "20"
           },
-          "t_contract(INodeOperatorRegistry)12229": {
+          "t_contract(INodeOperatorRegistry)12230": {
             "label": "contract INodeOperatorRegistry",
             "numberOfBytes": "20"
           },
-          "t_contract(IPoLidoNFT)12279": {
+          "t_contract(IPoLidoNFT)12286": {
             "label": "contract IPoLidoNFT",
             "numberOfBytes": "20"
           },
-          "t_contract(IStakeManager)12813": {
+          "t_contract(IStakeManager)12825": {
             "label": "contract IStakeManager",
             "numberOfBytes": "20"
           },
@@ -1711,11 +1711,11 @@
             "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12300_storage)dyn_storage)": {
+          "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage)": {
             "label": "mapping(uint256 => struct IStMATIC.RequestWithdraw[])",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(RequestWithdraw)12300_storage)": {
+          "t_mapping(t_uint256,t_struct(RequestWithdraw)12306_storage)": {
             "label": "mapping(uint256 => struct IStMATIC.RequestWithdraw)",
             "numberOfBytes": "32"
           },
@@ -1723,7 +1723,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(FeeDistribution)12307_storage": {
+          "t_struct(FeeDistribution)12313_storage": {
             "label": "struct IStMATIC.FeeDistribution",
             "members": [
               {
@@ -1747,7 +1747,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(RequestWithdraw)12300_storage": {
+          "t_struct(RequestWithdraw)12306_storage": {
             "label": "struct IStMATIC.RequestWithdraw",
             "members": [
               {
@@ -2052,6 +2052,432 @@
           "t_uint256": {
             "label": "uint256",
             "numberOfBytes": "32"
+          }
+        }
+      }
+    },
+    "11901660397bd1d8c4ccd7c1ef0323641f522cc79c46529ff64a966e986f9e38": {
+      "address": "0xd124162fF7373f22F426Ee8477d5f0271b3E427f",
+      "txHash": "0x9f9832ea067c916cd6c7f0e7b72e72b5c07c8e8fab05a0a9270cfc783382949d",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_balances",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:37"
+          },
+          {
+            "label": "_allowances",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:39"
+          },
+          {
+            "label": "_totalSupply",
+            "offset": 0,
+            "slot": "53",
+            "type": "t_uint256",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:41"
+          },
+          {
+            "label": "_name",
+            "offset": 0,
+            "slot": "54",
+            "type": "t_string_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:43"
+          },
+          {
+            "label": "_symbol",
+            "offset": 0,
+            "slot": "55",
+            "type": "t_string_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:44"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "56",
+            "type": "t_array(t_uint256)45_storage",
+            "contract": "ERC20Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol:394"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC165Upgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol:41"
+          },
+          {
+            "label": "_roles",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)2310_storage)",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "AccessControlUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:235"
+          },
+          {
+            "label": "_paused",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_bool",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:29"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "PausableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol:102"
+          },
+          {
+            "label": "nodeOperatorRegistry",
+            "offset": 0,
+            "slot": "251",
+            "type": "t_contract(INodeOperatorRegistry)12230",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:29"
+          },
+          {
+            "label": "entityFees",
+            "offset": 0,
+            "slot": "252",
+            "type": "t_struct(FeeDistribution)12313_storage",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:32"
+          },
+          {
+            "label": "stakeManager",
+            "offset": 0,
+            "slot": "253",
+            "type": "t_contract(IStakeManager)12825",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:35"
+          },
+          {
+            "label": "poLidoNFT",
+            "offset": 0,
+            "slot": "254",
+            "type": "t_contract(IPoLidoNFT)12286",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:38"
+          },
+          {
+            "label": "fxStateRootTunnel",
+            "offset": 0,
+            "slot": "255",
+            "type": "t_contract(IFxStateRootTunnel)11909",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:41"
+          },
+          {
+            "label": "version",
+            "offset": 0,
+            "slot": "256",
+            "type": "t_string_storage",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:44"
+          },
+          {
+            "label": "dao",
+            "offset": 0,
+            "slot": "257",
+            "type": "t_address",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:47"
+          },
+          {
+            "label": "insurance",
+            "offset": 0,
+            "slot": "258",
+            "type": "t_address",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:50"
+          },
+          {
+            "label": "token",
+            "offset": 0,
+            "slot": "259",
+            "type": "t_address",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:53"
+          },
+          {
+            "label": "lastWithdrawnValidatorId",
+            "offset": 0,
+            "slot": "260",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:56"
+          },
+          {
+            "label": "totalBuffered",
+            "offset": 0,
+            "slot": "261",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:59"
+          },
+          {
+            "label": "delegationLowerBound",
+            "offset": 0,
+            "slot": "262",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:62"
+          },
+          {
+            "label": "rewardDistributionLowerBound",
+            "offset": 0,
+            "slot": "263",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:65"
+          },
+          {
+            "label": "reservedFunds",
+            "offset": 0,
+            "slot": "264",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:68"
+          },
+          {
+            "label": "submitThreshold",
+            "offset": 0,
+            "slot": "265",
+            "type": "t_uint256",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:71"
+          },
+          {
+            "label": "submitHandler",
+            "offset": 0,
+            "slot": "266",
+            "type": "t_bool",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:74"
+          },
+          {
+            "label": "token2WithdrawRequest",
+            "offset": 0,
+            "slot": "267",
+            "type": "t_mapping(t_uint256,t_struct(RequestWithdraw)12306_storage)",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:77"
+          },
+          {
+            "label": "token2WithdrawRequests",
+            "offset": 0,
+            "slot": "268",
+            "type": "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage)",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:85"
+          },
+          {
+            "label": "protocolFee",
+            "offset": 0,
+            "slot": "269",
+            "type": "t_uint8",
+            "contract": "StMATIC",
+            "src": "contracts/StMATIC.sol:88"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage": {
+            "label": "struct IStMATIC.RequestWithdraw[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)45_storage": {
+            "label": "uint256[45]",
+            "numberOfBytes": "1440"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IFxStateRootTunnel)11909": {
+            "label": "contract IFxStateRootTunnel",
+            "numberOfBytes": "20"
+          },
+          "t_contract(INodeOperatorRegistry)12230": {
+            "label": "contract INodeOperatorRegistry",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IPoLidoNFT)12286": {
+            "label": "contract IPoLidoNFT",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IStakeManager)12825": {
+            "label": "contract IStakeManager",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)2310_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_array(t_struct(RequestWithdraw)12306_storage)dyn_storage)": {
+            "label": "mapping(uint256 => struct IStMATIC.RequestWithdraw[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(RequestWithdraw)12306_storage)": {
+            "label": "mapping(uint256 => struct IStMATIC.RequestWithdraw)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(FeeDistribution)12313_storage": {
+            "label": "struct IStMATIC.FeeDistribution",
+            "members": [
+              {
+                "label": "dao",
+                "type": "t_uint8",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "operators",
+                "type": "t_uint8",
+                "offset": 1,
+                "slot": "0"
+              },
+              {
+                "label": "insurance",
+                "type": "t_uint8",
+                "offset": 2,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RequestWithdraw)12306_storage": {
+            "label": "struct IStMATIC.RequestWithdraw",
+            "members": [
+              {
+                "label": "amount2WithdrawFromStMATIC",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "validatorNonce",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "requestEpoch",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "validatorAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(RoleData)2310_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
           }
         }
       }
