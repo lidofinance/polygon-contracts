@@ -14,7 +14,7 @@
   "stMATIC_impl": "0x4B148a70F6CEC901376e854D85a19c2aC5C13Dd6",
   "node_operator_registry_proxy": "0xaDd9073e427caA89c1724c9762BC48032817aab5",
   "node_operator_registry_impl": "0xb4E76080386d22BBc58b48f19006d0C2AD669873",
-  "fx_state_root_tunnel": "0xCecf8550796E674844A480f4c171fE5F2a6e422b",
-  "fx_state_child_tunnel": "0xFDB9AB685A407A7AF3F0E6C1C50F45d25FC28865",
-  "rate_provider": "0x90a2C1a69cD96311413624f31ADaAFAbc1Cc50Dd"
+  "fx_state_root_tunnel": "0x5D5B16F3DE3f5F74a339910cF40773262Cb3d0f9",
+  "fx_state_child_tunnel": "0x71009c2DB18d312f0D14D89C25157D17f609F061",
+  "rate_provider": "0x6E1B36f56835e140CC8A3B84eFaC33FA4C831782"
 }
