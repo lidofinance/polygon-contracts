@@ -940,7 +940,7 @@ contract NodeOperatorRegistry is
         return validatorIds;
     }
 
-    /// @notice Explain to an end user what this does
+    /// @notice Return the statistics about the protocol as a list
     /// @return isBalanced if the system is balanced or not.
     /// @return distanceThreshold the distance threshold
     /// @return minAmount min amount delegated to a validator.
