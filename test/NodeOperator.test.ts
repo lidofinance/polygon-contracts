@@ -435,7 +435,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId, user1.address, user2.address)
         })
 
-        it("Should fail set reward address", async function () {
+        it.only("Should fail set reward address", async function () {
             await stakeOperator(user1)
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
@@ -445,6 +445,10 @@ describe("NodeOperator", function () {
 
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Invalid reward address")
+
+            await nodeOperatorRegistry.togglePause();
+            await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(user2.address))
+                    .revertedWith("Pausable: paused")
         })
     })
 

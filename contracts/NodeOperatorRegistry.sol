@@ -274,7 +274,9 @@ contract NodeOperatorRegistry is
     /// @notice Update the reward address of a Node Operator.
     /// ONLY Operator owner can call this function
     /// @param _newRewardAddress the new reward address.
-    function setRewardAddress(address _newRewardAddress) external override {
+    function setRewardAddress(address _newRewardAddress)
+    whenNotPaused external override
+    {
         uint256 validatorId = validatorRewardAddressToId[msg.sender];
         address oldRewardAddress = validatorIdToRewardAddress[validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
