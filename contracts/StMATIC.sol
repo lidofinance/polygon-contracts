@@ -600,7 +600,7 @@ contract StMATIC is
 
     /// @notice Rebalane the system by request withdraw from the validators that contains
     /// more token delegated to them.
-    function rebalanceDelegatedTokens() external override {
+    function rebalanceDelegatedTokens() onlyRole(DAO) external override {
         uint256 amountToReDelegate = totalBuffered -
             reservedFunds +
             calculatePendingBufferedTokens();

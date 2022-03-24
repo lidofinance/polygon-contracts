@@ -971,6 +971,11 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(totalWithdrawRequestAmount, "totalWithdrawRequestAmount").to.equal(totalToWithdraw);
         });
+
+        it("should fail to rebalance delegated tokes when not called by DAO", async () => {
+            await expect(stMATIC.connect(user1).rebalanceDelegatedTokens())
+                    .revertedWith("AccessControl");
+        });
     });
 
     describe("Request withdraw", function () {
