@@ -625,9 +625,13 @@ contract StMATIC is
         );
     }
 
+    /// @notice calculate the total amount stored in all the NFTs owned by
+    /// stMatic contract.
+    /// @return pendingBufferedTokens the total pending amount for stMatic.
     function calculatePendingBufferedTokens()
         public
         view
+        override
         returns (uint256 pendingBufferedTokens)
     {
         uint256[] memory pendingWithdrawalIds = poLidoNFT.getOwnedTokens(

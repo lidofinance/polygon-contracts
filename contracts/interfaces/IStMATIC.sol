@@ -36,7 +36,10 @@ interface IStMATIC is IERC20Upgradeable {
     }
 
     /// @notice node operator registry interface.
-    function nodeOperatorRegistry() external view returns (INodeOperatorRegistry);
+    function nodeOperatorRegistry()
+        external
+        view
+        returns (INodeOperatorRegistry);
 
     /// @notice The fee distribution.
     /// @return dao dao fee.
@@ -44,6 +47,7 @@ interface IStMATIC is IERC20Upgradeable {
     /// @return insurance insurance fee.
     function entityFees()
         external
+        view
         returns (
             uint8,
             uint8,
@@ -102,7 +106,6 @@ interface IStMATIC is IERC20Upgradeable {
             uint256,
             address
         );
-
 
     /// @notice DAO Role.
     function DAO() external view returns (bytes32);
@@ -201,6 +204,11 @@ interface IStMATIC is IERC20Upgradeable {
         external
         view
         returns (uint256);
+
+    /// @notice calculate the total amount stored in all the NFTs owned by
+    /// stMatic contract.
+    /// @return pendingBufferedTokens the total pending amount for stMatic.
+    function calculatePendingBufferedTokens() external view returns(uint256);
 
     /// @notice Function that converts arbitrary stMATIC to Matic
     /// @param _amountInStMatic - Amount of stMATIC to convert to Matic
