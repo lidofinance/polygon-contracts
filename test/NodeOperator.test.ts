@@ -2027,7 +2027,7 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
     if (log) {
         console.log(res)
     }
-    expect(res.nodeOperators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.bigNodeOperatorLength, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
     expect(res.smallNodeOperatorLength, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
 
@@ -2047,9 +2047,9 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
         expect(res.operatorAmountCanBeRequested[idx], `${id}--${idx}--operatorAmountCanBeRequested`).eq(data.operatorAmountCanBeRequested[idx])
     }
 
-    expect(res.nodeOperators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
-    for (let idx = 0; idx < res.nodeOperators.length; idx++) {
-        expect(res.nodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
+    expect(res.validators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
+    for (let idx = 0; idx < res.validators.length; idx++) {
+        expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
     expect(res.totalValidatorToWithdrawFrom, `${id}--res.totalValidatorToWithdrawFrom.length`).eq(data.totalValidatorToWithdrawFrom)
 }
@@ -2070,9 +2070,9 @@ async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigN
         expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
-    expect(res.nodeOperators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
+    expect(res.validators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
     for (let idx = 0; idx < res.totalActiveNodeOperator.toNumber(); idx++) {
-        expect(res.nodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
+        expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
     expect(res.totalToWithdraw, `${id}--res.totalToWithdraw.length`).eq(data.totalToWithdraw)
 }
@@ -2095,9 +2095,9 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
         expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
-    expect(res.nodeOperators.length, `${id}--res.totalActiveNodeOperator`).eq(data.rewardAddresses.length)
-    for (let idx = 0; idx < res.nodeOperators.length; idx++) {
-        expect(res.nodeOperators[idx].rewardAddress, `${id}--${idx}--rewardAddress[i]`).eq(data.rewardAddresses[idx])
+    expect(res.validators.length, `${id}--res.totalActiveNodeOperator`).eq(data.rewardAddresses.length)
+    for (let idx = 0; idx < res.validators.length; idx++) {
+        expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[i]`).eq(data.rewardAddresses[idx])
     }
 }
 

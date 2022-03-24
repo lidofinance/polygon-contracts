@@ -118,9 +118,9 @@ contract StMATIC is
         address _fxStateRootTunnel,
         uint256 _submitThreshold
     ) external override initializer {
-        __AccessControl_init();
-        __Pausable_init();
-        __ERC20_init("Staked MATIC", "stMATIC");
+        __AccessControl_init_unchained();
+        __Pausable_init_unchained();
+        __ERC20_init_unchained("Staked MATIC", "stMATIC");
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DAO, _dao);
@@ -187,8 +187,8 @@ contract StMATIC is
         );
 
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[]
+            memory activeNodeOperators,
             uint256 totalDelegated,
             uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
@@ -282,7 +282,7 @@ contract StMATIC is
     /// @notice Request withdraw when system is balanced
     function _requestWithdrawBalanced(
         uint256 tokenId,
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 totalAmount2WithdrawInMatic,
         uint256 totalValidatorToWithdrawFrom,
         uint256 totalDelegated,
@@ -310,7 +310,7 @@ contract StMATIC is
     /// @notice Request withdraw when system is unbalanced
     function _requestWithdrawUnbalanced(
         uint256 tokenId,
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 nodeOperatorLength,
         uint256[] memory nodeOperatorIds,
         uint256[] memory operatorAmountCanBeRequested,
@@ -374,8 +374,8 @@ contract StMATIC is
         uint256 amountToDelegate = totalBuffered - reservedFunds;
 
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[]
+            memory activeNodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
@@ -522,7 +522,7 @@ contract StMATIC is
     /// in entityFee.
     function distributeRewards() external override whenNotPaused nonReentrant {
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos,
+            INodeOperatorRegistry.ValidatorData[] memory operatorInfos,
             uint256 totalActiveOperatorInfos
         ) = nodeOperatorRegistry.listDelegatedNodeOperators();
 
@@ -607,7 +607,7 @@ contract StMATIC is
             reservedFunds +
             calculatePendingBufferedTokens();
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
@@ -817,7 +817,7 @@ contract StMATIC is
     {
         uint256 totalStake;
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
             uint256 operatorsLength
         ) = nodeOperatorRegistry.listWithdrawNodeOperators();
 
