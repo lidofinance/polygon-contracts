@@ -78,14 +78,27 @@ contract StMATIC is
 
     /// @notice DAO Role.
     bytes32 public constant override DAO = keccak256("DAO");
-    bytes32 public constant override PAUSE_ROLE =
-        keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override UNPAUSE_ROLE = keccak256("LIDO_UNPAUSE_OPERATOR");
 
     /// @notice token to Array WithdrawRequest mapping one-to-many.
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
 
     /// @notice protocol fee.
     uint8 public override protocolFee;
+
+    // @notice these state variable are used to mark entrance and exit form a contract function
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+    uint256 private _status;
+
+    /// @notice Prevents a contract from calling itself, directly or indirectly.
+    modifier nonReentrant() {
+        _nonReentrant();
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
 
     /// @param _nodeOperatorRegistry - Address of the node operator registry
     /// @param _token - Address of MATIC token on Ethereum Mainnet
@@ -105,13 +118,14 @@ contract StMATIC is
         address _fxStateRootTunnel,
         uint256 _submitThreshold
     ) external override initializer {
-        __AccessControl_init();
-        __Pausable_init();
-        __ERC20_init("Staked MATIC", "stMATIC");
+        __AccessControl_init_unchained();
+        __Pausable_init_unchained();
+        __ERC20_init_unchained("Staked MATIC", "stMATIC");
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DAO, _dao);
-        _setupRole(PAUSE_ROLE, _dao);
+        _setupRole(PAUSE_ROLE, msg.sender);
+        _setupRole(UNPAUSE_ROLE, _dao);
 
         nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
@@ -134,6 +148,7 @@ contract StMATIC is
         external
         override
         whenNotPaused
+        nonReentrant
         returns (uint256)
     {
         require(_amount > 0, "Invalid amount");
@@ -165,15 +180,15 @@ contract StMATIC is
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount) external override whenNotPaused {
+    function requestWithdraw(uint256 _amount) external override whenNotPaused nonReentrant {
         require(
             _amount > 0 && balanceOf(msg.sender) >= _amount,
             "Invalid amount"
         );
 
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[]
+            memory activeNodeOperators,
             uint256 totalDelegated,
             uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
@@ -267,7 +282,7 @@ contract StMATIC is
     /// @notice Request withdraw when system is balanced
     function _requestWithdrawBalanced(
         uint256 tokenId,
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 totalAmount2WithdrawInMatic,
         uint256 totalValidatorToWithdrawFrom,
         uint256 totalDelegated,
@@ -295,7 +310,7 @@ contract StMATIC is
     /// @notice Request withdraw when system is unbalanced
     function _requestWithdrawUnbalanced(
         uint256 tokenId,
-        INodeOperatorRegistry.NodeOperatorRegistry[] memory activeNodeOperators,
+        INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 nodeOperatorLength,
         uint256[] memory nodeOperatorIds,
         uint256[] memory operatorAmountCanBeRequested,
@@ -350,7 +365,7 @@ contract StMATIC is
 
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract
-    function delegate() external override whenNotPaused {
+    function delegate() external override whenNotPaused nonReentrant {
         require(
             totalBuffered > delegationLowerBound + reservedFunds,
             "Amount to delegate lower than minimum"
@@ -359,8 +374,8 @@ contract StMATIC is
         uint256 amountToDelegate = totalBuffered - reservedFunds;
 
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[]
-                memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[]
+            memory activeNodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
@@ -505,9 +520,9 @@ contract StMATIC is
 
     /// @notice Distributes rewards claimed from validator shares based on fees defined
     /// in entityFee.
-    function distributeRewards() external override whenNotPaused {
+    function distributeRewards() external override whenNotPaused nonReentrant {
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory operatorInfos,
+            INodeOperatorRegistry.ValidatorData[] memory operatorInfos,
             uint256 totalActiveOperatorInfos
         ) = nodeOperatorRegistry.listDelegatedNodeOperators();
 
@@ -567,7 +582,7 @@ contract StMATIC is
     /// @notice Only NodeOperatorRegistry can call this function
     /// @notice Withdraws funds from unstaked validator
     /// @param _validatorShare - Address of the validator share that will be withdrawn
-    function withdrawTotalDelegated(address _validatorShare) external override {
+    function withdrawTotalDelegated(address _validatorShare) external override nonReentrant {
         require(
             msg.sender == address(nodeOperatorRegistry),
             "Not a node operator"
@@ -587,12 +602,12 @@ contract StMATIC is
 
     /// @notice Rebalane the system by request withdraw from the validators that contains
     /// more token delegated to them.
-    function rebalanceDelegatedTokens() external override {
+    function rebalanceDelegatedTokens() onlyRole(DAO) external override {
         uint256 amountToReDelegate = totalBuffered -
             reservedFunds +
             calculatePendingBufferedTokens();
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
@@ -659,6 +674,7 @@ contract StMATIC is
         external
         override
         whenNotPaused
+        nonReentrant
     {
         RequestWithdraw storage lidoRequests = token2WithdrawRequest[_tokenId];
 
@@ -696,9 +712,14 @@ contract StMATIC is
         emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
     }
 
-    /// @notice Flips the pause state
-    function togglePause() external override onlyRole(PAUSE_ROLE) {
-        paused() ? _unpause() : _pause();
+    /// @notice Pauses the contract
+    function pause() external onlyRole(PAUSE_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpauses the contract
+    function unpause() external onlyRole(UNPAUSE_ROLE) {
+       _unpause();
     }
 
     ////////////////////////////////////////////////////////////
@@ -796,7 +817,7 @@ contract StMATIC is
     {
         uint256 totalStake;
         (
-            INodeOperatorRegistry.NodeOperatorRegistry[] memory nodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
             uint256 operatorsLength
         ) = nodeOperatorRegistry.listWithdrawNodeOperators();
 
@@ -1096,4 +1117,9 @@ contract StMATIC is
 
         return (withdrawExchangeRate * unbond.shares) / exchangeRatePrecision;
     }
+
+    function _nonReentrant() private view {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+    }
+
 }

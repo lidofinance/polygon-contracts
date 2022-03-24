@@ -971,6 +971,11 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(totalWithdrawRequestAmount, "totalWithdrawRequestAmount").to.equal(totalToWithdraw);
         });
+
+        it("should fail to rebalance delegated tokes when not called by DAO", async () => {
+            await expect(stMATIC.connect(user1).rebalanceDelegatedTokens())
+                    .revertedWith("AccessControl");
+        });
     });
 
     describe("Request withdraw", function () {
@@ -1841,12 +1846,12 @@ describe("Starting to test StMATIC contract", () => {
 
     describe("Setters", function () {
         it("Should pause the contract successfully", async () => {
-            await stMATIC.togglePause();
+            await stMATIC.pause();
             await expect(stMATIC.delegate()).to.be.revertedWith("Pausable: paused");
         });
 
         it("Should fail pause the contract successfully", async () => {
-            await expect(stMATIC.connect(user2).togglePause()).reverted;
+            await expect(stMATIC.connect(user2).pause()).reverted;
         });
 
         it("Update dao address", async () => {
