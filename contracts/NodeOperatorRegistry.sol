@@ -57,6 +57,18 @@ contract NodeOperatorRegistry is
     /// extend the struct.
     mapping(address => uint256) public validatorRewardAddressToId;
 
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+
     /// @notice Check if the msg.sender has permission.
     /// @param _role role needed to call function.
     modifier userHasRole(bytes32 _role) {
@@ -139,7 +151,7 @@ contract NodeOperatorRegistry is
 
     /// @notice Exit the node operator registry
     /// ONLY the owner of the node operator can call this function
-    function exitNodeOperatorRegistry() external override {
+    function exitNodeOperatorRegistry() external override nonReentrant {
         uint256 validatorId = validatorRewardAddressToId[msg.sender];
         address rewardAddress = validatorIdToRewardAddress[validatorId];
         require(rewardAddress == msg.sender, "Unauthorized");
@@ -159,6 +171,7 @@ contract NodeOperatorRegistry is
         external
         override
         userHasRole(REMOVE_NODE_OPERATOR_ROLE)
+        nonReentrant
     {
         address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
@@ -179,6 +192,7 @@ contract NodeOperatorRegistry is
         external
         override
         whenNotPaused
+        nonReentrant
     {
         address rewardAddress = validatorIdToRewardAddress[_validatorId];
         require(rewardAddress != address(0), "Validator doesn't exist");
