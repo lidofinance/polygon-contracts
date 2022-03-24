@@ -58,13 +58,14 @@ contract NodeOperatorRegistry is
     /// extend the struct.
     mapping(address => uint256) public validatorRewardAddressToId;
 
+    // @notice these state variable are used to mark entrance and exit form a contract function
     uint256 private constant _NOT_ENTERED = 1;
     uint256 private constant _ENTERED = 2;
-
     uint256 private _status;
 
+    /// @notice Prevents a contract from calling itself, directly or indirectly.
     modifier nonReentrant() {
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _nonReentrant();
         _status = _ENTERED;
         _;
         _status = _NOT_ENTERED;
