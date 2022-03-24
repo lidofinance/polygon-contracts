@@ -282,21 +282,11 @@ contract StMATIC is
         for (uint256 idx = 0; idx < totalValidatorToWithdrawFrom; idx++) {
             address validatorShare = activeNodeOperators[idx].validatorShare;
 
-            sellVoucher_new(
+            currentAmount2WithdrawInMatic = _requestWithdraw(
+                tokenId,
                 validatorShare,
                 amount2WithdrawFromValidator,
-                type(uint256).max
-            );
-
-            currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
-
-            token2WithdrawRequests[tokenId].push(
-                RequestWithdraw(
-                    0,
-                    IValidatorShare(validatorShare).unbondNonces(address(this)),
-                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                    validatorShare
-                )
+                currentAmount2WithdrawInMatic
             );
         }
         return currentAmount2WithdrawInMatic;
@@ -323,24 +313,38 @@ contract StMATIC is
 
             address validatorShare = activeNodeOperators[id].validatorShare;
 
-            sellVoucher_new(
+            currentAmount2WithdrawInMatic = _requestWithdraw(
+                tokenId,
                 validatorShare,
                 amount2WithdrawFromValidator,
-                type(uint256).max
+                currentAmount2WithdrawInMatic
             );
-
-            token2WithdrawRequests[tokenId].push(
-                RequestWithdraw(
-                    0,
-                    IValidatorShare(validatorShare).unbondNonces(address(this)),
-                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                    validatorShare
-                )
-            );
-
-            currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
             if (currentAmount2WithdrawInMatic == 0) break;
         }
+        return currentAmount2WithdrawInMatic;
+    }
+
+    function _requestWithdraw(
+        uint256 tokenId,
+        address validatorShare,
+        uint256 amount2WithdrawFromValidator,
+        uint256 currentAmount2WithdrawInMatic
+    ) private returns (uint256) {
+        sellVoucher_new(
+            validatorShare,
+            amount2WithdrawFromValidator,
+            type(uint256).max
+        );
+
+        token2WithdrawRequests[tokenId].push(
+            RequestWithdraw(
+                0,
+                IValidatorShare(validatorShare).unbondNonces(address(this)),
+                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                validatorShare
+            )
+        );
+        currentAmount2WithdrawInMatic -= amount2WithdrawFromValidator;
         return currentAmount2WithdrawInMatic;
     }
 

@@ -548,7 +548,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(balanceAfter.sub(balanceBefore).eq(initialSubmitAmount.add(finalSubmitAmount))).to.be.true;
         });
 
-        it.only("Should delegate to validators", async () => {
+        it("Should delegate to validators", async () => {
             await mint(user1, ethers.utils.parseEther("100"));
             await stakeOperator(user1);
             let validatorId = await mockStakeManager.getValidatorId(user1.address)
