@@ -78,8 +78,8 @@ contract StMATIC is
 
     /// @notice DAO Role.
     bytes32 public constant override DAO = keccak256("DAO");
-    bytes32 public constant override PAUSE_ROLE =
-        keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override UNPAUSE_ROLE = keccak256("LIDO_UNPAUSE_OPERATOR");
 
     /// @notice token to Array WithdrawRequest mapping one-to-many.
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
@@ -123,7 +123,8 @@ contract StMATIC is
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(DAO, _dao);
-        _setupRole(PAUSE_ROLE, _dao);
+        _setupRole(PAUSE_ROLE, msg.sender);
+        _setupRole(UNPAUSE_ROLE, _dao);
 
         nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
@@ -710,9 +711,14 @@ contract StMATIC is
         emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
     }
 
-    /// @notice Flips the pause state
-    function togglePause() external override onlyRole(PAUSE_ROLE) {
-        paused() ? _unpause() : _pause();
+    /// @notice Pauses the contract
+    function pause() external onlyRole(PAUSE_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpauses the contract
+    function unpause() external onlyRole(UNPAUSE_ROLE) {
+       _unpause();
     }
 
     ////////////////////////////////////////////////////////////

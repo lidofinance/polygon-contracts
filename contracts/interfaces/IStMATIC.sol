@@ -113,6 +113,9 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice PAUSE_ROLE Role.
     function PAUSE_ROLE() external view returns (bytes32);
 
+    /// @notice UNPAUSE_ROLE Role.
+    function UNPAUSE_ROLE() external view returns (bytes32);
+
     /// @notice Protocol Fee.
     function protocolFee() external view returns (uint8);
 
@@ -166,9 +169,6 @@ interface IStMATIC is IERC20Upgradeable {
     /// StMATIC contract
     /// @param _tokenId - Id of the token that is supposed to be claimed
     function claimTokensFromValidatorToContract(uint256 _tokenId) external;
-
-    /// @notice Flips the pause state
-    function togglePause() external;
 
     /// @notice Rebalane the system by request withdraw from the validators that contains
     /// more token delegated to them.

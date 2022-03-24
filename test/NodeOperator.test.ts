@@ -435,7 +435,7 @@ describe("NodeOperator", function () {
                 .withArgs(validatorId, user1.address, user2.address)
         })
 
-        it.only("Should fail set reward address", async function () {
+        it("Should fail set reward address", async function () {
             await stakeOperator(user1)
             const validatorId = await stakeManagerMock.getValidatorId(user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
@@ -446,7 +446,7 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Invalid reward address")
 
-            await nodeOperatorRegistry.togglePause();
+            await nodeOperatorRegistry.pause();
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(user2.address))
                     .revertedWith("Pausable: paused")
         })
@@ -1919,11 +1919,11 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.removeInvalidNodeOperator(1)
 
             expect(await nodeOperatorRegistry.paused()).false
-            await nodeOperatorRegistry.togglePause()
+            await nodeOperatorRegistry.pause()
             expect(await nodeOperatorRegistry.paused()).true
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(2)).revertedWith("Pausable: paused")
 
-            await nodeOperatorRegistry.togglePause()
+            await nodeOperatorRegistry.unpause()
             expect(await nodeOperatorRegistry.paused()).false
             await nodeOperatorRegistry.removeInvalidNodeOperator(2)
         })
@@ -1931,12 +1931,12 @@ describe("NodeOperator", function () {
         it("Should fail pause/unpause the contract", async function () {
             const PAUSE_ROLE = await nodeOperatorRegistry.PAUSE_ROLE()
             expect(await nodeOperatorRegistry.paused()).false
-            await expect(nodeOperatorRegistry.connect(user1).togglePause()).revertedWith("Unauthorized")
+            await expect(nodeOperatorRegistry.connect(user1).pause()).revertedWith("AccessControl")
             await nodeOperatorRegistry.grantRole(PAUSE_ROLE, user1.address)
-            await nodeOperatorRegistry.togglePause()
+            await nodeOperatorRegistry.pause()
             expect(await nodeOperatorRegistry.paused()).true
             await nodeOperatorRegistry.revokeRole(PAUSE_ROLE, user1.address)
-            await expect(nodeOperatorRegistry.connect(user1).togglePause()).revertedWith("Unauthorized")
+            await expect(nodeOperatorRegistry.connect(user1).pause()).revertedWith("AccessControl")
         })
     })
 

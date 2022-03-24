@@ -28,6 +28,7 @@ contract NodeOperatorRegistry is
     /// @notice all the roles.
     bytes32 public constant DAO_ROLE = keccak256("LIDO_DAO");
     bytes32 public constant PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant UNPAUSE_ROLE = keccak256("LIDO_UNPAUSE_OPERATOR");
     bytes32 public constant ADD_NODE_OPERATOR_ROLE =
         keccak256("ADD_NODE_OPERATOR_ROLE");
     bytes32 public constant REMOVE_NODE_OPERATOR_ROLE =
@@ -95,8 +96,8 @@ contract NodeOperatorRegistry is
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(PAUSE_ROLE, msg.sender);
+        _setupRole(UNPAUSE_ROLE, _dao);
         _setupRole(DAO_ROLE, _dao);
-        _setupRole(PAUSE_ROLE, _dao);
         _setupRole(ADD_NODE_OPERATOR_ROLE, _dao);
         _setupRole(REMOVE_NODE_OPERATOR_ROLE, _dao);
         version = "2.0.0";
@@ -356,9 +357,14 @@ contract NodeOperatorRegistry is
         emit SetVersion(oldVersion, _newVersion);
     }
 
-    /// @notice Allows to pause the contract.
-    function togglePause() external override userHasRole(PAUSE_ROLE) {
-        paused() ? _unpause() : _pause();
+    /// @notice Pauses the contract
+    function pause() external onlyRole(PAUSE_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpauses the contract
+    function unpause() external onlyRole(UNPAUSE_ROLE) {
+        _unpause();
     }
 
     ////////////////////////////////////////////////////////////

@@ -101,9 +101,6 @@ interface INodeOperatorRegistry {
         uint256 maxWithdrawPercentagePerRebalance
     ) external;
 
-    /// @notice Allows to pause the contract.
-    function togglePause() external;
-
     /// @notice Allows to set new version.
     /// @param _newVersion new contract version.
     function setVersion(string memory _newVersion) external;
