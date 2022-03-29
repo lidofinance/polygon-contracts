@@ -23,7 +23,7 @@ const upgradeLidoNFT = async () => {
 
     exportAddresses(filePath, {
         lido_nft_proxy: lidoNFTAddress,
-        lido_nft_implementation: lidoNFTImplAddress
+        lido_nft_impl: lidoNFTImplAddress
     });
 };
 

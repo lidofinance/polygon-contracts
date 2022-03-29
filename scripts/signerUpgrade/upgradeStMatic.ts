@@ -23,7 +23,7 @@ const upgradeStMATIC = async () => {
 
     exportAddresses(filePath, {
         stMATIC_proxy: stMATICAddress,
-        stMATIC_implementation: stMATICImplAddress
+        stMATIC_impl: stMATICImplAddress
     });
 };
 

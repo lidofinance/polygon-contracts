@@ -23,7 +23,7 @@ const upgradeNodeOperatorRegistry = async () => {
 
     exportAddresses(filePath, {
         node_operator_registry_proxy: nodeOperatorRegistryAddress,
-        node_operator_registry_implementation: nodeOperatorRegistryImplAddress
+        node_operator_registry_impl: nodeOperatorRegistryImplAddress
     });
 };
 
