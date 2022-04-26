@@ -1790,6 +1790,7 @@ describe("Starting to test StMATIC contract", () => {
                 await submit(testers[i], amountToDelegate);
             }
             await stMATIC.delegate();
+            const vs = (await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, validatorId)).validatorShare
             await nodeOperatorRegistry.removeNodeOperator(validatorId);
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
@@ -1799,8 +1800,8 @@ describe("Starting to test StMATIC contract", () => {
             const amountToClaim = amountToDelegate.mul(3);
             const bufferedAmountBeforeClaim = await stMATIC.totalBuffered();
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent")
-                .withArgs(stMATIC.address, amountToClaim);
+                .emit(stMATIC, "ClaimTotalDelegatedEvent")
+                .withArgs(vs, amountToClaim);
 
             const bufferedAmountAfterClaim = await stMATIC.totalBuffered();
             expect(bufferedAmountAfterClaim.sub(bufferedAmountBeforeClaim), "totalBuffered").eq(amountToClaim);
@@ -1963,17 +1964,17 @@ describe("Starting to test StMATIC contract", () => {
             await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(2))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.div(3));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.div(3).mul(2));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate);
 
@@ -2058,15 +2059,15 @@ describe("Starting to test StMATIC contract", () => {
             await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.mul(slashPecentage).div(100));
@@ -2150,15 +2151,15 @@ describe("Starting to test StMATIC contract", () => {
             await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(1))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.claimTokensFromValidatorToContract(0))
-                .emit(stMATIC, "ClaimTokensEvent");
+                .emit(stMATIC, "ClaimTotalDelegatedEvent");
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate.mul(slashPecentage).div(100));
 
             expect(await stMATIC.totalBuffered()).eq(amountToDelegate.mul(slashPecentage).div(100));
@@ -2241,6 +2242,7 @@ describe("Starting to test StMATIC contract", () => {
             await mint(user1, amountSubmit);
             await submit(user1, amountSubmit);
             await stMATIC.delegate();
+            const vs = (await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, 1)).validatorShare
             await nodeOperatorRegistry.removeNodeOperator(1);
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
@@ -2249,8 +2251,8 @@ describe("Starting to test StMATIC contract", () => {
 
             await stMATIC.claimTokensFromValidatorToContract(0);
             expect(await stMATIC.connect(user1).requestWithdraw(amountSubmit))
-                .emit(stMATIC, "ClaimTotalDelegatedEvent")
-                .withArgs(1, amountSubmit);
+                .emit(stMATIC, "RequestWithdrawEvent")
+                .withArgs(user1.address, amountSubmit);
 
             const req = await stMATIC.token2WithdrawRequests(1, 0);
             expect(req.validatorAddress).eq(ethers.constants.AddressZero);
