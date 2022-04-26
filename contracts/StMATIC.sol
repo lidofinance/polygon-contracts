@@ -78,8 +78,14 @@ contract StMATIC is
 
     /// @notice DAO Role.
     bytes32 public constant override DAO = keccak256("DAO");
-    bytes32 public constant override PAUSE_ROLE = keccak256("LIDO_PAUSE_OPERATOR");
-    bytes32 public constant override UNPAUSE_ROLE = keccak256("LIDO_UNPAUSE_OPERATOR");
+    bytes32 public constant override PAUSE_ROLE =
+        keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override UNPAUSE_ROLE =
+        keccak256("LIDO_UNPAUSE_OPERATOR");
+
+    /// @notice When an operator quite the system StMATIC contract withdraw the total delegated
+    /// to it. The request is stored inside this array.
+    RequestWithdraw[] public stMaticWithdrawRequest;
 
     /// @notice token to Array WithdrawRequest mapping one-to-many.
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
@@ -180,15 +186,19 @@ contract StMATIC is
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount) external override whenNotPaused nonReentrant {
+    function requestWithdraw(uint256 _amount)
+        external
+        override
+        whenNotPaused
+        nonReentrant
+    {
         require(
             _amount > 0 && balanceOf(msg.sender) >= _amount,
             "Invalid amount"
         );
 
         (
-            INodeOperatorRegistry.ValidatorData[]
-            memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
             uint256 totalDelegated,
             uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
@@ -374,8 +384,7 @@ contract StMATIC is
         uint256 amountToDelegate = totalBuffered - reservedFunds;
 
         (
-            INodeOperatorRegistry.ValidatorData[]
-            memory activeNodeOperators,
+            INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
             uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
@@ -582,7 +591,11 @@ contract StMATIC is
     /// @notice Only NodeOperatorRegistry can call this function
     /// @notice Withdraws funds from unstaked validator
     /// @param _validatorShare - Address of the validator share that will be withdrawn
-    function withdrawTotalDelegated(address _validatorShare) external override nonReentrant {
+    function withdrawTotalDelegated(address _validatorShare)
+        external
+        override
+        nonReentrant
+    {
         require(
             msg.sender == address(nodeOperatorRegistry),
             "Not a node operator"
@@ -602,7 +615,7 @@ contract StMATIC is
 
     /// @notice Rebalane the system by request withdraw from the validators that contains
     /// more token delegated to them.
-    function rebalanceDelegatedTokens() onlyRole(DAO) external override {
+    function rebalanceDelegatedTokens() external override onlyRole(DAO) {
         uint256 amountToReDelegate = totalBuffered -
             reservedFunds +
             calculatePendingBufferedTokens();
@@ -633,14 +646,14 @@ contract StMATIC is
     function _createWithdrawRequest(address _validatorShare, uint256 amount)
         private
     {
-        uint256 tokenId = poLidoNFT.mint(address(this));
         sellVoucher_new(_validatorShare, amount, type(uint256).max);
-
-        token2WithdrawRequest[tokenId] = RequestWithdraw(
-            0,
-            IValidatorShare(_validatorShare).unbondNonces(address(this)),
-            stakeManager.epoch() + stakeManager.withdrawalDelay(),
-            _validatorShare
+        stMaticWithdrawRequest.push(
+            RequestWithdraw(
+                0,
+                IValidatorShare(_validatorShare).unbondNonces(address(this)),
+                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                _validatorShare
+            )
         );
     }
 
@@ -653,15 +666,13 @@ contract StMATIC is
         override
         returns (uint256 pendingBufferedTokens)
     {
-        uint256[] memory pendingWithdrawalIds = poLidoNFT.getOwnedTokens(
-            address(this)
-        );
-        uint256 pendingWithdrawalIdsLength = pendingWithdrawalIds.length;
+        RequestWithdraw[]
+            memory stMaticWithdrawRequestCache = stMaticWithdrawRequest;
+        uint256 pendingWithdrawalLength = stMaticWithdrawRequestCache.length;
 
-        for (uint256 i = 0; i < pendingWithdrawalIdsLength; i++) {
-            if (pendingWithdrawalIds[i] == 0) continue;
+        for (uint256 i = 0; i < pendingWithdrawalLength; i++) {
             pendingBufferedTokens += _getMaticFromTokenId(
-                token2WithdrawRequest[pendingWithdrawalIds[i]]
+                stMaticWithdrawRequestCache[i]
             );
         }
         return pendingBufferedTokens;
@@ -669,21 +680,15 @@ contract StMATIC is
 
     /// @notice Claims tokens from validator share and sends them to the
     /// StMATIC contract
-    /// @param _tokenId - Id of the token that is supposed to be claimed
-    function claimTokensFromValidatorToContract(uint256 _tokenId)
+    function claimTokensFromValidatorToContract(uint256 _index)
         external
         override
         whenNotPaused
         nonReentrant
     {
-        RequestWithdraw storage lidoRequests = token2WithdrawRequest[_tokenId];
-
-        require(
-            poLidoNFT.ownerOf(_tokenId) == address(this),
-            "Not owner of the NFT"
-        );
-
-        poLidoNFT.burn(_tokenId);
+        uint256 length = stMaticWithdrawRequest.length;
+        require(_index < length, "invalid index");
+        RequestWithdraw storage lidoRequests = stMaticWithdrawRequest[_index];
 
         require(
             stakeManager.epoch() >= lidoRequests.requestEpoch,
@@ -705,11 +710,16 @@ contract StMATIC is
 
         totalBuffered += claimedAmount;
 
+        if (_index != length - 1 && length != 1) {
+            stMaticWithdrawRequest[_index] = stMaticWithdrawRequest[length - 1];
+        }
+        stMaticWithdrawRequest.pop();
+
         fxStateRootTunnel.sendMessageToChild(
             abi.encode(totalSupply(), getTotalPooledMatic())
         );
 
-        emit ClaimTokensEvent(address(this), _tokenId, claimedAmount, 0);
+        emit ClaimTotalDelegatedEvent(lidoRequests.validatorAddress, _index);
     }
 
     /// @notice Pauses the contract
@@ -719,7 +729,7 @@ contract StMATIC is
 
     /// @notice Unpauses the contract
     function unpause() external onlyRole(UNPAUSE_ROLE) {
-       _unpause();
+        _unpause();
     }
 
     ////////////////////////////////////////////////////////////
@@ -727,6 +737,15 @@ contract StMATIC is
     /////             ***ValidatorShare API***               ///
     /////                                                    ///
     ////////////////////////////////////////////////////////////
+
+    /// @notice Returns the stMaticWithdrawRequest list
+    function getTotalWithdrawRequest()
+        public
+        view
+        returns (RequestWithdraw[] memory)
+    {
+        return stMaticWithdrawRequest;
+    }
 
     /// @notice API for delegated buying vouchers from validatorShare
     /// @param _validatorShare - Address of validatorShare contract
@@ -1121,5 +1140,4 @@ contract StMATIC is
     function _nonReentrant() private view {
         require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
     }
-
 }
