@@ -68,6 +68,7 @@ describe("PoLidoNFT Tests", () => {
                 await poLidoNFT.connect(user1).approve(user2.address, i + 1);
             }
             const user1Tokens = await poLidoNFT.getOwnedTokens(user1.address);
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).to.eq(3);
             const tokenId = user1Tokens[1];
             const tokenIndex = await poLidoNFT.token2Index(tokenId);
             await poLidoNFT.burn(tokenId);
@@ -120,7 +121,7 @@ describe("PoLidoNFT Tests", () => {
 
     describe("Setters", () => {
         it("Should pause the contract successfully", async () => {
-            await poLidoNFT .togglePause();
+            await poLidoNFT.togglePause();
             await expect(poLidoNFT.mint(user1.address)).to.be.revertedWith("Pausable: paused");
         });
 

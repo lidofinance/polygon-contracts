@@ -136,6 +136,7 @@ contract PoLidoNFT is
                 ];
             }
             ownerTokens.pop();
+            delete token2Index[tokenId];
 
             if (getApproved(tokenId) != address(0)) {
                 _removeApproval(tokenId);
@@ -211,17 +212,29 @@ contract PoLidoNFT is
         uint256[] storage approvedTokens = address2Approved[
             getApproved(_tokenId)
         ];
-        uint256 approvedIndex = tokenId2ApprovedIndex[_tokenId];
-        uint256 length = approvedTokens.length;
-        if (approvedIndex != length - 1 && length != 1) {
-            uint256 t = approvedTokens[length - 1];
-            tokenId2ApprovedIndex[t] = approvedIndex;
-            approvedTokens[approvedIndex] = approvedTokens[
-                approvedTokens.length - 1
+        uint256 removeApprovedTokenIndexInOwnerTokens = tokenId2ApprovedIndex[
+            _tokenId
+        ];
+        uint256 approvedTokensLength = approvedTokens.length;
+        uint256 lastApprovedTokensIndex = approvedTokensLength - 1;
+
+        if (
+            removeApprovedTokenIndexInOwnerTokens != lastApprovedTokensIndex &&
+            approvedTokensLength != 1
+        ) {
+            uint256 lastApprovedTokenId = approvedTokens[
+                lastApprovedTokensIndex
             ];
+            tokenId2ApprovedIndex[
+                lastApprovedTokenId
+            ] = removeApprovedTokenIndexInOwnerTokens;
+            approvedTokens[
+                removeApprovedTokenIndexInOwnerTokens
+            ] = approvedTokens[lastApprovedTokensIndex];
         }
+
         approvedTokens.pop();
-        tokenId2ApprovedIndex[_tokenId] = 0;
+        delete tokenId2ApprovedIndex[_tokenId];
     }
 
     /// @notice Flips the pause state
