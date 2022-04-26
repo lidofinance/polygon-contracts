@@ -16,13 +16,12 @@ contract PoLidoNFT is
     ERC721Upgradeable,
     ERC721PausableUpgradeable
 {
-
     /// @notice stMATIC address.
     address public stMATIC;
 
     /// @notice tokenIdIndex.
     uint256 public tokenIdIndex;
-    
+
     /// @notice version.
     string public version;
 
@@ -43,10 +42,11 @@ contract PoLidoNFT is
         _;
     }
 
-    function initialize(string memory name_, string memory symbol_, address _stMATIC)
-        external
-        initializer
-    {
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        address _stMATIC
+    ) external initializer {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __Ownable_init_unchained();
@@ -57,7 +57,6 @@ contract PoLidoNFT is
         stMATIC = _stMATIC;
     }
 
-    
     /// @notice Increments the token supply and mints the token based on that index
     /// @param _to - Address that will be the owner of minted token
     /// @return Index of the minted token
@@ -71,7 +70,6 @@ contract PoLidoNFT is
         return currentIndex;
     }
 
-    
     /// @notice Burn the token with specified _tokenId
     /// @param _tokenId - Id of the token that will be burned
     function burn(uint256 _tokenId) external override isLido {
@@ -110,7 +108,7 @@ contract PoLidoNFT is
         whenNotPaused
     {
         require(from != to, "Invalid operation");
-        
+
         super._beforeTokenTransfer(from, to, tokenId);
 
         // Minting
@@ -127,10 +125,15 @@ contract PoLidoNFT is
             uint256 burnedTokenIndexInOwnerTokens = token2Index[tokenId];
             uint256 lastOwnerTokensIndex = ownerTokensLength - 1;
 
-            if (burnedTokenIndexInOwnerTokens != lastOwnerTokensIndex && ownerTokensLength != 1) {
-                uint256 t = ownerTokens[lastOwnerTokensIndex];
-                token2Index[t] = burnedTokenIndexInOwnerTokens;
-                ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[lastOwnerTokensIndex];
+            if (
+                burnedTokenIndexInOwnerTokens != lastOwnerTokensIndex &&
+                ownerTokensLength != 1
+            ) {
+                uint256 lastOwnerTokenId = ownerTokens[lastOwnerTokensIndex];
+                token2Index[lastOwnerTokenId] = burnedTokenIndexInOwnerTokens;
+                ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[
+                    lastOwnerTokensIndex
+                ];
             }
             ownerTokens.pop();
 
@@ -155,7 +158,6 @@ contract PoLidoNFT is
         }
     }
 
-    
     /// @notice Check if the spender is the owner or is the tokenId approved to him
     /// @param _spender - Address that will be checked
     /// @param _tokenId - Token id that will be checked against _spender
@@ -168,7 +170,6 @@ contract PoLidoNFT is
         return _isApprovedOrOwner(_spender, _tokenId);
     }
 
-    
     /// @notice Set stMATIC contract address
     /// @param _stMATIC - address of the stMATIC contract
     function setStMATIC(address _stMATIC) external override onlyOwner {
@@ -181,7 +182,6 @@ contract PoLidoNFT is
         version = _version;
     }
 
-    
     /// @notice Retrieve the array of owned tokens
     /// @param _address - Address for which the tokens will be retrieved
     /// @return - Array of owned tokens
@@ -194,7 +194,6 @@ contract PoLidoNFT is
         return owner2Tokens[_address];
     }
 
-    
     /// @notice Retrieve the array of approved tokens
     /// @param _address - Address for which the tokens will be retrieved
     /// @return - Array of approved tokens
@@ -206,7 +205,6 @@ contract PoLidoNFT is
         return address2Approved[_address];
     }
 
-    
     /// @notice Remove the tokenId from the specific users array of approved tokens
     /// @param _tokenId - Id of the token that will be removed
     function _removeApproval(uint256 _tokenId) internal {
@@ -218,7 +216,9 @@ contract PoLidoNFT is
         if (approvedIndex != length - 1 && length != 1) {
             uint256 t = approvedTokens[length - 1];
             tokenId2ApprovedIndex[t] = approvedIndex;
-            approvedTokens[approvedIndex] = approvedTokens[approvedTokens.length - 1];
+            approvedTokens[approvedIndex] = approvedTokens[
+                approvedTokens.length - 1
+            ];
         }
         approvedTokens.pop();
         tokenId2ApprovedIndex[_tokenId] = 0;
