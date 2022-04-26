@@ -124,12 +124,12 @@ contract PoLidoNFT is
         else if (to == address(0)) {
             uint256[] storage ownerTokens = owner2Tokens[from];
             uint256 length = ownerTokens.length;
-            uint256 tokenIndex = token2Index[tokenId];
+            uint256 burnedTokenIndexInOwnerTokens = token2Index[tokenId];
 
-            if (tokenIndex != length - 1 && length != 1) {
+            if (burnedTokenIndexInOwnerTokens != length - 1 && length != 1) {
                 uint256 t = ownerTokens[ownerTokens.length - 1];
-                token2Index[t] = tokenIndex;
-                ownerTokens[tokenIndex] = ownerTokens[ownerTokens.length - 1];
+                token2Index[t] = burnedTokenIndexInOwnerTokens;
+                ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[ownerTokens.length - 1];
             }
             ownerTokens.pop();
 
