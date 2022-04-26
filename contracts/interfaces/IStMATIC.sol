@@ -387,10 +387,10 @@ interface IStMATIC is IERC20Upgradeable {
     event SetProtocolFee(uint8 oldProtocolFee, uint8 newProtocolFee);
 
     /// @notice Emit when set ProtocolFee.
-    /// @param from vaidatorshare address.
+    /// @param validatorShare vaidatorshare address.
     /// @param amountClaimed amount claimed.
     event ClaimTotalDelegatedEvent(
-        address indexed from,
+        address indexed validatorShare,
         uint256 indexed amountClaimed
     );
 }

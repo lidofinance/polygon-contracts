@@ -14,6 +14,7 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IPoLidoNFT.sol";
 import "./interfaces/IFxStateRootTunnel.sol";
 import "./interfaces/IStMATIC.sol";
+import "hardhat/console.sol";
 
 /// @title StMATIC
 /// @author 2021 ShardLabs.
@@ -589,7 +590,7 @@ contract StMATIC is
     }
 
     /// @notice Only NodeOperatorRegistry can call this function
-    /// @notice Withdraws funds from unstaked validator
+    /// @notice Withdraws funds from stopped validator.
     /// @param _validatorShare - Address of the validator share that will be withdrawn
     function withdrawTotalDelegated(address _validatorShare)
         external
@@ -657,8 +658,7 @@ contract StMATIC is
         );
     }
 
-    /// @notice calculate the total amount stored in all the NFTs owned by
-    /// stMatic contract.
+    /// @notice calculate the total amount stored in stMaticWithdrawRequest array.
     /// @return pendingBufferedTokens the total pending amount for stMatic.
     function calculatePendingBufferedTokens()
         public
@@ -678,8 +678,7 @@ contract StMATIC is
         return pendingBufferedTokens;
     }
 
-    /// @notice Claims tokens from validator share and sends them to the
-    /// StMATIC contract
+    /// @notice Claims tokens from validator share and sends them to the StMATIC contract.
     function claimTokensFromValidatorToContract(uint256 _index)
         external
         override
@@ -688,7 +687,7 @@ contract StMATIC is
     {
         uint256 length = stMaticWithdrawRequest.length;
         require(_index < length, "invalid index");
-        RequestWithdraw storage lidoRequests = stMaticWithdrawRequest[_index];
+        RequestWithdraw memory lidoRequests = stMaticWithdrawRequest[_index];
 
         require(
             stakeManager.epoch() >= lidoRequests.requestEpoch,
@@ -719,7 +718,7 @@ contract StMATIC is
             abi.encode(totalSupply(), getTotalPooledMatic())
         );
 
-        emit ClaimTotalDelegatedEvent(lidoRequests.validatorAddress, _index);
+        emit ClaimTotalDelegatedEvent(lidoRequests.validatorAddress, claimedAmount);
     }
 
     /// @notice Pauses the contract
