@@ -103,6 +103,7 @@ contract NodeOperatorRegistry is
         external
         override
         userHasRole(ADD_NODE_OPERATOR_ROLE)
+        nonReentrant
     {
         require(_validatorId != 0, "ValidatorId=0");
         require(
