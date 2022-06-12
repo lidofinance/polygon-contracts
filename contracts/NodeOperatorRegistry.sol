@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/INodeOperatorRegistry.sol";
 import "./interfaces/IStMATIC.sol";
+import "hardhat/console.sol";
 
 /// @title NodeOperatorRegistry
 /// @author 2021 ShardLabs.
@@ -769,8 +770,8 @@ contract NodeOperatorRegistry is
             totalDelegated;
 
         totalValidatorToWithdrawFrom =
-            ((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) /
-                (100 / length)) +
+            (((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) *
+                length) / 100) +
             1;
 
         totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
