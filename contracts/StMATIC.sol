@@ -172,6 +172,8 @@ contract StMATIC is
             uint256 totalPooledMatic
         ) = convertMaticToStMatic(_amount);
 
+        require(amountToMint > 0, "Mint ZERO");
+
         _mint(msg.sender, amountToMint);
 
         totalBuffered += _amount;
