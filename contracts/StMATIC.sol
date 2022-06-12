@@ -1004,10 +1004,7 @@ contract StMATIC is
     /// @param _newDAO - New dao address
     function setDaoAddress(address _newDAO) external override onlyRole(DAO) {
         address oldDAO = dao;
-        revokeRole(DAO, dao);
         dao = _newDAO;
-        _setupRole(DAO, dao);
-
         emit SetDaoAddress(oldDAO, _newDAO);
     }
 
