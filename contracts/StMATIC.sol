@@ -216,6 +216,7 @@ contract StMATIC is
             _amount,
             totalPooledMatic
         );
+        require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
 
         if (totalDelegated != 0) {
             require(
