@@ -518,8 +518,8 @@ contract NodeOperatorRegistry is
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
-        // If the system is balanced
-        if (distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS) {
+        bool isTheSystemBalanced = distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS;
+        if (isTheSystemBalanced) {
             return (
             validators,
                 totalActiveNodeOperator,
