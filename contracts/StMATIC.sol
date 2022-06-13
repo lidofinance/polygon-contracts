@@ -420,18 +420,14 @@ contract StMATIC is
                     totalRatio;
             }
             address _validatorAddress = activeNodeOperators[i].validatorShare;
-            
+
             uint256 shares = _calculateValidatorShares(
                 _validatorAddress,
                 amountToDelegatePerOperator
             );
             if (shares == 0) continue;
 
-            buyVoucher(
-                _validatorAddress,
-                amountToDelegatePerOperator,
-                0
-            );
+            buyVoucher(_validatorAddress, amountToDelegatePerOperator, 0);
 
             amountDelegated += amountToDelegatePerOperator;
         }
@@ -446,7 +442,10 @@ contract StMATIC is
     /// user if his request is in the userToWithdrawRequest
     /// @param _tokenId - Id of the token that wants to be claimed
     function claimTokens(uint256 _tokenId) external override whenNotPaused {
-        _require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
+        _require(
+            poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId),
+            "Not owner"
+        );
 
         if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
             _claimTokensV1(_tokenId);
@@ -614,7 +613,7 @@ contract StMATIC is
         (uint256 stakedAmount, ) = getTotalStake(
             IValidatorShare(_validatorShare)
         );
-        
+
         // Check if the validator has enough shares.
         uint256 shares = _calculateValidatorShares(
             _validatorShare,
@@ -652,8 +651,8 @@ contract StMATIC is
             amountToWithdraw =
                 (operatorRatios[i] * totalToWithdraw) /
                 totalRatio;
-            if (amountToWithdraw == 0 ) continue;
-            
+            if (amountToWithdraw == 0) continue;
+
             _validatorAddress = nodeOperators[i].validatorShare;
             uint256 shares = _calculateValidatorShares(
                 _validatorAddress,
@@ -742,7 +741,10 @@ contract StMATIC is
             abi.encode(totalSupply(), getTotalPooledMatic())
         );
 
-        emit ClaimTotalDelegatedEvent(lidoRequests.validatorAddress, claimedAmount);
+        emit ClaimTotalDelegatedEvent(
+            lidoRequests.validatorAddress,
+            claimedAmount
+        );
     }
 
     /// @notice Pauses the contract
@@ -1148,7 +1150,9 @@ contract StMATIC is
         IValidatorShare validatorShare = IValidatorShare(
             requestData.validatorAddress
         );
-        uint256 exchangeRatePrecision = _getExchangeRatePrecision(validatorShare.validatorId());
+        uint256 exchangeRatePrecision = _getExchangeRatePrecision(
+            validatorShare.validatorId()
+        );
         uint256 withdrawExchangeRate = validatorShare.withdrawExchangeRate();
         IValidatorShare.DelegatorUnbond memory unbond = validatorShare
             .unbonds_new(address(this), requestData.validatorNonce);
@@ -1160,7 +1164,7 @@ contract StMATIC is
         _require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
     }
 
-    function _require(bool _condition, string memory _message) private pure{
+    function _require(bool _condition, string memory _message) private pure {
         require(_condition, _message);
     }
 
@@ -1178,9 +1182,7 @@ contract StMATIC is
         address _validatorAddress,
         uint256 _amountInMatic
     ) private view returns (uint256) {
-        IValidatorShare validatorShare = IValidatorShare(
-            _validatorAddress
-        );
+        IValidatorShare validatorShare = IValidatorShare(_validatorAddress);
         uint256 exchangeRatePrecision = _getExchangeRatePrecision(
             validatorShare.validatorId()
         );

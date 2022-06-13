@@ -238,7 +238,9 @@ contract NodeOperatorRegistry is
     /// ONLY Operator owner can call this function
     /// @param _newRewardAddress the new reward address.
     function setRewardAddress(address _newRewardAddress)
-    whenNotPaused external override
+        external
+        override
+        whenNotPaused
     {
         uint256 validatorId = validatorRewardAddressToId[msg.sender];
         address oldRewardAddress = validatorIdToRewardAddress[validatorId];
@@ -269,11 +271,9 @@ contract NodeOperatorRegistry is
     /// @notice set MIN_REQUEST_WITHDRAW_RANGE_PERCENTS
     /// ONLY DAO can call this function
     /// @param _newMinRequestWithdrawRangePercents the min request withdraw range percents.
-    function setMinRequestWithdrawRange(uint8 _newMinRequestWithdrawRangePercents)
-        external
-        override
-        onlyRole(DAO_ROLE)
-    {
+    function setMinRequestWithdrawRange(
+        uint8 _newMinRequestWithdrawRangePercents
+    ) external override onlyRole(DAO_ROLE) {
         require(
             _newMinRequestWithdrawRangePercents <= 100,
             "Invalid minRequestWithdrawRange"
@@ -349,8 +349,7 @@ contract NodeOperatorRegistry is
         uint256 length = memValidatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[]
-            memory activeValidators = new ValidatorData[](length);
+        ValidatorData[] memory activeValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
@@ -360,9 +359,7 @@ contract NodeOperatorRegistry is
                 if (!IValidatorShare(validator.contractAddress).delegation())
                     continue;
 
-                activeValidators[
-                    totalActiveNodeOperators
-                ] = ValidatorData(
+                activeValidators[totalActiveNodeOperators] = ValidatorData(
                     validator.contractAddress,
                     validatorIdToRewardAddress[memValidatorIds[i]]
                 );
@@ -387,8 +384,7 @@ contract NodeOperatorRegistry is
         uint256 length = memValidatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[]
-            memory withdrawValidators = new ValidatorData[](length);
+        ValidatorData[] memory withdrawValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
@@ -464,10 +460,14 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            bool isDelegationEnabled = IValidatorShare(validator.contractAddress)
-                .delegation();
+            bool isDelegationEnabled = IValidatorShare(
+                validator.contractAddress
+            ).delegation();
 
-            if (status == NodeOperatorRegistryStatus.ACTIVE && isDelegationEnabled) {
+            if (
+                status == NodeOperatorRegistryStatus.ACTIVE &&
+                isDelegationEnabled
+            ) {
                 stakePerOperator[activeOperatorCount] = amount;
 
                 validators[activeOperatorCount] = ValidatorData(
@@ -511,17 +511,18 @@ contract NodeOperatorRegistry is
         uint256 totalStaked;
         uint256 distanceThreshold;
         (
-        validators,
+            validators,
             totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
-        bool isTheSystemBalanced = distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS;
+        bool isTheSystemBalanced = distanceThreshold <=
+            DISTANCE_THRESHOLD_PERCENTS;
         if (isTheSystemBalanced) {
             return (
-            validators,
+                validators,
                 totalActiveNodeOperator,
                 operatorRatios,
                 totalRatio
@@ -580,14 +581,17 @@ contract NodeOperatorRegistry is
         uint256 totalStaked;
         uint256 distanceThreshold;
         (
-        validators,
+            validators,
             totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
-        require(totalActiveNodeOperator > 1, "Not enough active operators to rebalance");
+        require(
+            totalActiveNodeOperator > 1,
+            "Not enough active operators to rebalance"
+        );
 
         require(
             distanceThreshold >= DISTANCE_THRESHOLD_PERCENTS && totalStaked > 0,
@@ -717,7 +721,7 @@ contract NodeOperatorRegistry is
         uint256 maxAmount;
 
         (
-        validators,
+            validators,
             stakePerOperator,
             totalDelegated,
             minAmount,
@@ -726,7 +730,7 @@ contract NodeOperatorRegistry is
 
         if (totalDelegated == 0) {
             return (
-            validators,
+                validators,
                 totalDelegated,
                 bigNodeOperatorLength,
                 bigNodeOperatorIds,
@@ -911,8 +915,8 @@ contract NodeOperatorRegistry is
     /// @return maxAmount max amount delegated to a validator.
     function getProtocolStats()
         external
-        override
         view
+        override
         returns (
             bool isBalanced,
             uint256 distanceThreshold,
