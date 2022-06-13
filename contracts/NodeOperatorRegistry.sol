@@ -557,13 +557,13 @@ contract NodeOperatorRegistry is
     /// buffered tokens. If validators are in EJECTED or UNSTAKED status the function will revert.
     /// If the system is balanced the function will revert.
     /// @notice Calculate the operator ratios to rebalance the system.
-    /// @param _totalBuffered The total amount buffered in stMatic.
+    /// @param _amountToReDelegate The total amount to redelegate in Matic.
     /// @return validators all active node operators.
     /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
-    function getValidatorsRebalanceAmount(uint256 _totalBuffered)
+    function getValidatorsRebalanceAmount(uint256 _amountToReDelegate)
         external
         view
         override
@@ -610,8 +610,8 @@ contract NodeOperatorRegistry is
             operatorRatios[idx] = operatorRatioToRebalance;
             totalRatio += operatorRatioToRebalance;
         }
-        totalToWithdraw = totalRatio > _totalBuffered
-            ? totalRatio - _totalBuffered
+        totalToWithdraw = totalRatio > _amountToReDelegate
+            ? totalRatio - _amountToReDelegate
             : 0;
 
         require(totalToWithdraw > 0, "Zero total to withdraw");
