@@ -587,6 +587,8 @@ contract NodeOperatorRegistry is
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
+        require(totalActiveNodeOperator > 1, "Not enough active operators to rebalance");
+
         require(
             distanceThreshold >= DISTANCE_THRESHOLD_PERCENTS && totalStaked > 0,
             "The system is balanced"
