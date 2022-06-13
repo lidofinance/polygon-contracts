@@ -67,11 +67,6 @@ interface INodeOperatorRegistry {
     /// @param validatorId the validator id on stakeManager.
     function removeInvalidNodeOperator(uint256 validatorId) external;
 
-    /// @notice Set the new commission rate
-    /// ONLY DAO can call this function
-    /// @param newCommissionRate the new commission rate
-    function setCommissionRate(uint8 newCommissionRate) external;
-
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
     /// @param newStMatic new stMatic address.
@@ -279,14 +274,6 @@ interface INodeOperatorRegistry {
         uint256 validatorId,
         address oldRewardAddress,
         address newRewardAddress
-    );
-
-    /// @notice Emit when the default commission rate is changed.
-    /// @param oldCommissionRate the old commission rate.
-    /// @param newCommissionRate the new commission rate.
-    event SetCommissionRate(
-        uint256 oldCommissionRate,
-        uint256 newCommissionRate
     );
 
     /// @notice Emit when the distance threshold is changed.

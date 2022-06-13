@@ -47,9 +47,6 @@ contract NodeOperatorRegistry is
     /// when the system is balanced.
     uint8 public MIN_REQUEST_WITHDRAW_RANGE_PERCENTS;
 
-    /// @notice the default commission rate for operators.
-    uint8 public DEFAULT_COMMISSION_RATE;
-
     /// @notice all the validators ids.
     uint256[] public validatorIds;
 
@@ -83,7 +80,6 @@ contract NodeOperatorRegistry is
 
         DISTANCE_THRESHOLD_PERCENTS = 100;
         MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
-        DEFAULT_COMMISSION_RATE = 5;
         MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = 15;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -230,24 +226,6 @@ contract NodeOperatorRegistry is
     /////                 ***Setters***                      ///
     /////                                                    ///
     ////////////////////////////////////////////////////////////
-
-    ///@notice Set default commission rate.
-    /// ONLY DAO can call this function.
-    ///@param _newCommissionRate new commission rate.
-    function setCommissionRate(uint8 _newCommissionRate)
-        external
-        override
-        userHasRole(DAO_ROLE)
-    {
-        require(
-            _newCommissionRate != 0 && _newCommissionRate <= 100,
-            "Invalid commission rate"
-        );
-
-        uint256 oldCommissionRate = DEFAULT_COMMISSION_RATE;
-        DEFAULT_COMMISSION_RATE = _newCommissionRate;
-        emit SetCommissionRate(oldCommissionRate, _newCommissionRate);
-    }
 
     /// @notice Set StMatic address.
     /// ONLY DAO can call this function
