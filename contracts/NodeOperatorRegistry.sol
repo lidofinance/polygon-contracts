@@ -299,22 +299,22 @@ contract NodeOperatorRegistry is
 
     /// @notice set MIN_REQUEST_WITHDRAW_RANGE_PERCENTS
     /// ONLY DAO can call this function
-    /// @param _newMinRequestWithdrawRange the min request withdraw range.
-    function setMinRequestWithdrawRange(uint8 _newMinRequestWithdrawRange)
+    /// @param _newMinRequestWithdrawRangePercents the min request withdraw range percents.
+    function setMinRequestWithdrawRange(uint8 _newMinRequestWithdrawRangePercents)
         external
         override
         userHasRole(DAO_ROLE)
     {
         require(
-            _newMinRequestWithdrawRange <= 100,
+            _newMinRequestWithdrawRangePercents <= 100,
             "Invalid minRequestWithdrawRange"
         );
         uint8 _oldMinRequestWithdrawRange = MIN_REQUEST_WITHDRAW_RANGE_PERCENTS;
-        MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = _newMinRequestWithdrawRange;
+        MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = _newMinRequestWithdrawRangePercents;
 
         emit SetMinRequestWithdrawRange(
             _oldMinRequestWithdrawRange,
-            _newMinRequestWithdrawRange
+            _newMinRequestWithdrawRangePercents
         );
     }
 
