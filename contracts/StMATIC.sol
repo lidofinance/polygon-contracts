@@ -420,9 +420,16 @@ contract StMATIC is
                     (operatorRatios[i] * amountToDelegate) /
                     totalRatio;
             }
+            address _validatorAddress = activeNodeOperators[i].validatorShare;
+            
+            uint256 shares = _calculateValidatorShares(
+                _validatorAddress,
+                amountToDelegatePerOperator
+            );
+            if (shares == 0) continue;
 
             buyVoucher(
-                activeNodeOperators[i].validatorShare,
+                _validatorAddress,
                 amountToDelegatePerOperator,
                 0
             );
