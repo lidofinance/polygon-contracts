@@ -409,7 +409,7 @@ contract NodeOperatorRegistry is
 
     /// @notice Returns operators delegation infos.
     /// @return validators all active node operators.
-    /// @return activeOperatorCount count onlt active validators.
+    /// @return activeOperatorCount count only active validators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
     /// @return distanceThreshold the distance between the min and max amount staked in a validator.
