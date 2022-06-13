@@ -646,12 +646,22 @@ contract StMATIC is
             );
 
         uint256 amountToWithdraw;
+        address _validatorAddress;
         for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
             if (operatorRatios[i] == 0) continue;
 
             amountToWithdraw =
                 (operatorRatios[i] * totalToWithdraw) /
                 totalRatio;
+            if (amountToWithdraw == 0 ) continue;
+            
+            _validatorAddress = nodeOperators[i].validatorShare;
+            uint256 shares = _calculateValidatorShares(
+                _validatorAddress,
+                amountToWithdraw
+            );
+            if (shares == 0) continue;
+
             _createWithdrawRequest(
                 nodeOperators[i].validatorShare,
                 amountToWithdraw
