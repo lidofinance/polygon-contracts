@@ -218,14 +218,13 @@ contract StMATIC is
         );
         _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
 
-        if (totalDelegated != 0) {
+        {
+            uint256 localActiveBalance = totalBuffered > reservedFunds
+                ? totalBuffered - reservedFunds
+                : 0;
+            uint256 liquidity = totalDelegated + localActiveBalance;
             _require(
-                (totalDelegated + totalBuffered) >= totalAmount2WithdrawInMatic,
-                "Too much to withdraw"
-            );
-        } else {
-            _require(
-                totalBuffered >= totalAmount2WithdrawInMatic,
+                liquidity >= totalAmount2WithdrawInMatic,
                 "Too much to withdraw"
             );
         }
