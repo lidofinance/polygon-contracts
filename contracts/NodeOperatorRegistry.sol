@@ -37,8 +37,8 @@ contract NodeOperatorRegistry is
     bytes32 public constant REMOVE_NODE_OPERATOR_ROLE =
         keccak256("REMOVE_NODE_OPERATOR_ROLE");
 
-    /// @notice The min amount to recognize the system as balanced.
-    uint256 public DISTANCE_THRESHOLD;
+    /// @notice The min percent to recognize the system as balanced.
+    uint256 public DISTANCE_THRESHOLD_PERCENTS;
 
     /// @notice The maximum percentage withdraw per system rebalance.
     uint256 public MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE;
@@ -81,7 +81,7 @@ contract NodeOperatorRegistry is
         stakeManager = _stakeManager;
         stMATIC = _stMATIC;
 
-        DISTANCE_THRESHOLD = 100;
+        DISTANCE_THRESHOLD_PERCENTS = 100;
         MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
         DEFAULT_COMMISSION_RATE = 5;
         MIN_REQUEST_WITHDRAW_RANGE = 15;
@@ -281,7 +281,7 @@ contract NodeOperatorRegistry is
         emit SetRewardAddress(validatorId, oldRewardAddress, _newRewardAddress);
     }
 
-    /// @notice set DISTANCE_THRESHOLD
+    /// @notice set DISTANCE_THRESHOLD_PERCENTS
     /// ONLY DAO can call this function
     /// @param _newDistanceThreshold the min rebalance threshold to include
     /// a validator in the delegation process.
@@ -291,8 +291,8 @@ contract NodeOperatorRegistry is
         userHasRole(DAO_ROLE)
     {
         require(_newDistanceThreshold >= 100, "Invalid distance threshold");
-        uint256 _oldDistanceThreshold = DISTANCE_THRESHOLD;
-        DISTANCE_THRESHOLD = _newDistanceThreshold;
+        uint256 _oldDistanceThreshold = DISTANCE_THRESHOLD_PERCENTS;
+        DISTANCE_THRESHOLD_PERCENTS = _newDistanceThreshold;
 
         emit SetDistanceThreshold(_oldDistanceThreshold, _newDistanceThreshold);
     }
@@ -550,7 +550,7 @@ contract NodeOperatorRegistry is
         ) = _getValidatorsDelegationInfos();
 
         // If the system is balanced
-        if (distanceThreshold <= DISTANCE_THRESHOLD) {
+        if (distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS) {
             return (
             validators,
                 totalActiveNodeOperator,
@@ -574,7 +574,7 @@ contract NodeOperatorRegistry is
             if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
                 operatorRatioToDelegate = (rebalanceTarget * 100) /
                     stakePerOperator[idx] >=
-                    DISTANCE_THRESHOLD
+                    DISTANCE_THRESHOLD_PERCENTS
                     ? operatorRatioToDelegate
                     : 0;
             }
@@ -619,7 +619,7 @@ contract NodeOperatorRegistry is
         ) = _getValidatorsDelegationInfos();
 
         require(
-            distanceThreshold >= DISTANCE_THRESHOLD && totalStaked > 0,
+            distanceThreshold >= DISTANCE_THRESHOLD_PERCENTS && totalStaked > 0,
             "The system is balanced"
         );
 
@@ -634,7 +634,7 @@ contract NodeOperatorRegistry is
 
             operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
                 rebalanceTarget >=
-                DISTANCE_THRESHOLD
+                DISTANCE_THRESHOLD_PERCENTS
                 ? operatorRatioToRebalance
                 : 0;
 
@@ -780,7 +780,7 @@ contract NodeOperatorRegistry is
             : totalValidatorToWithdrawFrom;
 
         if (
-            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD &&
+            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS &&
             minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount
         ) {
             return (
@@ -971,7 +971,7 @@ contract NodeOperatorRegistry is
 
         uint256 min = minAmount == 0 ? 1 : minAmount;
         distanceThreshold = ((maxAmount * 100) / min);
-        isBalanced = distanceThreshold <= DISTANCE_THRESHOLD;
+        isBalanced = distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS;
     }
 
     /// @notice List all the node operator statuses in the system.
