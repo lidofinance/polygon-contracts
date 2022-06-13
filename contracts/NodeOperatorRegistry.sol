@@ -85,7 +85,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Add a new node operator to the system.
-    /// ONLY DAO can execute this function.
+    /// ONLY ADD_NODE_OPERATOR_ROLE can execute this function.
     /// @param _validatorId the validator id on stakeManager.
     /// @param _rewardAddress the reward address.
     function addNodeOperator(uint256 _validatorId, address _rewardAddress)
