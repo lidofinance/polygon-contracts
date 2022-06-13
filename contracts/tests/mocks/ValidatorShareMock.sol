@@ -17,7 +17,7 @@ contract ValidatorShareMock is IValidatorShare {
     uint256 public totalStaked;
     uint256 public totalWithdrawPoolShares;
     uint256 public override validatorId;
-
+    uint256 public _exchangeRate;
     mapping(address => mapping(uint256 => uint256))
         public user2WithdrawPoolShare;
     mapping(address => uint256) public override unbondNonces;
@@ -33,6 +33,7 @@ contract ValidatorShareMock is IValidatorShare {
         stakeManager = IStakeManager(_stakeManager);
         validatorId = _id;
         delegation = true;
+        _exchangeRate = 1;
     }
 
     function calculateRewards() private view returns (uint256) {
@@ -190,5 +191,13 @@ contract ValidatorShareMock is IValidatorShare {
     /// @notice Test only used to increase the delegation for a user.
     function increaseStakeFor(uint256 _amount) external {
         totalStaked = _amount;
+    }
+
+    function exchangeRate() external override view returns (uint256) {
+        return _exchangeRate;
+    }
+
+    function setExchangeRate(uint256 _newExchangeRate) external {
+        _exchangeRate = _newExchangeRate;
     }
 }

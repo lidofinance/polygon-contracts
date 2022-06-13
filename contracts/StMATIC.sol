@@ -158,7 +158,7 @@ contract StMATIC is
         nonReentrant
         returns (uint256)
     {
-        require(_amount > 0, "Invalid amount");
+        _require(_amount > 0, "Invalid amount");
 
         IERC20Upgradeable(token).safeTransferFrom(
             msg.sender,
@@ -172,7 +172,7 @@ contract StMATIC is
             uint256 totalPooledMatic
         ) = convertMaticToStMatic(_amount);
 
-        require(amountToMint > 0, "Mint ZERO");
+        _require(amountToMint > 0, "Mint ZERO");
 
         _mint(msg.sender, amountToMint);
 
@@ -195,7 +195,7 @@ contract StMATIC is
         whenNotPaused
         nonReentrant
     {
-        require(
+        _require(
             _amount > 0 && balanceOf(msg.sender) >= _amount,
             "Invalid amount"
         );
@@ -216,15 +216,15 @@ contract StMATIC is
             _amount,
             totalPooledMatic
         );
-        require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
+        _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
 
         if (totalDelegated != 0) {
-            require(
+            _require(
                 (totalDelegated + totalBuffered) >= totalAmount2WithdrawInMatic,
                 "Too much to withdraw"
             );
         } else {
-            require(
+            _require(
                 totalBuffered >= totalAmount2WithdrawInMatic,
                 "Too much to withdraw"
             );
@@ -380,7 +380,7 @@ contract StMATIC is
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract
     function delegate() external override whenNotPaused nonReentrant {
-        require(
+        _require(
             totalBuffered > delegationLowerBound + reservedFunds,
             "Amount to delegate lower than minimum"
         );
@@ -440,7 +440,7 @@ contract StMATIC is
     /// user if his request is in the userToWithdrawRequest
     /// @param _tokenId - Id of the token that wants to be claimed
     function claimTokens(uint256 _tokenId) external override whenNotPaused {
-        require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
+        _require(poLidoNFT.isApprovedOrOwner(msg.sender, _tokenId), "Not owner");
 
         if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
             _claimTokensV1(_tokenId);
@@ -456,7 +456,7 @@ contract StMATIC is
         RequestWithdraw[] memory usersRequest = token2WithdrawRequests[
             _tokenId
         ];
-        require(
+        _require(
             stakeManager.epoch() >= usersRequest[0].requestEpoch,
             "Not able to claim yet"
         );
@@ -497,7 +497,7 @@ contract StMATIC is
     function _claimTokensV1(uint256 _tokenId) private {
         RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
 
-        require(
+        _require(
             stakeManager.epoch() >= usersRequest.requestEpoch,
             "Not able to claim yet"
         );
@@ -556,7 +556,7 @@ contract StMATIC is
             (IERC20Upgradeable(token).balanceOf(address(this)) - totalBuffered)
         ) / protocolFee;
 
-        require(
+        _require(
             totalRewards > rewardDistributionLowerBound,
             "Amount to distribute lower than minimum"
         );
@@ -600,7 +600,7 @@ contract StMATIC is
         override
         nonReentrant
     {
-        require(
+        _require(
             msg.sender == address(nodeOperatorRegistry),
             "Not a node operator"
         );
@@ -608,8 +608,13 @@ contract StMATIC is
         (uint256 stakedAmount, ) = getTotalStake(
             IValidatorShare(_validatorShare)
         );
-
-        if (stakedAmount == 0) {
+        
+        // Check if the validator has enough shares.
+        uint256 shares = _calculateValidatorShares(
+            _validatorShare,
+            stakedAmount
+        );
+        if (shares == 0) {
             return;
         }
 
@@ -689,10 +694,10 @@ contract StMATIC is
         nonReentrant
     {
         uint256 length = stMaticWithdrawRequest.length;
-        require(_index < length, "invalid index");
+        _require(_index < length, "invalid index");
         RequestWithdraw memory lidoRequests = stMaticWithdrawRequest[_index];
 
-        require(
+        _require(
             stakeManager.epoch() >= lidoRequests.requestEpoch,
             "Not able to claim yet"
         );
@@ -974,7 +979,7 @@ contract StMATIC is
         uint8 _operatorsFee,
         uint8 _insuranceFee
     ) external override onlyRole(DAO) {
-        require(
+        _require(
             _daoFee + _operatorsFee + _insuranceFee == 100,
             "sum(fee)!=100"
         );
@@ -992,7 +997,7 @@ contract StMATIC is
         override
         onlyRole(DAO)
     {
-        require(
+        _require(
             _newProtocolFee > 0 && _newProtocolFee <= 100,
             "Invalid protcol fee"
         );
@@ -1127,8 +1132,7 @@ contract StMATIC is
         IValidatorShare validatorShare = IValidatorShare(
             requestData.validatorAddress
         );
-        uint256 validatorId = validatorShare.validatorId();
-        uint256 exchangeRatePrecision = validatorId < 8 ? 100 : 10**29;
+        uint256 exchangeRatePrecision = _getExchangeRatePrecision(validatorShare.validatorId());
         uint256 withdrawExchangeRate = validatorShare.withdrawExchangeRate();
         IValidatorShare.DelegatorUnbond memory unbond = validatorShare
             .unbonds_new(address(this), requestData.validatorNonce);
@@ -1137,6 +1141,34 @@ contract StMATIC is
     }
 
     function _nonReentrant() private view {
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        _require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+    }
+
+    function _require(bool _condition, string memory _message) private pure{
+        require(_condition, _message);
+    }
+
+    /// @dev get the exchange rate precision per validator.
+    function _getExchangeRatePrecision(uint256 _validatorId)
+        private
+        pure
+        returns (uint256)
+    {
+        return _validatorId < 8 ? 100 : 10**29;
+    }
+
+    /// @dev calculate the number of shares to get when delegate an amount of Matic
+    function _calculateValidatorShares(
+        address _validatorAddress,
+        uint256 _amountInMatic
+    ) private view returns (uint256) {
+        IValidatorShare validatorShare = IValidatorShare(
+            _validatorAddress
+        );
+        uint256 exchangeRatePrecision = _getExchangeRatePrecision(
+            validatorShare.validatorId()
+        );
+        uint256 rate = validatorShare.exchangeRate();
+        return (_amountInMatic * exchangeRatePrecision) / rate;
     }
 }
