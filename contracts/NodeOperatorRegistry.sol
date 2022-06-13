@@ -82,12 +82,12 @@ contract NodeOperatorRegistry is
         MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
         MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = 15;
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(PAUSE_ROLE, msg.sender);
-        _setupRole(UNPAUSE_ROLE, _dao);
-        _setupRole(DAO_ROLE, _dao);
-        _setupRole(ADD_NODE_OPERATOR_ROLE, _dao);
-        _setupRole(REMOVE_NODE_OPERATOR_ROLE, _dao);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSE_ROLE, msg.sender);
+        _grantRole(UNPAUSE_ROLE, _dao);
+        _grantRole(DAO_ROLE, _dao);
+        _grantRole(ADD_NODE_OPERATOR_ROLE, _dao);
+        _grantRole(REMOVE_NODE_OPERATOR_ROLE, _dao);
         version = "2.0.0";
     }
 
