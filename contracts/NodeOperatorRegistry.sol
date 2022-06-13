@@ -464,10 +464,10 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            bool delegation = IValidatorShare(validator.contractAddress)
+            bool isDelegationEnabled = IValidatorShare(validator.contractAddress)
                 .delegation();
 
-            if (status == NodeOperatorRegistryStatus.ACTIVE && delegation) {
+            if (status == NodeOperatorRegistryStatus.ACTIVE && isDelegationEnabled) {
                 stakePerOperator[activeOperatorCount] = amount;
 
                 validators[activeOperatorCount] = ValidatorData(
