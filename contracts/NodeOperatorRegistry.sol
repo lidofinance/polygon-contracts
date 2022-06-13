@@ -58,13 +58,6 @@ contract NodeOperatorRegistry is
     /// extend the struct.
     mapping(address => uint256) public validatorRewardAddressToId;
 
-    /// @notice Check if the msg.sender has permission.
-    /// @param _role role needed to call function.
-    modifier userHasRole(bytes32 _role) {
-        require(hasRole(_role, msg.sender), "Unauthorized");
-        _;
-    }
-
     /// @notice Initialize the NodeOperatorRegistry contract.
     function initialize(
         IStakeManager _stakeManager,
@@ -98,7 +91,7 @@ contract NodeOperatorRegistry is
     function addNodeOperator(uint256 _validatorId, address _rewardAddress)
         external
         override
-        userHasRole(ADD_NODE_OPERATOR_ROLE)
+        onlyRole(ADD_NODE_OPERATOR_ROLE)
         nonReentrant
     {
         require(_validatorId != 0, "ValidatorId=0");
@@ -160,7 +153,7 @@ contract NodeOperatorRegistry is
     function removeNodeOperator(uint256 _validatorId)
         external
         override
-        userHasRole(REMOVE_NODE_OPERATOR_ROLE)
+        onlyRole(REMOVE_NODE_OPERATOR_ROLE)
         nonReentrant
     {
         address rewardAddress = validatorIdToRewardAddress[_validatorId];
@@ -231,7 +224,7 @@ contract NodeOperatorRegistry is
     function setStMaticAddress(address _newStMatic)
         external
         override
-        userHasRole(DAO_ROLE)
+        onlyRole(DAO_ROLE)
     {
         require(_newStMatic != address(0), "Invalid stMatic address");
 
@@ -264,7 +257,7 @@ contract NodeOperatorRegistry is
     function setDistanceThreshold(uint256 _newDistanceThreshold)
         external
         override
-        userHasRole(DAO_ROLE)
+        onlyRole(DAO_ROLE)
     {
         require(_newDistanceThreshold >= 100, "Invalid distance threshold");
         uint256 _oldDistanceThreshold = DISTANCE_THRESHOLD_PERCENTS;
@@ -279,7 +272,7 @@ contract NodeOperatorRegistry is
     function setMinRequestWithdrawRange(uint8 _newMinRequestWithdrawRangePercents)
         external
         override
-        userHasRole(DAO_ROLE)
+        onlyRole(DAO_ROLE)
     {
         require(
             _newMinRequestWithdrawRangePercents <= 100,
@@ -300,7 +293,7 @@ contract NodeOperatorRegistry is
     /// withdraw from a validator per rebalance.
     function setMaxWithdrawPercentagePerRebalance(
         uint256 _newMaxWithdrawPercentagePerRebalance
-    ) external override userHasRole(DAO_ROLE) {
+    ) external override onlyRole(DAO_ROLE) {
         require(
             _newMaxWithdrawPercentagePerRebalance <= 100,
             "Invalid maxWithdrawPercentagePerRebalance"
@@ -319,7 +312,7 @@ contract NodeOperatorRegistry is
     function setVersion(string memory _newVersion)
         external
         override
-        userHasRole(DAO_ROLE)
+        onlyRole(DAO_ROLE)
     {
         string memory oldVersion = version;
         version = _newVersion;
