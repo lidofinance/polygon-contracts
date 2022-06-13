@@ -184,9 +184,6 @@ contract NodeOperatorRegistry is
         whenNotPaused
         nonReentrant
     {
-        address rewardAddress = validatorIdToRewardAddress[_validatorId];
-        require(rewardAddress != address(0), "Validator doesn't exist");
-
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
@@ -197,6 +194,7 @@ contract NodeOperatorRegistry is
                 operatorStatus == NodeOperatorRegistryStatus.EJECTED,
             "Cannot remove valid operator."
         );
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
 
         _removeOperator(_validatorId, validator.contractAddress, rewardAddress);
 
