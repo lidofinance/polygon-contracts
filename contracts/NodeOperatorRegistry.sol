@@ -620,10 +620,10 @@ contract NodeOperatorRegistry is
             ? totalRatio - _amountToReDelegate
             : 0;
 
-        require(totalToWithdraw > 0, "Zero total to withdraw");
         totalToWithdraw =
             (totalToWithdraw * MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE) /
             100;
+        require(totalToWithdraw > 0, "Zero total to withdraw");
     }
 
     /// @notice Returns operators info.
