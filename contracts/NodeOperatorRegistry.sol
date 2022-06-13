@@ -45,7 +45,7 @@ contract NodeOperatorRegistry is
 
     /// @notice Allows to increse the number of validators to request withdraw from
     /// when the system is balanced.
-    uint8 public MIN_REQUEST_WITHDRAW_RANGE;
+    uint8 public MIN_REQUEST_WITHDRAW_RANGE_PERCENTS;
 
     /// @notice the default commission rate for operators.
     uint8 public DEFAULT_COMMISSION_RATE;
@@ -84,7 +84,7 @@ contract NodeOperatorRegistry is
         DISTANCE_THRESHOLD_PERCENTS = 100;
         MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
         DEFAULT_COMMISSION_RATE = 5;
-        MIN_REQUEST_WITHDRAW_RANGE = 15;
+        MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = 15;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(PAUSE_ROLE, msg.sender);
@@ -297,7 +297,7 @@ contract NodeOperatorRegistry is
         emit SetDistanceThreshold(_oldDistanceThreshold, _newDistanceThreshold);
     }
 
-    /// @notice set MIN_REQUEST_WITHDRAW_RANGE
+    /// @notice set MIN_REQUEST_WITHDRAW_RANGE_PERCENTS
     /// ONLY DAO can call this function
     /// @param _newMinRequestWithdrawRange the min request withdraw range.
     function setMinRequestWithdrawRange(uint8 _newMinRequestWithdrawRange)
@@ -309,8 +309,8 @@ contract NodeOperatorRegistry is
             _newMinRequestWithdrawRange <= 100,
             "Invalid minRequestWithdrawRange"
         );
-        uint8 _oldMinRequestWithdrawRange = MIN_REQUEST_WITHDRAW_RANGE;
-        MIN_REQUEST_WITHDRAW_RANGE = _newMinRequestWithdrawRange;
+        uint8 _oldMinRequestWithdrawRange = MIN_REQUEST_WITHDRAW_RANGE_PERCENTS;
+        MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = _newMinRequestWithdrawRange;
 
         emit SetMinRequestWithdrawRange(
             _oldMinRequestWithdrawRange,
@@ -771,7 +771,7 @@ contract NodeOperatorRegistry is
             totalDelegated;
 
         totalValidatorToWithdrawFrom =
-            (((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE) *
+            (((withdrawAmountPercentage + MIN_REQUEST_WITHDRAW_RANGE_PERCENTS) *
                 length) / 100) +
             1;
 
