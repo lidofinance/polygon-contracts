@@ -73,6 +73,7 @@ describe("NodeOperator", function () {
         await erc20Mock.connect(signer).mint(toEth("1000000"))
 
         await stMATICMock.setOperator(nodeOperatorRegistry.address);
+        await nodeOperatorRegistry.setDistanceThreshold(100)
     });
 
     describe("Add Operator", async function () {
@@ -207,7 +208,7 @@ describe("NodeOperator", function () {
 
             // revert remove operator which not exist
             await expect(nodeOperatorRegistry.connect(user1).addNodeOperator(validatorId, user1.address))
-                .revertedWith("Unauthorized")
+                .reverted
         })
     })
 
@@ -230,7 +231,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
             await expect(nodeOperatorRegistry.exitNodeOperatorRegistry())
-                .revertedWith("Unauthorized");
+                .reverted;
 
         });
     })
@@ -321,7 +322,7 @@ describe("NodeOperator", function () {
 
             // revert user1 try no remove an operator
             await expect(nodeOperatorRegistry.connect(user1).removeNodeOperator(validatorId))
-                .revertedWith("Unauthorized")
+                .reverted
         })
     })
 
@@ -333,7 +334,7 @@ describe("NodeOperator", function () {
             const validatorId = 100
             // revert remove operator which not exist
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId))
-                .revertedWith("Validator doesn't exist")
+                .revertedWith("Operator not found")
         })
 
         it("should fully remove an invalid operator", async function () {
@@ -374,8 +375,6 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId1, user1.address)
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address)
 
-            await nodeOperatorRegistry.setCommissionRate(20);
-
             await stakeManagerMock.updateCommissionRate(validatorId1, 20);
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId1))
                 .revertedWith("Cannot remove valid operator.")
@@ -385,25 +384,6 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.removeInvalidNodeOperator(validatorId2))
                 .revertedWith("Cannot remove valid operator.")
         });
-    })
-
-    describe("Set Commission Rate", async function () {
-        it("should set the commission rate", async function () {
-            expect(await nodeOperatorRegistry.setCommissionRate(10))
-                .emit(nodeOperatorRegistry, "SetCommissionRate")
-                .withArgs(5, 10)
-        })
-
-        it("should fail to set the commission rate", async function () {
-            await expect(nodeOperatorRegistry.setCommissionRate(0))
-                .revertedWith("Invalid commission rate")
-
-            await expect(nodeOperatorRegistry.setCommissionRate(200))
-                .revertedWith("Invalid commission rate")
-
-            await expect(nodeOperatorRegistry.connect(user1).setCommissionRate(10))
-                .revertedWith("Unauthorized")
-        })
     })
 
     describe("St Matic Address", async function () {
@@ -420,7 +400,7 @@ describe("NodeOperator", function () {
 
             // revert user1 try to set stMatic address
             await expect(nodeOperatorRegistry.connect(user1).setStMaticAddress(user1.address))
-                .revertedWith("Unauthorized")
+                .reverted
         })
     })
 
@@ -433,6 +413,12 @@ describe("NodeOperator", function () {
             expect(await nodeOperatorRegistry.connect(user1).setRewardAddress(user2.address))
                 .emit(nodeOperatorRegistry, "SetRewardAddress")
                 .withArgs(validatorId, user1.address, user2.address)
+            expect(await nodeOperatorRegistry.validatorRewardAddressToId(user2.address))
+                .eq(validatorId)
+            expect(await nodeOperatorRegistry.validatorIdToRewardAddress(validatorId))
+                .eq(user2.address)
+            expect(await nodeOperatorRegistry.validatorRewardAddressToId(user1.address))
+                .eq(0)
         })
 
         it("Should fail set reward address", async function () {
@@ -441,7 +427,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
 
             await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
-                .revertedWith("Unauthorized")
+                .reverted
 
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Invalid reward address")
@@ -1991,7 +1977,7 @@ describe("NodeOperator", function () {
         it("Should fail to set version", async function () {
             const newVersion = "2.0.1"
             await expect(nodeOperatorRegistry.connect(user2).setVersion(newVersion))
-                .revertedWith("Unauthorized")
+                .reverted
         })
     })
 });
