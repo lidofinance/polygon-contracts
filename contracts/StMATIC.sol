@@ -306,6 +306,14 @@ contract StMATIC is
         for (uint256 idx = 0; idx < totalValidatorsToWithdrawFrom; idx++) {
             address validatorShare = activeNodeOperators[idx].validatorShare;
 
+            _require(
+                _calculateValidatorShares(
+                    validatorShare,
+                    currentAmount2WithdrawInMatic
+                ) > 0,
+                "ZERO shares to withdraw"
+            );
+
             currentAmount2WithdrawInMatic = _requestWithdraw(
                 tokenId,
                 validatorShare,
@@ -327,7 +335,9 @@ contract StMATIC is
     ) private returns (uint256) {
         for (uint256 idx = 0; idx < nodeOperatorLength; idx++) {
             uint256 id = nodeOperatorIds[idx];
-            uint256 amountCanBeRequested = allowedAmountToRequestFromOperators[id];
+            uint256 amountCanBeRequested = allowedAmountToRequestFromOperators[
+                id
+            ];
             if (amountCanBeRequested == 0) continue;
 
             uint256 amount2WithdrawFromValidator = amountCanBeRequested >
@@ -336,6 +346,14 @@ contract StMATIC is
                 : allowedAmountToRequestFromOperators[id];
 
             address validatorShare = activeNodeOperators[id].validatorShare;
+
+            _require(
+                _calculateValidatorShares(
+                    validatorShare,
+                    currentAmount2WithdrawInMatic
+                ) > 0,
+                "ZERO shares to withdraw"
+            );
 
             currentAmount2WithdrawInMatic = _requestWithdraw(
                 tokenId,
@@ -385,7 +403,8 @@ contract StMATIC is
         uint256 amountToDelegate = ltotalBuffered - lreservedFunds;
 
         (
-            INodeOperatorRegistry.ValidatorData[] memory delegatableNodeOperators,
+            INodeOperatorRegistry.ValidatorData[]
+                memory delegatableNodeOperators,
             uint256 totalDelegatableNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio
@@ -417,7 +436,8 @@ contract StMATIC is
                     (operatorRatios[i] * amountToDelegate) /
                     totalRatio;
             }
-            address _validatorAddress = delegatableNodeOperators[i].validatorShare;
+            address _validatorAddress = delegatableNodeOperators[i]
+                .validatorShare;
 
             uint256 shares = _calculateValidatorShares(
                 _validatorAddress,
