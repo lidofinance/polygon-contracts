@@ -71,7 +71,7 @@ contract NodeOperatorRegistry is
         stakeManager = _stakeManager;
         stMATIC = _stMATIC;
 
-        DISTANCE_THRESHOLD_PERCENTS = 100;
+        DISTANCE_THRESHOLD_PERCENTS = 120;
         MAX_WITHDRAW_PERCENTAGE_PER_REBALANCE = 20;
         MIN_REQUEST_WITHDRAW_RANGE_PERCENTS = 15;
 
