@@ -248,6 +248,8 @@ contract NodeOperatorRegistry is
         require(_newRewardAddress != address(0), "Invalid reward address");
 
         validatorIdToRewardAddress[validatorId] = _newRewardAddress;
+        validatorRewardAddressToId[_newRewardAddress] = validatorId;
+        delete validatorRewardAddressToId[msg.sender];
 
         emit SetRewardAddress(validatorId, oldRewardAddress, _newRewardAddress);
     }
