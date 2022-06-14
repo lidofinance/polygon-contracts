@@ -14,7 +14,6 @@ import "./interfaces/IStakeManager.sol";
 import "./interfaces/IPoLidoNFT.sol";
 import "./interfaces/IFxStateRootTunnel.sol";
 import "./interfaces/IStMATIC.sol";
-import "hardhat/console.sol";
 
 /// @title StMATIC
 /// @author 2021 ShardLabs.
