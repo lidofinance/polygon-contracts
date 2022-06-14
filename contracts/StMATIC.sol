@@ -788,12 +788,6 @@ contract StMATIC is
         return amountSpent;
     }
 
-    /// @notice API for delegated restaking rewards to validatorShare
-    /// @param _validatorShare - Address of validatorShare contract
-    function restake(address _validatorShare) private {
-        IValidatorShare(_validatorShare).restake();
-    }
-
     /// @notice API for delegated unstaking and claiming tokens from validatorShare
     /// @param _validatorShare - Address of validatorShare contract
     /// @param _unbondNonce - Unbond nonce
