@@ -913,7 +913,7 @@ contract StMATIC is
     /// @return totalStMaticAmount - Total StMatic in the contract,
     /// @return totalPooledMatic - Total Matic in the staking pool
     function convertStMaticToMatic(uint256 _amountInStMatic)
-        public
+        external
         view
         override
         returns (
