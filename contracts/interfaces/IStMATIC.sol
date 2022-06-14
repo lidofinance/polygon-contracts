@@ -126,7 +126,6 @@ interface IStMATIC is IERC20Upgradeable {
     /// @param _stakeManager - Address of the stake manager
     /// @param _poLidoNFT - Address of the stMATIC NFT
     /// @param _fxStateRootTunnel - Address of the FxStateRootTunnel
-    /// @param _submitThreshold - Submit for submit function
     function initialize(
         address _nodeOperatorRegistry,
         address _token,
@@ -134,8 +133,7 @@ interface IStMATIC is IERC20Upgradeable {
         address _insurance,
         address _stakeManager,
         address _poLidoNFT,
-        address _fxStateRootTunnel,
-        uint256 _submitThreshold
+        address _fxStateRootTunnel
     ) external;
 
     /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender

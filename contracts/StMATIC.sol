@@ -114,7 +114,6 @@ contract StMATIC is
     /// @param _stakeManager - Address of the stake manager
     /// @param _poLidoNFT - Address of the stMATIC NFT
     /// @param _fxStateRootTunnel - Address of the FxStateRootTunnel
-    /// @param _submitThreshold - Submit for submit function
     function initialize(
         address _nodeOperatorRegistry,
         address _token,
@@ -122,8 +121,7 @@ contract StMATIC is
         address _insurance,
         address _stakeManager,
         address _poLidoNFT,
-        address _fxStateRootTunnel,
-        uint256 _submitThreshold
+        address _fxStateRootTunnel
     ) external override initializer {
         __AccessControl_init_unchained();
         __Pausable_init_unchained();
@@ -143,8 +141,6 @@ contract StMATIC is
         insurance = _insurance;
 
         entityFees = FeeDistribution(25, 50, 25);
-        submitThreshold = _submitThreshold;
-        submitHandler = true;
     }
 
     /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender
