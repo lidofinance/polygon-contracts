@@ -203,7 +203,7 @@ contract StMATIC is
             uint256[] memory bigNodeOperatorIds,
             uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
-            uint256[] memory operatorAmountCanBeRequested,
+            uint256[] memory allowedAmountToRequestFromOperators,
             uint256 totalValidatorsToWithdrawFrom
         ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
 
@@ -245,7 +245,7 @@ contract StMATIC is
                     activeNodeOperators,
                     bigNodeOperatorLength,
                     bigNodeOperatorIds,
-                    operatorAmountCanBeRequested,
+                    allowedAmountToRequestFromOperators,
                     currentAmount2WithdrawInMatic
                 );
 
@@ -256,7 +256,7 @@ contract StMATIC is
                         activeNodeOperators,
                         smallNodeOperatorLength,
                         smallNodeOperatorIds,
-                        operatorAmountCanBeRequested,
+                        allowedAmountToRequestFromOperators,
                         currentAmount2WithdrawInMatic
                     );
                 }
@@ -322,18 +322,18 @@ contract StMATIC is
         INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 nodeOperatorLength,
         uint256[] memory nodeOperatorIds,
-        uint256[] memory operatorAmountCanBeRequested,
+        uint256[] memory allowedAmountToRequestFromOperators,
         uint256 currentAmount2WithdrawInMatic
     ) private returns (uint256) {
         for (uint256 idx = 0; idx < nodeOperatorLength; idx++) {
             uint256 id = nodeOperatorIds[idx];
-            uint256 amountCanBeRequested = operatorAmountCanBeRequested[id];
+            uint256 amountCanBeRequested = allowedAmountToRequestFromOperators[id];
             if (amountCanBeRequested == 0) continue;
 
             uint256 amount2WithdrawFromValidator = amountCanBeRequested >
                 currentAmount2WithdrawInMatic
                 ? currentAmount2WithdrawInMatic
-                : operatorAmountCanBeRequested[id];
+                : allowedAmountToRequestFromOperators[id];
 
             address validatorShare = activeNodeOperators[id].validatorShare;
 
