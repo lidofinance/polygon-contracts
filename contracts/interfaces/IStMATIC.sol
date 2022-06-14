@@ -391,4 +391,12 @@ interface IStMATIC is IERC20Upgradeable {
         address indexed validatorShare,
         uint256 indexed amountClaimed
     );
+
+    /// @notice Emit when set version.
+    /// @param oldVersion old.
+    /// @param newVersion new.
+    event Version(
+        string oldVersion,
+        string indexed newVersion
+    );
 }

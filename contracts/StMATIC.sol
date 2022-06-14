@@ -1105,6 +1105,7 @@ contract StMATIC is
         override
         onlyRole(DAO)
     {
+        emit Version(version, _newVersion);
         version = _newVersion;
     }
 
