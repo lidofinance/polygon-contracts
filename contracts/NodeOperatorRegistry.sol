@@ -519,8 +519,9 @@ contract NodeOperatorRegistry is
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
+        uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         bool isTheSystemBalanced = distanceThreshold <=
-            DISTANCE_THRESHOLD_PERCENTS;
+            distanceThresholdPercents;
         if (isTheSystemBalanced) {
             return (
                 validators,
@@ -545,7 +546,7 @@ contract NodeOperatorRegistry is
             if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
                 operatorRatioToDelegate = (rebalanceTarget * 100) /
                     stakePerOperator[idx] >=
-                    DISTANCE_THRESHOLD_PERCENTS
+                    distanceThresholdPercents
                     ? operatorRatioToDelegate
                     : 0;
             }
@@ -594,8 +595,9 @@ contract NodeOperatorRegistry is
             "Not enough active operators to rebalance"
         );
 
+        uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         require(
-            distanceThreshold >= DISTANCE_THRESHOLD_PERCENTS && totalStaked > 0,
+            distanceThreshold >= distanceThresholdPercents && totalStaked > 0,
             "The system is balanced"
         );
 
@@ -610,7 +612,7 @@ contract NodeOperatorRegistry is
 
             operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
                 rebalanceTarget >=
-                DISTANCE_THRESHOLD_PERCENTS
+                distanceThresholdPercents
                 ? operatorRatioToRebalance
                 : 0;
 
