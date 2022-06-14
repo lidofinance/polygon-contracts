@@ -405,7 +405,7 @@ contract StMATIC is
         for (uint256 i = 0; i < totalDelegatableNodeOperators; i++) {
             uint256 amountToDelegatePerOperator;
 
-            // If the total Ratio is equal to ZERO that means the systemis balanced so we
+            // If the total Ratio is equal to ZERO that means the system is balanced so we
             // distribute the buffered tokens equally between the validators
             if (totalRatio == 0) {
                 amountToDelegatePerOperator =
