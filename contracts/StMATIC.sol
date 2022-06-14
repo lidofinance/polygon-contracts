@@ -83,7 +83,7 @@ contract StMATIC is
     bytes32 public constant override UNPAUSE_ROLE =
         keccak256("LIDO_UNPAUSE_OPERATOR");
 
-    /// @notice When an operator quite the system StMATIC contract withdraw the total delegated
+    /// @notice When an operator quit the system StMATIC contract withdraw the total delegated
     /// to it. The request is stored inside this array.
     RequestWithdraw[] public stMaticWithdrawRequest;
 
@@ -706,13 +706,11 @@ contract StMATIC is
         override
         returns (uint256 pendingBufferedTokens)
     {
-        RequestWithdraw[]
-            memory stMaticWithdrawRequestCache = stMaticWithdrawRequest;
-        uint256 pendingWithdrawalLength = stMaticWithdrawRequestCache.length;
+        uint256 pendingWithdrawalLength = stMaticWithdrawRequest.length;
 
         for (uint256 i = 0; i < pendingWithdrawalLength; i++) {
-            pendingBufferedTokens += _getMaticFromTokenId(
-                stMaticWithdrawRequestCache[i]
+            pendingBufferedTokens += _getMaticFromRequestData(
+                stMaticWithdrawRequest[i]
             );
         }
         return pendingBufferedTokens;
@@ -727,10 +725,10 @@ contract StMATIC is
     {
         uint256 length = stMaticWithdrawRequest.length;
         _require(_index < length, "invalid index");
-        RequestWithdraw memory lidoRequests = stMaticWithdrawRequest[_index];
+        RequestWithdraw memory lidoRequest = stMaticWithdrawRequest[_index];
 
         _require(
-            stakeManager.epoch() >= lidoRequests.requestEpoch,
+            stakeManager.epoch() >= lidoRequest.requestEpoch,
             "Not able to claim yet"
         );
 
@@ -739,8 +737,8 @@ contract StMATIC is
         );
 
         unstakeClaimTokens_new(
-            lidoRequests.validatorAddress,
-            lidoRequests.validatorNonce
+            lidoRequest.validatorAddress,
+            lidoRequest.validatorNonce
         );
 
         uint256 claimedAmount = IERC20Upgradeable(token).balanceOf(
@@ -759,7 +757,7 @@ contract StMATIC is
         );
 
         emit ClaimTotalDelegatedEvent(
-            lidoRequests.validatorAddress,
+            lidoRequest.validatorAddress,
             claimedAmount
         );
     }
@@ -1137,21 +1135,21 @@ contract StMATIC is
         returns (uint256)
     {
         if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
-            return _getMaticFromTokenId(token2WithdrawRequest[_tokenId]);
+            return _getMaticFromRequestData(token2WithdrawRequest[_tokenId]);
         } else if (token2WithdrawRequests[_tokenId].length != 0) {
             RequestWithdraw[] memory requestsData = token2WithdrawRequests[
                 _tokenId
             ];
             uint256 totalMatic;
             for (uint256 idx = 0; idx < requestsData.length; idx++) {
-                totalMatic += _getMaticFromTokenId(requestsData[idx]);
+                totalMatic += _getMaticFromRequestData(requestsData[idx]);
             }
             return totalMatic;
         }
         return 0;
     }
 
-    function _getMaticFromTokenId(RequestWithdraw memory requestData)
+    function _getMaticFromRequestData(RequestWithdraw memory requestData)
         private
         view
         returns (uint256)
