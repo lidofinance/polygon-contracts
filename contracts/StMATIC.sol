@@ -385,8 +385,8 @@ contract StMATIC is
         uint256 amountToDelegate = ltotalBuffered - lreservedFunds;
 
         (
-            INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
-            uint256 totalActiveNodeOperator,
+            INodeOperatorRegistry.ValidatorData[] memory delegatableNodeOperators,
+            uint256 totalDelegatableNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(
@@ -402,7 +402,7 @@ contract StMATIC is
             amountToDelegate
         );
 
-        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
+        for (uint256 i = 0; i < totalDelegatableNodeOperators; i++) {
             uint256 amountToDelegatePerOperator;
 
             // If the total Ratio is equal to ZERO that means the systemis balanced so we
@@ -410,14 +410,14 @@ contract StMATIC is
             if (totalRatio == 0) {
                 amountToDelegatePerOperator =
                     amountToDelegate /
-                    totalActiveNodeOperator;
+                    totalDelegatableNodeOperators;
             } else {
                 if (operatorRatios[i] == 0) continue;
                 amountToDelegatePerOperator =
                     (operatorRatios[i] * amountToDelegate) /
                     totalRatio;
             }
-            address _validatorAddress = activeNodeOperators[i].validatorShare;
+            address _validatorAddress = delegatableNodeOperators[i].validatorShare;
 
             uint256 shares = _calculateValidatorShares(
                 _validatorAddress,
