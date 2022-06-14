@@ -347,15 +347,14 @@ contract NodeOperatorRegistry is
         returns (ValidatorData[] memory, uint256)
     {
         uint256 totalActiveNodeOperators = 0;
-        uint256[] memory memValidatorIds = validatorIds;
-        uint256 length = memValidatorIds.length;
+        uint256 length = validatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
         ValidatorData[] memory activeValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                memValidatorIds[i]
+                validatorIds[i]
             );
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 if (!IValidatorShare(validator.contractAddress).delegation())
@@ -363,7 +362,7 @@ contract NodeOperatorRegistry is
 
                 activeValidators[totalActiveNodeOperators] = ValidatorData(
                     validator.contractAddress,
-                    validatorIdToRewardAddress[memValidatorIds[i]]
+                    validatorIdToRewardAddress[validatorIds[i]]
                 );
                 totalActiveNodeOperators++;
             }
