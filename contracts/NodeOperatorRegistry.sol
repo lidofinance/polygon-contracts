@@ -627,7 +627,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Returns operators info.
-    /// @return activeValidators all active node operators.
+    /// @return nonInactiveValidators all no inactive node operators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalDelegated the total amount delegated to all validators.
     /// @return minAmount the distance between the min and max amount staked in a validator.
@@ -636,7 +636,7 @@ contract NodeOperatorRegistry is
         private
         view
         returns (
-            ValidatorData[] memory activeValidators,
+            ValidatorData[] memory nonInactiveValidators,
             uint256[] memory stakePerOperator,
             uint256 totalDelegated,
             uint256 minAmount,
@@ -644,7 +644,7 @@ contract NodeOperatorRegistry is
         )
     {
         uint256 length = validatorIds.length;
-        activeValidators = new ValidatorData[](length);
+        nonInactiveValidators = new ValidatorData[](length);
         stakePerOperator = new uint256[](length);
 
         uint256 validatorId;
@@ -671,7 +671,7 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            activeValidators[i] = ValidatorData(
+            nonInactiveValidators[i] = ValidatorData(
                 validator.contractAddress,
                 validatorIdToRewardAddress[validatorIds[i]]
             );
