@@ -1182,6 +1182,8 @@ contract StMATIC is
     }
 
     /// @dev get the exchange rate precision per validator.
+    /// More details: https://github.com/maticnetwork/contracts/blob/v0.3.0-backport/contracts/staking/validatorShare/ValidatorShare.sol#L21
+    /// https://github.com/maticnetwork/contracts/blob/v0.3.0-backport/contracts/staking/validatorShare/ValidatorShare.sol#L87
     function _getExchangeRatePrecision(uint256 _validatorId)
         private
         pure
