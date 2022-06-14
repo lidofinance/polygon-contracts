@@ -375,12 +375,14 @@ contract StMATIC is
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract
     function delegate() external override whenNotPaused nonReentrant {
+        uint256 ltotalBuffered = totalBuffered;
+        uint256 lreservedFunds = reservedFunds;
         _require(
-            totalBuffered > delegationLowerBound + reservedFunds,
+            ltotalBuffered > delegationLowerBound + lreservedFunds,
             "Amount to delegate lower than minimum"
         );
 
-        uint256 amountToDelegate = totalBuffered - reservedFunds;
+        uint256 amountToDelegate = ltotalBuffered - lreservedFunds;
 
         (
             INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
@@ -429,7 +431,7 @@ contract StMATIC is
         }
 
         remainder = amountToDelegate - amountDelegated;
-        totalBuffered = remainder + reservedFunds;
+        totalBuffered = remainder + lreservedFunds;
 
         emit DelegateEvent(amountDelegated, remainder);
     }
