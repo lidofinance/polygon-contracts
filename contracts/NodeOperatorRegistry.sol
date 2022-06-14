@@ -797,7 +797,7 @@ contract NodeOperatorRegistry is
             }
 
             uint256 operatorRatioToRebalance = stakePerOperator[idx] != 0 &&
-                stakePerOperator[idx] - rebalanceTarget > 0
+                stakePerOperator[idx] > rebalanceTarget
                 ? stakePerOperator[idx] - rebalanceTarget
                 : 0;
             operatorAmountCanBeRequested[idx] = operatorRatioToRebalance;
