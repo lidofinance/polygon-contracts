@@ -204,7 +204,7 @@ contract StMATIC is
             uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
-            uint256 totalValidatorToWithdrawFrom
+            uint256 totalValidatorsToWithdrawFrom
         ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
 
         uint256 totalPooledMatic = _getTotalPooledMatic(totalDelegated);
@@ -229,12 +229,12 @@ contract StMATIC is
         uint256 tokenId = poLidoNFT.mint(msg.sender);
 
         if (totalDelegated != 0) {
-            if (totalValidatorToWithdrawFrom != 0) {
+            if (totalValidatorsToWithdrawFrom != 0) {
                 currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
                     tokenId,
                     activeNodeOperators,
                     totalAmount2WithdrawInMatic,
-                    totalValidatorToWithdrawFrom,
+                    totalValidatorsToWithdrawFrom,
                     totalDelegated,
                     currentAmount2WithdrawInMatic
                 );
@@ -293,7 +293,7 @@ contract StMATIC is
         uint256 tokenId,
         INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
         uint256 totalAmount2WithdrawInMatic,
-        uint256 totalValidatorToWithdrawFrom,
+        uint256 totalValidatorsToWithdrawFrom,
         uint256 totalDelegated,
         uint256 currentAmount2WithdrawInMatic
     ) private returns (uint256) {
@@ -301,9 +301,9 @@ contract StMATIC is
             ? totalAmount2WithdrawInMatic
             : totalDelegated;
         uint256 amount2WithdrawFromValidator = totalAmount /
-            totalValidatorToWithdrawFrom;
+            totalValidatorsToWithdrawFrom;
 
-        for (uint256 idx = 0; idx < totalValidatorToWithdrawFrom; idx++) {
+        for (uint256 idx = 0; idx < totalValidatorsToWithdrawFrom; idx++) {
             address validatorShare = activeNodeOperators[idx].validatorShare;
 
             currentAmount2WithdrawInMatic = _requestWithdraw(
