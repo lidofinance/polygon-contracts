@@ -126,10 +126,10 @@ contract StMATIC is
         __Pausable_init_unchained();
         __ERC20_init_unchained("Staked MATIC", "stMATIC");
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(DAO, _dao);
-        _setupRole(PAUSE_ROLE, msg.sender);
-        _setupRole(UNPAUSE_ROLE, _dao);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DAO, _dao);
+        _grantRole(PAUSE_ROLE, msg.sender);
+        _grantRole(UNPAUSE_ROLE, _dao);
 
         nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
