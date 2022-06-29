@@ -308,7 +308,7 @@ contract StMATIC is
             _require(
                 _calculateValidatorShares(
                     validatorShare,
-                    currentAmount2WithdrawInMatic
+                    amount2WithdrawFromValidator
                 ) > 0,
                 "ZERO shares to withdraw"
             );
@@ -349,7 +349,7 @@ contract StMATIC is
             _require(
                 _calculateValidatorShares(
                     validatorShare,
-                    currentAmount2WithdrawInMatic
+                    amount2WithdrawFromValidator
                 ) > 0,
                 "ZERO shares to withdraw"
             );
