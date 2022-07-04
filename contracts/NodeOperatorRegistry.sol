@@ -346,12 +346,11 @@ contract NodeOperatorRegistry is
         returns (ValidatorData[] memory, uint256)
     {
         uint256 totalActiveNodeOperators = 0;
-        uint256 length = validatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory activeValidators = new ValidatorData[](length);
+        ValidatorData[] memory activeValidators = new ValidatorData[](validatorIds.length);
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < validatorIds.length; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
                 validatorIds[i]
             );
