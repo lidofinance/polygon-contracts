@@ -966,13 +966,12 @@ contract NodeOperatorRegistry is
             uint256 unstakedNodeOperator
         )
     {
-        uint256[] memory memValidatorIds = validatorIds;
-        uint256 length = memValidatorIds.length;
+        uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length; idx++) {
             (
                 NodeOperatorRegistryStatus operatorStatus,
 
-            ) = _getOperatorStatusAndValidator(memValidatorIds[idx]);
+            ) = _getOperatorStatusAndValidator(validatorIds[idx]);
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 activeNodeOperator++;
             } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
