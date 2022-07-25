@@ -126,10 +126,10 @@ contract StMATIC is
         __Pausable_init_unchained();
         __ERC20_init_unchained("Staked MATIC", "stMATIC");
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(DAO, _dao);
-        _setupRole(PAUSE_ROLE, msg.sender);
-        _setupRole(UNPAUSE_ROLE, _dao);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DAO, _dao);
+        _grantRole(PAUSE_ROLE, msg.sender);
+        _grantRole(UNPAUSE_ROLE, _dao);
 
         nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
@@ -308,7 +308,7 @@ contract StMATIC is
             _require(
                 _calculateValidatorShares(
                     validatorShare,
-                    currentAmount2WithdrawInMatic
+                    amount2WithdrawFromValidator
                 ) > 0,
                 "ZERO shares to withdraw"
             );
@@ -349,7 +349,7 @@ contract StMATIC is
             _require(
                 _calculateValidatorShares(
                     validatorShare,
-                    currentAmount2WithdrawInMatic
+                    amount2WithdrawFromValidator
                 ) > 0,
                 "ZERO shares to withdraw"
             );
@@ -574,12 +574,14 @@ contract StMATIC is
             }
         }
 
-        uint256 totalRewards = (
-            (IERC20Upgradeable(token).balanceOf(address(this)) - totalBuffered)
-        ) / protocolFee;
+        uint256 totalRewards = IERC20Upgradeable(token).balanceOf(
+            address(this)
+        ) - totalBuffered;
+
+        uint256 protocolRewards = totalRewards * protocolFee / 100;
 
         _require(
-            totalRewards > rewardDistributionLowerBound,
+            protocolRewards > rewardDistributionLowerBound,
             "Amount to distribute lower than minimum"
         );
 
@@ -587,9 +589,9 @@ contract StMATIC is
             address(this)
         );
 
-        uint256 daoRewards = (totalRewards * entityFees.dao) / 100;
-        uint256 insuranceRewards = (totalRewards * entityFees.insurance) / 100;
-        uint256 operatorsRewards = (totalRewards * entityFees.operators) / 100;
+        uint256 daoRewards = (protocolRewards * entityFees.dao) / 100;
+        uint256 insuranceRewards = (protocolRewards * entityFees.insurance) / 100;
+        uint256 operatorsRewards = (protocolRewards * entityFees.operators) / 100;
         uint256 operatorReward = operatorsRewards / totalActiveOperatorInfos;
 
         IERC20Upgradeable(token).safeTransfer(dao, daoRewards);
@@ -1018,7 +1020,7 @@ contract StMATIC is
     }
 
     /// @notice Function that sets protocol fee
-    /// @param _newProtocolFee - Insurance fee in %
+    /// @param _newProtocolFee new protocol fee
     function setProtocolFee(uint8 _newProtocolFee)
         external
         override

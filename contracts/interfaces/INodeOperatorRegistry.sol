@@ -120,13 +120,13 @@ interface INodeOperatorRegistry {
     /// @notice  Calculate how total buffered should be delegated between the active validators,
     /// depending on if the system is balanced or not. If validators are in EJECTED or UNSTAKED
     /// status the function will revert.
-    /// @param totalBuffered The total amount buffered in stMatic.
+    /// @param amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
     /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
-    function getValidatorsDelegationAmount(uint256 totalBuffered)
+    function getValidatorsDelegationAmount(uint256 amountToDelegate)
         external
         view
         returns (

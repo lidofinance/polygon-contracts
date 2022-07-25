@@ -346,12 +346,11 @@ contract NodeOperatorRegistry is
         returns (ValidatorData[] memory, uint256)
     {
         uint256 totalActiveNodeOperators = 0;
-        uint256 length = validatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory activeValidators = new ValidatorData[](length);
+        ValidatorData[] memory activeValidators = new ValidatorData[](validatorIds.length);
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < validatorIds.length; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
                 validatorIds[i]
             );
@@ -489,13 +488,13 @@ contract NodeOperatorRegistry is
     /// @notice  Calculate how total buffered should be delegated between the active validators,
     /// depending on if the system is balanced or not. If validators are in EJECTED or UNSTAKED
     /// status the function will revert.
-    /// @param _totalBuffered The total amount buffered in stMatic.
+    /// @param _amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
     /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
-    function getValidatorsDelegationAmount(uint256 _totalBuffered)
+    function getValidatorsDelegationAmount(uint256 _amountToDelegate)
         external
         view
         override
@@ -532,7 +531,7 @@ contract NodeOperatorRegistry is
 
         // If the system is not balanced calculate ratios
         operatorRatios = new uint256[](totalActiveNodeOperator);
-        uint256 rebalanceTarget = (totalStaked + _totalBuffered) /
+        uint256 rebalanceTarget = (totalStaked + _amountToDelegate) /
             totalActiveNodeOperator;
 
         uint256 operatorRatioToDelegate;
@@ -651,12 +650,10 @@ contract NodeOperatorRegistry is
 
         uint256 validatorId;
         IStakeManager.Validator memory validator;
-        NodeOperatorRegistryStatus status;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
-            (status, validator) = _getOperatorStatusAndValidator(validatorId);
-            if (status == NodeOperatorRegistryStatus.INACTIVE) continue;
+            (, validator) = _getOperatorStatusAndValidator(validatorId);
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
@@ -969,13 +966,12 @@ contract NodeOperatorRegistry is
             uint256 unstakedNodeOperator
         )
     {
-        uint256[] memory memValidatorIds = validatorIds;
-        uint256 length = memValidatorIds.length;
+        uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length; idx++) {
             (
                 NodeOperatorRegistryStatus operatorStatus,
 
-            ) = _getOperatorStatusAndValidator(memValidatorIds[idx]);
+            ) = _getOperatorStatusAndValidator(validatorIds[idx]);
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 activeNodeOperator++;
             } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
