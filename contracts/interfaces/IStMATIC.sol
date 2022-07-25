@@ -16,12 +16,12 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice The request withdraw struct.
     /// @param amount2WithdrawFromStMATIC amount in Matic.
     /// @param validatorNonce validator nonce.
-    /// @param requestEpoch request epoch.
+    /// @param requestTime request epoch.
     /// @param validatorAddress validator share address.
     struct RequestWithdraw {
         uint256 amount2WithdrawFromStMATIC;
         uint256 validatorNonce;
-        uint256 requestEpoch;
+        uint256 requestTime;
         address validatorAddress;
     }
 
@@ -36,7 +36,7 @@ interface IStMATIC is IERC20Upgradeable {
     }
 
     /// @notice node operator registry interface.
-    function nodeOperatorRegistry()
+    function nodeOperator()
         external
         view
         returns (INodeOperatorRegistry);

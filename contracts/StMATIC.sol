@@ -26,7 +26,7 @@ contract StMATIC is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /// @notice node operator registry interface.
-    INodeOperatorRegistry public override nodeOperatorRegistry;
+    INodeOperatorRegistry public override nodeOperator;
 
     /// @notice The fee distribution.
     FeeDistribution public override entityFees;
@@ -36,9 +36,6 @@ contract StMATIC is
 
     /// @notice LidoNFT interface.
     IPoLidoNFT public override poLidoNFT;
-
-    /// @notice fxStateRootTunnel interface.
-    IFxStateRootTunnel public override fxStateRootTunnel;
 
     /// @notice contract version.
     string public override version;
@@ -67,25 +64,26 @@ contract StMATIC is
     /// @notice reserved funds in Matic.
     uint256 public override reservedFunds;
 
-    /// @notice submit threshold NOT USED in V2.
-    uint256 public override submitThreshold;
-
-    /// @notice submit handler NOT USED in V2.
-    bool public override submitHandler;
+    uint256 public minValidatorBalance;
 
     /// @notice token to WithdrawRequest mapping one-to-one.
     mapping(uint256 => RequestWithdraw) public override token2WithdrawRequest;
 
     /// @notice DAO Role.
     bytes32 public constant override DAO = keccak256("DAO");
-    bytes32 public constant override PAUSE_ROLE =
-        keccak256("LIDO_PAUSE_OPERATOR");
-    bytes32 public constant override UNPAUSE_ROLE =
-        keccak256("LIDO_UNPAUSE_OPERATOR");
+
+    IFxStateRootTunnel override public fxStateRootTunnel;
+    bool public override submitHandler;
+    uint256 public override submitThreshold;
 
     /// @notice When an operator quit the system StMATIC contract withdraw the total delegated
     /// to it. The request is stored inside this array.
     RequestWithdraw[] public stMaticWithdrawRequest;
+
+    bytes32 public constant override PAUSE_ROLE =
+        keccak256("LIDO_PAUSE_OPERATOR");
+    bytes32 public constant override UNPAUSE_ROLE =
+        keccak256("LIDO_UNPAUSE_OPERATOR");
 
     /// @notice token to Array WithdrawRequest mapping one-to-many.
     mapping(uint256 => RequestWithdraw[]) public token2WithdrawRequests;
@@ -131,7 +129,7 @@ contract StMATIC is
         _grantRole(PAUSE_ROLE, msg.sender);
         _grantRole(UNPAUSE_ROLE, _dao);
 
-        nodeOperatorRegistry = INodeOperatorRegistry(_nodeOperatorRegistry);
+        nodeOperator = INodeOperatorRegistry(_nodeOperatorRegistry);
         stakeManager = IStakeManager(_stakeManager);
         poLidoNFT = IPoLidoNFT(_poLidoNFT);
         fxStateRootTunnel = IFxStateRootTunnel(_fxStateRootTunnel);
@@ -204,7 +202,7 @@ contract StMATIC is
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory allowedAmountToRequestFromOperators,
             uint256 totalValidatorsToWithdrawFrom
-        ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
+        ) = nodeOperator.getValidatorsRequestWithdraw(_amount);
 
         uint256 totalPooledMatic = _getTotalPooledMatic(totalDelegated);
         uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
@@ -407,7 +405,7 @@ contract StMATIC is
             uint256 totalDelegatableNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio
-        ) = nodeOperatorRegistry.getValidatorsDelegationAmount(
+        ) = nodeOperator.getValidatorsDelegationAmount(
                 amountToDelegate
             );
 
@@ -464,7 +462,7 @@ contract StMATIC is
             "Not owner"
         );
 
-        if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
+        if (token2WithdrawRequest[_tokenId].requestTime != 0) {
             _claimTokensV1(_tokenId);
         } else if (token2WithdrawRequests[_tokenId].length != 0) {
             _claimTokensV2(_tokenId);
@@ -479,7 +477,7 @@ contract StMATIC is
             _tokenId
         ];
         _require(
-            stakeManager.epoch() >= usersRequest[0].requestEpoch,
+            stakeManager.epoch() >= usersRequest[0].requestTime,
             "Not able to claim yet"
         );
 
@@ -520,7 +518,7 @@ contract StMATIC is
         RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
 
         _require(
-            stakeManager.epoch() >= usersRequest.requestEpoch,
+            stakeManager.epoch() >= usersRequest.requestTime,
             "Not able to claim yet"
         );
 
@@ -559,7 +557,7 @@ contract StMATIC is
         (
             INodeOperatorRegistry.ValidatorData[] memory operatorInfos,
             uint256 totalActiveOperatorInfos
-        ) = nodeOperatorRegistry.listDelegatedNodeOperators();
+        ) = nodeOperator.listDelegatedNodeOperators();
 
         for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
             IValidatorShare validatorShare = IValidatorShare(
@@ -625,7 +623,7 @@ contract StMATIC is
         nonReentrant
     {
         _require(
-            msg.sender == address(nodeOperatorRegistry),
+            msg.sender == address(nodeOperator),
             "Not a node operator"
         );
 
@@ -658,7 +656,7 @@ contract StMATIC is
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
-        ) = nodeOperatorRegistry.getValidatorsRebalanceAmount(
+        ) = nodeOperator.getValidatorsRebalanceAmount(
                 amountToReDelegate
             );
 
@@ -730,7 +728,7 @@ contract StMATIC is
         RequestWithdraw memory lidoRequest = stMaticWithdrawRequest[_index];
 
         _require(
-            stakeManager.epoch() >= lidoRequest.requestEpoch,
+            stakeManager.epoch() >= lidoRequest.requestTime,
             "Not able to claim yet"
         );
 
@@ -874,7 +872,7 @@ contract StMATIC is
         (
             INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
             uint256 operatorsLength
-        ) = nodeOperatorRegistry.listWithdrawNodeOperators();
+        ) = nodeOperator.listWithdrawNodeOperators();
 
         for (uint256 i = 0; i < operatorsLength; i++) {
             (uint256 currValidatorShare, ) = getTotalStake(
@@ -1065,7 +1063,7 @@ contract StMATIC is
         override
         onlyRole(DAO)
     {
-        nodeOperatorRegistry = INodeOperatorRegistry(_address);
+        nodeOperator = INodeOperatorRegistry(_address);
         emit SetNodeOperatorRegistryAddress(_address);
     }
 
@@ -1136,7 +1134,7 @@ contract StMATIC is
         override
         returns (uint256)
     {
-        if (token2WithdrawRequest[_tokenId].requestEpoch != 0) {
+        if (token2WithdrawRequest[_tokenId].requestTime != 0) {
             return _getMaticFromRequestData(token2WithdrawRequest[_tokenId]);
         } else if (token2WithdrawRequests[_tokenId].length != 0) {
             RequestWithdraw[] memory requestsData = token2WithdrawRequests[

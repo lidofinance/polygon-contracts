@@ -6,12 +6,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 
-import "./interfaces/IPoLidoNFT.sol";
-
 /// @title PoLidoNFT.
 /// @author 2021 ShardLabs.
 contract PoLidoNFT is
-    IPoLidoNFT,
     OwnableUpgradeable,
     ERC721Upgradeable,
     ERC721PausableUpgradeable
@@ -60,7 +57,7 @@ contract PoLidoNFT is
     /// @notice Increments the token supply and mints the token based on that index
     /// @param _to - Address that will be the owner of minted token
     /// @return Index of the minted token
-    function mint(address _to) external override isLido returns (uint256) {
+    function mint(address _to) external isLido returns (uint256) {
         uint256 currentIndex = tokenIdIndex + 1;
 
         _mint(_to, currentIndex);
@@ -72,7 +69,7 @@ contract PoLidoNFT is
 
     /// @notice Burn the token with specified _tokenId
     /// @param _tokenId - Id of the token that will be burned
-    function burn(uint256 _tokenId) external override isLido {
+    function burn(uint256 _tokenId) external isLido {
         _burn(_tokenId);
     }
 
@@ -81,7 +78,7 @@ contract PoLidoNFT is
     /// @param _tokenId - Id of the token that will be approved to _to
     function approve(address _to, uint256 _tokenId)
         public
-        override(ERC721Upgradeable, IERC721Upgradeable)
+        override(ERC721Upgradeable)
     {
         // If this token was approved before, remove it from the mapping of approvals
         if (getApproved(_tokenId) != address(0)) {
@@ -190,7 +187,6 @@ contract PoLidoNFT is
     function isApprovedOrOwner(address _spender, uint256 _tokenId)
         external
         view
-        override
         returns (bool)
     {
         return _isApprovedOrOwner(_spender, _tokenId);
@@ -198,13 +194,13 @@ contract PoLidoNFT is
 
     /// @notice Set stMATIC contract address
     /// @param _stMATIC - address of the stMATIC contract
-    function setStMATIC(address _stMATIC) external override onlyOwner {
+    function setStMATIC(address _stMATIC) external onlyOwner {
         stMATIC = _stMATIC;
     }
 
     /// @notice Set PoLidoNFT version
     /// @param _version - New version that will be set
-    function setVersion(string calldata _version) external override onlyOwner {
+    function setVersion(string calldata _version) external onlyOwner {
         version = _version;
     }
 
@@ -214,7 +210,6 @@ contract PoLidoNFT is
     function getOwnedTokens(address _address)
         external
         view
-        override
         returns (uint256[] memory)
     {
         return owner2Tokens[_address];
@@ -269,7 +264,7 @@ contract PoLidoNFT is
     }
 
     /// @notice Flips the pause state
-    function togglePause() external override onlyOwner {
+    function togglePause() external onlyOwner {
         paused() ? _unpause() : _pause();
     }
 }
