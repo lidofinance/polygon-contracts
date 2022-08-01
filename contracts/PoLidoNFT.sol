@@ -130,7 +130,12 @@ contract PoLidoNFT is
                 ownerTokensLength != 1
             ) {
                 uint256 lastOwnerTokenId = ownerTokens[lastOwnerTokensIndex];
+                // Make the last token have an index of a token we want to burn.
+                // So when we request index of token with id that is currently last in ownerTokens it does not point
+                // to the last slot in ownerTokens, but to a burned token's slot (we will update the slot at the next line)
                 token2Index[lastOwnerTokenId] = burnedTokenIndexInOwnerTokens;
+                // Copy currently last token to the place of a token we want to burn.
+                // So updated pointer in token2Index points to a slot with the correct value.
                 ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[
                     lastOwnerTokensIndex
                 ];
@@ -152,7 +157,27 @@ contract PoLidoNFT is
             uint256[] storage receiverTokens = owner2Tokens[to];
 
             uint256 tokenIndex = token2Index[tokenId];
-            delete senderTokens[tokenIndex];
+
+            uint256 ownerTokensLength = senderTokens.length;
+            uint256 removeTokenIndexInOwnerTokens = tokenIndex;
+            uint256 lastOwnerTokensIndex = ownerTokensLength - 1;
+
+            if (
+                removeTokenIndexInOwnerTokens != lastOwnerTokensIndex &&
+                ownerTokensLength != 1
+            ) {
+                uint256 lastOwnerTokenId = senderTokens[lastOwnerTokensIndex];
+                // Make the last token have an index of a token we want to burn.
+                // So when we request index of token with id that is currently last in ownerTokens it does not point
+                // to the last slot in ownerTokens, but to a burned token's slot (we will update the slot at the next line)
+                token2Index[lastOwnerTokenId] = removeTokenIndexInOwnerTokens;
+                // Copy currently last token to the place of a token we want to burn.
+                // So updated pointer in token2Index points to a slot with the correct value.
+                senderTokens[removeTokenIndexInOwnerTokens] = senderTokens[
+                    lastOwnerTokensIndex
+                ];
+            }
+            senderTokens.pop();
 
             receiverTokens.push(tokenId);
             token2Index[tokenId] = receiverTokens.length - 1;
@@ -225,9 +250,15 @@ contract PoLidoNFT is
             uint256 lastApprovedTokenId = approvedTokens[
                 lastApprovedTokensIndex
             ];
+            // Make the last token have an index of a token we want to burn.
+            // So when we request index of token with id that is currently last in approveTokens
+            // it does not point to the last slot in approveTokens, but to a burned token's slot
+            // (we will update the slot at the next line).
             tokenId2ApprovedIndex[
                 lastApprovedTokenId
             ] = removeApprovedTokenIndexInOwnerTokens;
+            // Copy currently last token to the place of a token we want to burn.
+            // So updated pointer in tokenId2ApprovedIndex points to a slot with the correct value.
             approvedTokens[
                 removeApprovedTokenIndexInOwnerTokens
             ] = approvedTokens[lastApprovedTokensIndex];

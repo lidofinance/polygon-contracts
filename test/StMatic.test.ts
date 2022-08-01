@@ -227,7 +227,6 @@ describe("Starting to test StMATIC contract", () => {
                 mockStakeManager.address,
                 poLidoNFT.address,
                 ethers.constants.AddressZero,
-                ethers.utils.parseEther("1000000000000000")
             ]
         )) as StMATIC;
         await stMATIC.deployed();
@@ -248,6 +247,21 @@ describe("Starting to test StMATIC contract", () => {
             const testerBalance = await stMATIC.balanceOf(user1.address);
             expect(testerBalance.eq(amount)).to.be.true;
         });
+
+        it("Should revert Mint ZERO", async () => {
+            await stakeOperator(user1);
+            const validatorId = await mockStakeManager.getValidatorId(user1.address)
+            await addOperator(validatorId.toString(), user1.address);
+
+            const amount = ethers.utils.parseEther("1000");
+            await mint(user1, 100);
+            await mint(user1, amount);
+            await submit(user1, 100);
+            await mockERC20.connect(user1).transfer(stMATIC.address, amount);
+            await stMATIC.distributeRewards()
+            await mint(user1, 1);
+            await expect(submit(user1, 1)).revertedWith("Mint ZERO");
+        })
 
         it("Should submit successfully when validator was removed", async () => {
             const amount = ethers.utils.parseEther("1");
@@ -344,6 +358,113 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(validatorShareBalance.eq(0)).to.be.true;
         });
+
+        it("Should revert withdraw ZERO Matic", async () => {
+            await stakeOperator(user1);
+            const validatorId = await mockStakeManager.getValidatorId(user1.address)
+            await addOperator(validatorId.toString(), user1.address);
+
+            const submitAmount = ethers.utils.parseEther("1000");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            await stMATIC.delegate();
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+
+            const validatorShareBalance1 = await mockERC20.balanceOf(
+                validatorShareContract1.address
+            );
+
+            const slashPecentage = 50;
+
+            await validatorShareContract1.slash(
+                validatorShareBalance1.mul(slashPecentage).div(100)
+            );
+
+            await expect(
+                stMATIC.connect(user1).requestWithdraw(1)
+            ).revertedWith("Withdraw ZERO Matic")
+        });
+
+        it("Should fail request withdraw ZERO shares when balanced", async () => {
+            await stakeOperator(user1);
+            const validatorId = await mockStakeManager.getValidatorId(user1.address)
+            await addOperator(validatorId.toString(), user1.address);
+
+            const submitAmount = ethers.utils.parseEther("100");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            await stMATIC.delegate();
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+
+            const validatorShareBalance1 = await mockERC20.balanceOf(
+                validatorShareContract1.address
+            );
+            await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("1000000"))
+
+            await expect(
+                stMATIC.connect(user1).requestWithdraw(submitAmount)
+            ).revertedWith("ZERO shares to withdraw")
+        })
+
+        it("Should fail request withdraw ZERO shares when not balanced", async () => {
+            await stakeOperator(user1);
+            await stakeOperator(user2);
+            const validatorId1 = await mockStakeManager.getValidatorId(user1.address)
+            await addOperator(validatorId1.toString(), user1.address);
+
+            const submitAmount = ethers.utils.parseEther("100");
+            await mint(user1, submitAmount);
+            await submit(user1, submitAmount);
+            await stMATIC.delegate();
+
+            const validatorId2 = await mockStakeManager.getValidatorId(user2.address)
+            await addOperator(validatorId2.toString(), user2.address);
+            await mint(user1, submitAmount.div(2));
+            await submit(user1, submitAmount.div(2));
+            await stMATIC.delegate();
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+
+            const validatorShareBalance1 = await mockERC20.balanceOf(
+                validatorShareContract1.address
+            );
+            await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("1000000"))
+            
+            expect((await nodeOperatorRegistry.getProtocolStats()).distanceThreshold)
+                .gt(await nodeOperatorRegistry.DISTANCE_THRESHOLD_PERCENTS())
+            await expect(
+                stMATIC.connect(user1).requestWithdraw(submitAmount)
+            ).revertedWith("ZERO shares to withdraw")
+        })
     });
 
     describe("Claim tokens", function () {
@@ -523,6 +644,37 @@ describe("Starting to test StMATIC contract", () => {
     });
 
     describe("Delegate tokens", function () {
+        it("Should success not delegate to validator when shares", async () => {
+            for (let i = 0; i < 3; i++) {
+                await mint(testers[i], ethers.utils.parseEther("100"));
+
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+
+                await addOperator(validatorId.toString(), testers[i].address);
+            }
+            let amount = ethers.utils.parseEther("300");
+
+            await mint(user1, amount);
+            await submit(user1, amount);
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+            
+            expect(await mockERC20.balanceOf(stMATIC.address)).eq(amount)
+            await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("100000"))
+            await stMATIC.delegate();
+            expect(await mockERC20.balanceOf(stMATIC.address)).eq(amount.div(3))
+        })
+
         it("Should delegate to validator if stake manager has approval > 0", async () => {
             let initialSubmitAmount = ethers.utils.parseEther("99");
             for (let i = 0; i < 2; i++) {
@@ -969,6 +1121,46 @@ describe("Starting to test StMATIC contract", () => {
             expect(totalWithdrawRequestAmount, "totalWithdrawRequestAmount").to.equal(totalToWithdraw);
         });
 
+        it("Should rebalance delegated tokens to validators", async () => {
+            for (let i = 0; i < 3; i++) {
+                await mint(testers[i], ethers.utils.parseEther("100"));
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await addOperator(validatorId.toString(), testers[i].address);
+            }
+
+            const user1SubmitAmount = toEth("100");
+            await mint(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount);
+
+            let user2SubmitAmount = toEth("50");
+            await mint(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount);
+
+            await stMATIC.delegate();
+
+            await mint(testers[3], toEth("100"));
+            await stakeOperator(testers[3]);
+            const validatorId = await mockStakeManager.getValidatorId(testers[3].address)
+            await addOperator(validatorId.toString(), testers[3].address);
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+            
+            await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("100000"))
+            
+            await stMATIC.rebalanceDelegatedTokens();
+            expect((await stMATIC.getTotalWithdrawRequest()).length).eq(2)
+        })
+
         it("should fail to rebalance delegated tokes when not called by DAO", async () => {
             await expect(stMATIC.connect(user1).rebalanceDelegatedTokens())
                 .revertedWith("AccessControl");
@@ -985,7 +1177,7 @@ describe("Starting to test StMATIC contract", () => {
                 amount2WithdrawFromStMATIC: amount,
                 validatorNonce: 0,
                 validatorAddress: ethers.constants.AddressZero
-            }], true)
+            }], false)
 
             expect(await stMATIC.balanceOf(user1.address)).eq(0)
             expect(await stMATIC.getTotalPooledMatic()).eq(0)
@@ -1001,7 +1193,6 @@ describe("Starting to test StMATIC contract", () => {
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
                 await addOperator(validatorId.toString(), testers[i].address);
             }
-            await nodeOperatorRegistry.setMinRequestWithdrawRange(0)
             const amount = toEth("3000")
             await mint(user1, amount);
             await submit(user1, amount)
@@ -1475,6 +1666,10 @@ describe("Starting to test StMATIC contract", () => {
             expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(1)
             expect(await stMATIC.getMaticFromTokenId(1)).eq(amount)
         })
+
+        it("Should fail to request withdraw: Too much to withdraw", async () => {
+
+        })
     });
 
     describe("Distribute rewards", async () => {
@@ -1692,6 +1887,32 @@ describe("Starting to test StMATIC contract", () => {
     });
 
     describe("withdrawTotalDelegated", async () => {
+        it("Should Success withdrawTotalDelegated when shares are ZERO", async () => {
+            await stakeOperator(user1);
+            
+            const amount = ethers.utils.parseEther("100")
+            await mint(user1, amount);
+            await submit(user1, amount)
+            await addOperator("1", user1.address);
+            await stMATIC.delegate();
+
+            let validatorShareAddress = (
+                await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
+            ).validatorShare;
+
+            const ValidatorShareMock = await ethers.getContractFactory(
+                "ValidatorShareMock"
+            );
+            const validatorShareContract1 = ValidatorShareMock.attach(
+                validatorShareAddress
+            ) as ValidatorShareMock;
+
+            validatorShareContract1.setExchangeRate(ethers.utils.parseEther("100000"))
+            expect((await stMATIC.getTotalWithdrawRequest()).length).eq(0)
+            await nodeOperatorRegistry.removeNodeOperator(1)
+            expect((await stMATIC.getTotalWithdrawRequest()).length).eq(0)
+        })
+
         describe("Success cases", async () => {
             // stake operators
             const operatorId = 3;
@@ -1848,12 +2069,10 @@ describe("Starting to test StMATIC contract", () => {
             const newDAOAdress = testers[5].address;
 
             const daoRole = await stMATIC.DAO();
-            expect(await stMATIC.hasRole(daoRole, deployer.address), "Before").true;
-            expect(await stMATIC.hasRole(daoRole, newDAOAdress), "Before").false;
-
+            // expect(await stMATIC.hasRole(daoRole, deployer.address), "Before").true;
+            // expect(await stMATIC.hasRole(daoRole, newDAOAdress), "Before").false;
             await stMATIC.setDaoAddress(newDAOAdress);
-            expect(await stMATIC.hasRole(daoRole, deployer.address), "After").false;
-            expect(await stMATIC.hasRole(daoRole, newDAOAdress), "After").true;
+            expect(await stMATIC.dao(), "After").eq(newDAOAdress);
         });
 
         it("should set the insurance address", async () => {
@@ -2355,7 +2574,9 @@ describe("Starting to test StMATIC contract", () => {
         log: boolean,
     ) => {
         const res = await stMATIC.getToken2WithdrawRequests(tokenId)
-        if (log) { }
+        if (log) { 
+            console.log(res)
+        }
         expect(res.length, tokenId + "--res.length").eq(requestWithdraw.length)
         for (let i = 0; i < requestWithdraw.length; i++) {
             expect(res[i].amount2WithdrawFromStMATIC, tokenId + "--amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)

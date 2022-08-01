@@ -27,6 +27,68 @@ describe("PoLidoNFT Tests", () => {
         )) as PoLidoNFT;
         await poLidoNFT.deployed();
     });
+    describe("Transfer token", () => {
+        it("Should successfully transfer token", async () => {
+            await poLidoNFT.mint(user1.address);
+            const tokenIndex = await poLidoNFT.tokenIdIndex();
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(1)
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                tokenIndex
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(0)
+        });
+
+        it("Should successfully transfer many token", async () => {
+            for (let i = 0; i < 5; i++) {
+                await poLidoNFT.mint(user1.address);
+            }
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(5)
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                1
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(4)
+            expect((await poLidoNFT.getOwnedTokens(user2.address)).length).eq(1)
+            expect(await poLidoNFT.owner2Tokens(user2.address, 0)).eq(1)
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                4
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(3)
+            expect((await poLidoNFT.getOwnedTokens(user2.address)).length).eq(2)
+            expect(await poLidoNFT.owner2Tokens(user2.address, 1)).eq(4)
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                2
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(2)
+            expect((await poLidoNFT.getOwnedTokens(user2.address)).length).eq(3)
+            expect(await poLidoNFT.owner2Tokens(user2.address, 2)).eq(2)
+
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                3
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(1)
+            expect((await poLidoNFT.getOwnedTokens(user2.address)).length).eq(4)
+            expect(await poLidoNFT.owner2Tokens(user2.address, 3)).eq(3)
+
+            await poLidoNFT.connect(user1).transferFrom(
+                user1.address,
+                user2.address,
+                5
+            )
+            expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(0)
+            expect((await poLidoNFT.getOwnedTokens(user2.address)).length).eq(5)
+            expect(await poLidoNFT.owner2Tokens(user2.address, 4)).eq(5)
+        });
+    })
 
     describe("Mint tokens", () => {
         it("Should successfully mint tokens", async () => {
