@@ -185,7 +185,8 @@ contract StMATIC is
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount)
+    /// @param _referral - referral address.
+    function requestWithdraw(uint256 _amount, address _referral)
         external
         override
         whenNotPaused
@@ -224,68 +225,69 @@ contract StMATIC is
                 "Too much to withdraw"
             );
         }
+        {
+            uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
+            uint256 tokenId = poLidoNFT.mint(msg.sender);
 
-        uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
-        uint256 tokenId = poLidoNFT.mint(msg.sender);
-
-        if (totalDelegated != 0) {
-            if (totalValidatorsToWithdrawFrom != 0) {
-                currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
-                    tokenId,
-                    activeNodeOperators,
-                    totalAmount2WithdrawInMatic,
-                    totalValidatorsToWithdrawFrom,
-                    totalDelegated,
-                    currentAmount2WithdrawInMatic
-                );
-            } else {
-                // request withdraw from big delegated validators
-                currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
-                    tokenId,
-                    activeNodeOperators,
-                    bigNodeOperatorLength,
-                    bigNodeOperatorIds,
-                    allowedAmountToRequestFromOperators,
-                    currentAmount2WithdrawInMatic
-                );
-
-                // request withdraw from small delegated validators
-                if (currentAmount2WithdrawInMatic != 0) {
+            if (totalDelegated != 0) {
+                if (totalValidatorsToWithdrawFrom != 0) {
+                    currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
+                        tokenId,
+                        activeNodeOperators,
+                        totalAmount2WithdrawInMatic,
+                        totalValidatorsToWithdrawFrom,
+                        totalDelegated,
+                        currentAmount2WithdrawInMatic
+                    );
+                } else {
+                    // request withdraw from big delegated validators
                     currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
                         tokenId,
                         activeNodeOperators,
-                        smallNodeOperatorLength,
-                        smallNodeOperatorIds,
+                        bigNodeOperatorLength,
+                        bigNodeOperatorIds,
                         allowedAmountToRequestFromOperators,
                         currentAmount2WithdrawInMatic
                     );
+
+                    // request withdraw from small delegated validators
+                    if (currentAmount2WithdrawInMatic != 0) {
+                        currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
+                            tokenId,
+                            activeNodeOperators,
+                            smallNodeOperatorLength,
+                            smallNodeOperatorIds,
+                            allowedAmountToRequestFromOperators,
+                            currentAmount2WithdrawInMatic
+                        );
+                    }
                 }
             }
-        }
 
-        if (_amount > totalDelegated) {
-            token2WithdrawRequests[tokenId].push(
-                RequestWithdraw(
-                    currentAmount2WithdrawInMatic,
-                    0,
-                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                    address(0)
+            if (_amount > totalDelegated) {
+                token2WithdrawRequests[tokenId].push(
+                    RequestWithdraw(
+                        currentAmount2WithdrawInMatic,
+                        0,
+                        stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                        address(0)
+                    )
+                );
+                reservedFunds += currentAmount2WithdrawInMatic;
+                currentAmount2WithdrawInMatic = 0;
+            }
+
+            _burn(msg.sender, _amount);
+
+            fxStateRootTunnel.sendMessageToChild(
+                abi.encode(
+                    totalSupply(),
+                    totalPooledMatic - totalAmount2WithdrawInMatic
                 )
             );
-            reservedFunds += currentAmount2WithdrawInMatic;
-            currentAmount2WithdrawInMatic = 0;
         }
 
-        _burn(msg.sender, _amount);
-
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(
-                totalSupply(),
-                totalPooledMatic - totalAmount2WithdrawInMatic
-            )
-        );
-
-        emit RequestWithdrawEvent(msg.sender, _amount);
+        emit RequestWithdrawEvent(msg.sender, _amount, _referral);
     }
 
     /// @notice Request withdraw when system is balanced

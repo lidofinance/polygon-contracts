@@ -145,7 +145,8 @@ interface IStMATIC is IERC20Upgradeable {
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount) external;
+    /// @param _referral - referral address.
+    function requestWithdraw(uint256 _amount, address _referral) external;
 
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract
@@ -301,7 +302,8 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice Emit when request withdraw.
     /// @param _from msg.sender.
     /// @param _amount amount.
-    event RequestWithdrawEvent(address indexed _from, uint256 indexed _amount);
+    /// @param _referral - referral address.
+    event RequestWithdrawEvent(address indexed _from, uint256 _amount, address indexed _referral);
 
     /// @notice Emit when distribute rewards.
     /// @param _amount amount.
