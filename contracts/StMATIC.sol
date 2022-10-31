@@ -145,8 +145,9 @@ contract StMATIC is
     /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender
     /// @notice Requires that msg.sender has approved _amount of MATIC to this contract
     /// @param _amount - Amount of MATIC sent from msg.sender to this contract
+    /// @param _referral - referral address.
     /// @return Amount of StMATIC shares generated
-    function submit(uint256 _amount)
+    function submit(uint256 _amount, address _referral)
         external
         override
         whenNotPaused
@@ -177,7 +178,7 @@ contract StMATIC is
             abi.encode(totalShares + amountToMint, totalPooledMatic + _amount)
         );
 
-        emit SubmitEvent(msg.sender, _amount);
+        emit SubmitEvent(msg.sender, _amount, _referral);
 
         return amountToMint;
     }
