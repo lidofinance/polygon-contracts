@@ -139,12 +139,15 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender
     /// @notice Requires that msg.sender has approved _amount of MATIC to this contract
     /// @param _amount - Amount of MATIC sent from msg.sender to this contract
+    /// @param _referral - referral address.
     /// @return Amount of StMATIC shares generated
-    function submit(uint256 _amount) external returns (uint256);
+    function submit(uint256 _amount, address _referral) external returns (uint256);
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount) external;
+    /// @param _referral - referral address.
+    /// @return NFT token id.
+    function requestWithdraw(uint256 _amount, address _referral) external returns (uint256);
 
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract
@@ -294,12 +297,14 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice Emit when submit.
     /// @param _from msg.sender.
     /// @param _amount amount.
-    event SubmitEvent(address indexed _from, uint256 indexed _amount);
+    /// @param _referral - referral address.
+    event SubmitEvent(address indexed _from, uint256 _amount, address indexed _referral);
 
     /// @notice Emit when request withdraw.
     /// @param _from msg.sender.
     /// @param _amount amount.
-    event RequestWithdrawEvent(address indexed _from, uint256 indexed _amount);
+    /// @param _referral - referral address.
+    event RequestWithdrawEvent(address indexed _from, uint256 _amount, address indexed _referral);
 
     /// @notice Emit when distribute rewards.
     /// @param _amount amount.

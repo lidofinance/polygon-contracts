@@ -145,8 +145,9 @@ contract StMATIC is
     /// @notice Send funds to StMATIC contract and mints StMATIC to msg.sender
     /// @notice Requires that msg.sender has approved _amount of MATIC to this contract
     /// @param _amount - Amount of MATIC sent from msg.sender to this contract
+    /// @param _referral - referral address.
     /// @return Amount of StMATIC shares generated
-    function submit(uint256 _amount)
+    function submit(uint256 _amount, address _referral)
         external
         override
         whenNotPaused
@@ -177,114 +178,123 @@ contract StMATIC is
             abi.encode(totalShares + amountToMint, totalPooledMatic + _amount)
         );
 
-        emit SubmitEvent(msg.sender, _amount);
+        emit SubmitEvent(msg.sender, _amount, _referral);
 
         return amountToMint;
     }
 
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
-    function requestWithdraw(uint256 _amount)
+    /// @param _referral - referral address.
+    /// @return NFT token id.
+    function requestWithdraw(uint256 _amount, address _referral)
         external
         override
         whenNotPaused
         nonReentrant
+        returns (uint256)
     {
         _require(
             _amount > 0 && balanceOf(msg.sender) >= _amount,
             "Invalid amount"
         );
-
-        (
-            INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
-            uint256 totalDelegated,
-            uint256 bigNodeOperatorLength,
-            uint256[] memory bigNodeOperatorIds,
-            uint256 smallNodeOperatorLength,
-            uint256[] memory smallNodeOperatorIds,
-            uint256[] memory allowedAmountToRequestFromOperators,
-            uint256 totalValidatorsToWithdrawFrom
-        ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
-
-        uint256 totalPooledMatic = _getTotalPooledMatic(totalDelegated);
-        uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
-            _amount,
-            totalPooledMatic
-        );
-        _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
+        uint256 tokenId;
 
         {
-            uint256 localActiveBalance = totalBuffered > reservedFunds
-                ? totalBuffered - reservedFunds
-                : 0;
-            uint256 liquidity = totalDelegated + localActiveBalance;
-            _require(
-                liquidity >= totalAmount2WithdrawInMatic,
-                "Too much to withdraw"
+            (
+                INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
+                uint256 totalDelegated,
+                uint256 bigNodeOperatorLength,
+                uint256[] memory bigNodeOperatorIds,
+                uint256 smallNodeOperatorLength,
+                uint256[] memory smallNodeOperatorIds,
+                uint256[] memory allowedAmountToRequestFromOperators,
+                uint256 totalValidatorsToWithdrawFrom
+            ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
+
+            uint256 totalPooledMatic = _getTotalPooledMatic(totalDelegated);
+            uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
+                _amount,
+                totalPooledMatic
             );
-        }
+            _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
 
-        uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
-        uint256 tokenId = poLidoNFT.mint(msg.sender);
-
-        if (totalDelegated != 0) {
-            if (totalValidatorsToWithdrawFrom != 0) {
-                currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
-                    tokenId,
-                    activeNodeOperators,
-                    totalAmount2WithdrawInMatic,
-                    totalValidatorsToWithdrawFrom,
-                    totalDelegated,
-                    currentAmount2WithdrawInMatic
+            {
+                uint256 localActiveBalance = totalBuffered > reservedFunds
+                    ? totalBuffered - reservedFunds
+                    : 0;
+                uint256 liquidity = totalDelegated + localActiveBalance;
+                _require(
+                    liquidity >= totalAmount2WithdrawInMatic,
+                    "Too much to withdraw"
                 );
-            } else {
-                // request withdraw from big delegated validators
-                currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
-                    tokenId,
-                    activeNodeOperators,
-                    bigNodeOperatorLength,
-                    bigNodeOperatorIds,
-                    allowedAmountToRequestFromOperators,
-                    currentAmount2WithdrawInMatic
-                );
+            }
+            // Added a scoop here to fix stack too deep error
+            {
+                uint256 currentAmount2WithdrawInMatic = totalAmount2WithdrawInMatic;
+                tokenId = poLidoNFT.mint(msg.sender);
 
-                // request withdraw from small delegated validators
-                if (currentAmount2WithdrawInMatic != 0) {
-                    currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
-                        tokenId,
-                        activeNodeOperators,
-                        smallNodeOperatorLength,
-                        smallNodeOperatorIds,
-                        allowedAmountToRequestFromOperators,
-                        currentAmount2WithdrawInMatic
+                if (totalDelegated != 0) {
+                    if (totalValidatorsToWithdrawFrom != 0) {
+                        currentAmount2WithdrawInMatic = _requestWithdrawBalanced(
+                            tokenId,
+                            activeNodeOperators,
+                            totalAmount2WithdrawInMatic,
+                            totalValidatorsToWithdrawFrom,
+                            totalDelegated,
+                            currentAmount2WithdrawInMatic
+                        );
+                    } else {
+                        // request withdraw from big delegated validators
+                        currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
+                            tokenId,
+                            activeNodeOperators,
+                            bigNodeOperatorLength,
+                            bigNodeOperatorIds,
+                            allowedAmountToRequestFromOperators,
+                            currentAmount2WithdrawInMatic
+                        );
+
+                        // request withdraw from small delegated validators
+                        if (currentAmount2WithdrawInMatic != 0) {
+                            currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
+                                tokenId,
+                                activeNodeOperators,
+                                smallNodeOperatorLength,
+                                smallNodeOperatorIds,
+                                allowedAmountToRequestFromOperators,
+                                currentAmount2WithdrawInMatic
+                            );
+                        }
+                    }
+                }
+
+                if (_amount > totalDelegated) {
+                    token2WithdrawRequests[tokenId].push(
+                        RequestWithdraw(
+                            currentAmount2WithdrawInMatic,
+                            0,
+                            stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                            address(0)
+                        )
                     );
+                    reservedFunds += currentAmount2WithdrawInMatic;
+                    currentAmount2WithdrawInMatic = 0;
                 }
             }
-        }
 
-        if (_amount > totalDelegated) {
-            token2WithdrawRequests[tokenId].push(
-                RequestWithdraw(
-                    currentAmount2WithdrawInMatic,
-                    0,
-                    stakeManager.epoch() + stakeManager.withdrawalDelay(),
-                    address(0)
+            _burn(msg.sender, _amount);
+
+            fxStateRootTunnel.sendMessageToChild(
+                abi.encode(
+                    totalSupply(),
+                    totalPooledMatic - totalAmount2WithdrawInMatic
                 )
             );
-            reservedFunds += currentAmount2WithdrawInMatic;
-            currentAmount2WithdrawInMatic = 0;
         }
 
-        _burn(msg.sender, _amount);
-
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(
-                totalSupply(),
-                totalPooledMatic - totalAmount2WithdrawInMatic
-            )
-        );
-
-        emit RequestWithdrawEvent(msg.sender, _amount);
+        emit RequestWithdrawEvent(msg.sender, _amount, _referral);
+        return tokenId;
     }
 
     /// @notice Request withdraw when system is balanced
