@@ -391,7 +391,6 @@ contract NodeOperatorRegistry is
             );
             if (operatorStatus == NodeOperatorRegistryStatus.INACTIVE) continue;
 
-            validator = stakeManager.validators(memValidatorIds[i]);
             withdrawValidators[totalNodeOperators] = ValidatorData(
                 validator.contractAddress,
                 validatorIdToRewardAddress[memValidatorIds[i]]
