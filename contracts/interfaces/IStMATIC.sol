@@ -146,7 +146,8 @@ interface IStMATIC is IERC20Upgradeable {
     /// @notice Stores users request to withdraw into a RequestWithdraw struct
     /// @param _amount - Amount of StMATIC that is requested to withdraw
     /// @param _referral - referral address.
-    function requestWithdraw(uint256 _amount, address _referral) external;
+    /// @return NFT token id.
+    function requestWithdraw(uint256 _amount, address _referral) external returns (uint256);
 
     /// @notice This will be included in the cron job
     /// @notice Delegates tokens to validator share contract

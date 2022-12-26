@@ -1179,7 +1179,8 @@ describe("Starting to test StMATIC contract", () => {
             const amount = toEth("100")
             await mint(user1, amount);
             await submit(user1, amount, testers[2].address)
-            await requestWithdraw(user1, amount, testers[4].address)
+            const tokenId = await requestWithdraw(user1, amount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId").not.eq(1)
             await checkToken2WithdrawRequests(1, [{
                 amount2WithdrawFromStMATIC: amount,
                 validatorNonce: 0,
@@ -1194,7 +1195,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[0]).eq(1)
         })
 
-        it("Should request withdraw unbalance and balance cases", async () => {
+        it.only("Should request withdraw unbalance and balance cases", async () => {
             for (let i = 0; i < 3; i++) {
                 await stakeOperator(testers[i]);
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
@@ -1207,7 +1208,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // balanced
             let requestAmount = toEth("300")
-            await requestWithdraw(user1, requestAmount, testers[4].address)
+            let tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 1").not.eq(1)
             await checkToken2WithdrawRequests(1, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1224,7 +1226,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // unbalanced
             requestAmount = toEth("900")
-            await requestWithdraw(user1, toEth("900"), testers[4].address)
+            tokenId = await requestWithdraw(user1, toEth("900"), testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 2").not.eq(2)
             await checkToken2WithdrawRequests(2, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1250,7 +1253,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // balanced
             requestAmount = toEth("600")
-            await requestWithdraw(user1, requestAmount, testers[4].address)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 3").not.eq(3)
             await checkToken2WithdrawRequests(3, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1273,7 +1277,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // unbalanced
             requestAmount = toEth("300")
-            await requestWithdraw(user1, requestAmount, testers[4].address)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 4").not.eq(4)
             await checkToken2WithdrawRequests(4, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1292,7 +1297,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // balanced
             requestAmount = toEth("900")
-            await requestWithdraw(user1, requestAmount, testers[4].address)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 5").not.eq(5)
             await checkToken2WithdrawRequests(5, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
