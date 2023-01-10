@@ -1195,7 +1195,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[0]).eq(1)
         })
 
-        it.only("Should request withdraw unbalance and balance cases", async () => {
+        it("Should request withdraw unbalance and balance cases", async () => {
             for (let i = 0; i < 3; i++) {
                 await stakeOperator(testers[i]);
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
