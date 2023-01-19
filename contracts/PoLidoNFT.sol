@@ -170,9 +170,7 @@ contract PoLidoNFT is
                 token2Index[lastOwnerTokenId] = removeTokenIndexInOwnerTokens;
                 // Copy currently last token to the place of a token we want to burn.
                 // So updated pointer in token2Index points to a slot with the correct value.
-                senderTokens[removeTokenIndexInOwnerTokens] = senderTokens[
-                    lastOwnerTokensIndex
-                ];
+                senderTokens[removeTokenIndexInOwnerTokens] = lastOwnerTokenId;
             }
             senderTokens.pop();
 
@@ -256,7 +254,7 @@ contract PoLidoNFT is
             // So updated pointer in tokenId2ApprovedIndex points to a slot with the correct value.
             approvedTokens[
                 removeApprovedTokenIndexInOwnerTokens
-            ] = approvedTokens[lastApprovedTokensIndex];
+            ] = lastApprovedTokenId;
         }
 
         approvedTokens.pop();
