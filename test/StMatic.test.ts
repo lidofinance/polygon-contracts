@@ -36,12 +36,14 @@ describe("Starting to test StMATIC contract", () => {
 
     let submit: (
         signer: SignerWithAddress,
-        amount: BigNumberish
+        amount: BigNumberish,
+        referral: string
     ) => Promise<void>;
 
     let requestWithdraw: (
         signer: SignerWithAddress,
-        amount: BigNumberish
+        amount: BigNumberish,
+        referral: string
     ) => Promise<void>;
 
     let claimTokens: (
@@ -88,20 +90,20 @@ describe("Starting to test StMATIC contract", () => {
             await signerERC.mint(amount);
         };
 
-        submit = async (signer, amount) => {
+        submit = async (signer, amount, referral) => {
             const signerERC20 = mockERC20.connect(signer);
             await signerERC20.approve(stMATIC.address, amount);
 
             const signerStMATIC = stMATIC.connect(signer);
-            await signerStMATIC.submit(amount);
+            await signerStMATIC.submit(amount, referral);
         };
 
-        requestWithdraw = async (signer, amount) => {
+        requestWithdraw = async (signer, amount, referral) => {
             const signerStMATIC = stMATIC.connect(signer);
             await signerStMATIC.approve(stMATIC.address, amount);
-            expect(await signerStMATIC.requestWithdraw(amount))
+            expect(await signerStMATIC.requestWithdraw(amount, referral))
                 .emit(stMATIC, "RequestWithdrawEvent")
-                .withArgs(signer.address, amount);
+                .withArgs(signer.address, amount, referral);
         };
 
         claimTokens = async (signer, tokenId) => {
@@ -242,7 +244,10 @@ describe("Starting to test StMATIC contract", () => {
         it("Should submit successfully", async () => {
             const amount = ethers.utils.parseEther("1");
             await mint(user1, amount);
-            await submit(user1, amount);
+            await mockERC20.connect(user1).approve(stMATIC.address, amount)
+            expect(await stMATIC.connect(user1).submit(amount, testers[2].address))
+                .emit(stMATIC, "SubmitEvent")
+                .withArgs(user1.address, amount, testers[2].address);
 
             const testerBalance = await stMATIC.balanceOf(user1.address);
             expect(testerBalance.eq(amount)).to.be.true;
@@ -256,17 +261,17 @@ describe("Starting to test StMATIC contract", () => {
             const amount = ethers.utils.parseEther("1000");
             await mint(user1, 100);
             await mint(user1, amount);
-            await submit(user1, 100);
+            await submit(user1, 100, testers[3].address);
             await mockERC20.connect(user1).transfer(stMATIC.address, amount);
             await stMATIC.distributeRewards()
             await mint(user1, 1);
-            await expect(submit(user1, 1)).revertedWith("Mint ZERO");
+            await expect(submit(user1, 1, testers[3].address)).revertedWith("Mint ZERO");
         })
 
         it("Should submit successfully when validator was removed", async () => {
             const amount = ethers.utils.parseEther("1");
             await mint(user1, amount);
-            await submit(user1, amount);
+            await submit(user1, amount, testers[2].address);
 
             await stakeOperator(user1);
             const validatorId = await mockStakeManager.getValidatorId(user1.address)
@@ -279,7 +284,7 @@ describe("Starting to test StMATIC contract", () => {
             await nodeOperatorRegistry.removeNodeOperator(1)
 
             await mint(user2, amount);
-            await submit(user2, amount);
+            await submit(user2, amount, testers[2].address);
             testerBalance = await stMATIC.balanceOf(user2.address);
             expect(testerBalance.eq(amount)).to.be.true;
         });
@@ -289,8 +294,10 @@ describe("Starting to test StMATIC contract", () => {
         it("Should request withdraw from the contract successfully", async () => {
             const amount = ethers.utils.parseEther("1");
             await mint(user1, amount);
-            await submit(user1, amount);
-            await requestWithdraw(user1, amount);
+            await submit(user1, amount, testers[2].address);
+            expect(await stMATIC.connect(user1).requestWithdraw(amount, testers[4].address))
+                .emit(stMATIC, "RequestWithdrawEvent")
+                .withArgs(user1.address, amount, testers[4].address)
             const owned = await poLidoNFT.getOwnedTokens(user1.address);
             expect(owned).length(1);
         });
@@ -305,8 +312,8 @@ describe("Starting to test StMATIC contract", () => {
             await addOperator(validatorId.toString(), user1.address);
 
             await mint(user1, amount2Submit);
-            await submit(user1, amount2Submit);
-            await requestWithdraw(user1, ethers.utils.parseEther("0.005"));
+            await submit(user1, amount2Submit, testers[3].address);
+            await requestWithdraw(user1, ethers.utils.parseEther("0.005"), testers[4].address);
 
             const balance = await poLidoNFT.balanceOf(user1.address);
             expect(balance.eq(1)).to.be.true;
@@ -323,10 +330,10 @@ describe("Starting to test StMATIC contract", () => {
             await addOperator(validatorId.toString(), user1.address);
 
             await mint(user1, amount2Submit);
-            await submit(user1, amount2Submit);
+            await submit(user1, amount2Submit, testers[3].address);
 
             await mockStakeManager.unstake(validatorId);
-            await requestWithdraw(user1, ethers.utils.parseEther("0.005"));
+            await requestWithdraw(user1, ethers.utils.parseEther("0.005"), testers[4].address);
 
             const balance = await poLidoNFT.balanceOf(user1.address);
             expect(balance.eq(1)).to.be.true;
@@ -341,10 +348,10 @@ describe("Starting to test StMATIC contract", () => {
 
             await addOperator(validatorId.toString(), user1.address);
             await mint(user1, amount2Submit);
-            await submit(user1, amount2Submit);
+            await submit(user1, amount2Submit, testers[3].address);
 
             await mockStakeManager.slash(1);
-            await requestWithdraw(user1, ethers.utils.parseEther("0.005"));
+            await requestWithdraw(user1, ethers.utils.parseEther("0.005"), testers[4].address);
             const balance = await poLidoNFT.balanceOf(user1.address);
             expect(balance.eq(1)).to.be.true;
 
@@ -366,7 +373,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("1000");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
             let validatorShareAddress = (
@@ -391,7 +398,7 @@ describe("Starting to test StMATIC contract", () => {
             );
 
             await expect(
-                stMATIC.connect(user1).requestWithdraw(1)
+                stMATIC.connect(user1).requestWithdraw(1, testers[4].address)
             ).revertedWith("Withdraw ZERO Matic")
         });
 
@@ -402,7 +409,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("100");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
             let validatorShareAddress = (
@@ -422,7 +429,7 @@ describe("Starting to test StMATIC contract", () => {
             await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("1000000"))
 
             await expect(
-                stMATIC.connect(user1).requestWithdraw(submitAmount)
+                stMATIC.connect(user1).requestWithdraw(submitAmount, testers[4].address)
             ).revertedWith("ZERO shares to withdraw")
         })
 
@@ -434,13 +441,13 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("100");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
             const validatorId2 = await mockStakeManager.getValidatorId(user2.address)
             await addOperator(validatorId2.toString(), user2.address);
             await mint(user1, submitAmount.div(2));
-            await submit(user1, submitAmount.div(2));
+            await submit(user1, submitAmount.div(2), testers[3].address);
             await stMATIC.delegate();
 
             let validatorShareAddress = (
@@ -462,7 +469,7 @@ describe("Starting to test StMATIC contract", () => {
             expect((await nodeOperatorRegistry.getProtocolStats()).distanceThreshold)
                 .gt(await nodeOperatorRegistry.DISTANCE_THRESHOLD_PERCENTS())
             await expect(
-                stMATIC.connect(user1).requestWithdraw(submitAmount)
+                stMATIC.connect(user1).requestWithdraw(submitAmount, testers[4].address)
             ).revertedWith("ZERO shares to withdraw")
         })
     });
@@ -476,10 +483,10 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("1000");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
-            await requestWithdraw(user1, submitAmount)
+            await requestWithdraw(user1, submitAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(1)).eq(submitAmount)
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
@@ -506,15 +513,15 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("1000");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
             let requestAmount = toEth("50")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(1)).eq(requestAmount)
 
             requestAmount = toEth("950")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(2)).eq(requestAmount)
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
@@ -542,24 +549,24 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = ethers.utils.parseEther("1000");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
 
             await mint(user2, submitAmount);
-            await submit(user2, submitAmount);
+            await submit(user2, submitAmount, testers[2].address);
             await stMATIC.delegate();
 
             let requestAmount = toEth("50")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(1)).eq(requestAmount)
 
-            await requestWithdraw(user2, requestAmount)
+            await requestWithdraw(user2, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(2)).eq(requestAmount)
 
             requestAmount = toEth("950")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(3)).eq(requestAmount)
 
-            await requestWithdraw(user2, requestAmount)
+            await requestWithdraw(user2, requestAmount, testers[4].address)
             expect(await stMATIC.getMaticFromTokenId(4)).eq(requestAmount)
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
@@ -590,7 +597,7 @@ describe("Starting to test StMATIC contract", () => {
                 );
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[2].address);
             }
 
             await mockStakeManager.setEpoch(1);
@@ -600,7 +607,7 @@ describe("Starting to test StMATIC contract", () => {
                     (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
                 const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-                await requestWithdraw(testers[i], withdrawAmountWei);
+                await requestWithdraw(testers[i], withdrawAmountWei, testers[4].address);
                 ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
             }
 
@@ -626,10 +633,10 @@ describe("Starting to test StMATIC contract", () => {
 
             await addOperator(validatorId.toString(), user1.address);
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
             const balanceBefore = await mockERC20.balanceOf(user1.address);
-            await requestWithdraw(user1, withdrawAmount);
+            await requestWithdraw(user1, withdrawAmount, testers[4].address);
 
             const withdrawalDelay = await mockStakeManager.withdrawalDelay();
             const currentEpoch = await mockStakeManager.epoch();
@@ -656,7 +663,7 @@ describe("Starting to test StMATIC contract", () => {
             let amount = ethers.utils.parseEther("300");
 
             await mint(user1, amount);
-            await submit(user1, amount);
+            await submit(user1, amount, testers[2].address);
 
             let validatorShareAddress = (
                 await nodeOperatorRegistry["getNodeOperator(uint256)"](1)
@@ -688,12 +695,12 @@ describe("Starting to test StMATIC contract", () => {
             const balanceBefore = await stMATIC.balanceOf(user1.address);
 
             await mint(user1, initialSubmitAmount);
-            await submit(user1, initialSubmitAmount);
+            await submit(user1, initialSubmitAmount, testers[3].address);
             await stMATIC.delegate();
 
             const finalSubmitAmount = ethers.utils.parseEther("100");
             await mint(user1, finalSubmitAmount);
-            await submit(user1, finalSubmitAmount);
+            await submit(user1, finalSubmitAmount, testers[3].address);
             await stMATIC.delegate();
 
             const balanceAfter = await stMATIC.balanceOf(user1.address);
@@ -708,21 +715,21 @@ describe("Starting to test StMATIC contract", () => {
 
             let submitAmount = ethers.utils.parseEther("10");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
 
             await stMATIC.delegate()
 
             submitAmount = ethers.utils.parseEther("30");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
 
-            await requestWithdraw(user1, ethers.utils.parseEther("20"))
+            await requestWithdraw(user1, ethers.utils.parseEther("20"), testers[4].address)
             expect(await stMATIC.reservedFunds()).eq(ethers.utils.parseEther("10"))
             expect(await stMATIC.getTotalPooledMatic()).eq(ethers.utils.parseEther("20"))
 
             submitAmount = ethers.utils.parseEther("10");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate()
 
             expect(await stMATIC.getTotalStakeAcrossAllValidators()).eq(ethers.utils.parseEther("30"))
@@ -734,7 +741,7 @@ describe("Starting to test StMATIC contract", () => {
 
             submitAmount = ethers.utils.parseEther("30");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate()
 
             expect(await stMATIC.getTotalStakeAcrossAllValidators()).eq(submitAmount.mul(2))
@@ -751,7 +758,7 @@ describe("Starting to test StMATIC contract", () => {
 
             await addOperator(validatorId.toString(), user1.address);
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
 
             const balanceBefore = await stMATIC.getTotalStakeAcrossAllValidators();
@@ -781,11 +788,11 @@ describe("Starting to test StMATIC contract", () => {
 
             const user1SubmitAmount = toEth("100");
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
 
             let user2SubmitAmount = toEth("100");
             await mint(user2, user2SubmitAmount);
-            await submit(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount, testers[2].address);
 
             await stMATIC.delegate();
 
@@ -822,7 +829,7 @@ describe("Starting to test StMATIC contract", () => {
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
 
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[2].address);
             }
 
             await stMATIC.delegate();
@@ -831,7 +838,7 @@ describe("Starting to test StMATIC contract", () => {
 
                 withdrawAmounts.push(withdrawAmount);
                 const withdrawAmountWei = withdrawAmounts[i];
-                await requestWithdraw(testers[i], withdrawAmountWei);
+                await requestWithdraw(testers[i], withdrawAmountWei, testers[4].address);
                 ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
             }
 
@@ -869,7 +876,7 @@ describe("Starting to test StMATIC contract", () => {
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
 
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[2].address);
             }
 
             await stMATIC.delegate();
@@ -879,7 +886,7 @@ describe("Starting to test StMATIC contract", () => {
                     (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
                 const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-                await requestWithdraw(testers[i], withdrawAmountWei);
+                await requestWithdraw(testers[i], withdrawAmountWei, testers[4].address);
                 ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
             }
 
@@ -929,7 +936,7 @@ describe("Starting to test StMATIC contract", () => {
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
 
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[2].address);
             }
 
             await stMATIC.delegate();
@@ -966,7 +973,7 @@ describe("Starting to test StMATIC contract", () => {
 
             for (let i = 0; i < testersAmount; i++) {
                 await mint(testers[i], submitAmount);
-                await submit(testers[i], submitAmount);
+                await submit(testers[i], submitAmount, testers[2].address);
             }
 
             await stMATIC.delegate();
@@ -992,11 +999,11 @@ describe("Starting to test StMATIC contract", () => {
 
             const user1SubmitAmount = toEth("100");
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
 
             let user2SubmitAmount = toEth("50");
             await mint(user2, user2SubmitAmount);
-            await submit(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount, testers[2].address);
 
             //CASE 1: Should delegate to all validators equally
             expect(await stMATIC.delegate())
@@ -1017,7 +1024,7 @@ describe("Starting to test StMATIC contract", () => {
 
             user2SubmitAmount = toEth("10");
             await mint(user2, user2SubmitAmount);
-            await submit(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount, testers[2].address);
 
             //CASE 3: Fail to delegate when total buffered is less than minimum amount to delegate
             await stMATIC.setDelegationLowerBound(toEth("50"));
@@ -1048,7 +1055,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const user1SubmitAmount = toEth("100");
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
 
             // balanced
             await stMATIC.delegate()
@@ -1057,11 +1064,11 @@ describe("Starting to test StMATIC contract", () => {
                 const validatorShare = await getValidatorShare(i + 1);
                 expect(await validatorShare.totalStaked()).to.eq(toEth("50"));
             }
-            await requestWithdraw(user1, toEth("20"))
+            await requestWithdraw(user1, toEth("20"), testers[4].address)
 
             // unbalanced            
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
             await stMATIC.delegate()
 
             for (let i = 0; i < totalValidators; i++) {
@@ -1070,7 +1077,7 @@ describe("Starting to test StMATIC contract", () => {
             }
 
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
             await stMATIC.delegate()
 
             for (let i = 0; i < totalValidators; i++) {
@@ -1091,11 +1098,11 @@ describe("Starting to test StMATIC contract", () => {
 
             const user1SubmitAmount = toEth("100");
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
 
             let user2SubmitAmount = toEth("50");
             await mint(user2, user2SubmitAmount);
-            await submit(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount, testers[2].address);
 
             await stMATIC.delegate();
 
@@ -1131,11 +1138,11 @@ describe("Starting to test StMATIC contract", () => {
 
             const user1SubmitAmount = toEth("100");
             await mint(user1, user1SubmitAmount);
-            await submit(user1, user1SubmitAmount);
+            await submit(user1, user1SubmitAmount, testers[3].address);
 
             let user2SubmitAmount = toEth("50");
             await mint(user2, user2SubmitAmount);
-            await submit(user2, user2SubmitAmount);
+            await submit(user2, user2SubmitAmount, testers[2].address);
 
             await stMATIC.delegate();
 
@@ -1171,8 +1178,9 @@ describe("Starting to test StMATIC contract", () => {
         it("Should request withdraw when no delegation", async () => {
             const amount = toEth("100")
             await mint(user1, amount);
-            await submit(user1, amount)
-            await requestWithdraw(user1, amount)
+            await submit(user1, amount, testers[2].address)
+            const tokenId = await requestWithdraw(user1, amount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId").not.eq(1)
             await checkToken2WithdrawRequests(1, [{
                 amount2WithdrawFromStMATIC: amount,
                 validatorNonce: 0,
@@ -1195,12 +1203,13 @@ describe("Starting to test StMATIC contract", () => {
             }
             const amount = toEth("3000")
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
             await stMATIC.delegate()
 
             // balanced
             let requestAmount = toEth("300")
-            await requestWithdraw(user1, requestAmount)
+            let tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 1").not.eq(1)
             await checkToken2WithdrawRequests(1, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1217,7 +1226,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // unbalanced
             requestAmount = toEth("900")
-            await requestWithdraw(user1, toEth("900"))
+            tokenId = await requestWithdraw(user1, toEth("900"), testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 2").not.eq(2)
             await checkToken2WithdrawRequests(2, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1243,7 +1253,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // balanced
             requestAmount = toEth("600")
-            await requestWithdraw(user1, requestAmount)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 3").not.eq(3)
             await checkToken2WithdrawRequests(3, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1266,7 +1277,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // unbalanced
             requestAmount = toEth("300")
-            await requestWithdraw(user1, requestAmount)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 4").not.eq(4)
             await checkToken2WithdrawRequests(4, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1285,7 +1297,8 @@ describe("Starting to test StMATIC contract", () => {
 
             // balanced
             requestAmount = toEth("900")
-            await requestWithdraw(user1, requestAmount)
+            tokenId = await requestWithdraw(user1, requestAmount, testers[4].address)
+            expect(tokenId, "Invalid requestWithdraw tokenId 5").not.eq(5)
             await checkToken2WithdrawRequests(5, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1322,18 +1335,18 @@ describe("Starting to test StMATIC contract", () => {
 
             const amount = toEth("3000")
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
             let totalPooled = amount
 
             await stMATIC.delegate()
 
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
             totalPooled = totalPooled.add(amount)
 
             // balanced
             const requestAmount = toEth("6000")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             await checkToken2WithdrawRequests(1, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1373,17 +1386,17 @@ describe("Starting to test StMATIC contract", () => {
             const amount = toEth("3000")
             let totalPooled = amount
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
 
             await stMATIC.delegate()
 
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
             totalPooled = totalPooled.add(amount)
 
             // balanced
             let requestAmount = toEth("300")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             await checkToken2WithdrawRequests(1, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1401,7 +1414,7 @@ describe("Starting to test StMATIC contract", () => {
 
             // unbalanced
             requestAmount = toEth("5700")
-            await requestWithdraw(user1, requestAmount)
+            await requestWithdraw(user1, requestAmount, testers[4].address)
             await checkToken2WithdrawRequests(2, [
                 {
                     amount2WithdrawFromStMATIC: toEth("0"),
@@ -1436,11 +1449,11 @@ describe("Starting to test StMATIC contract", () => {
             const amount = toEth("3000")
             const amountToRequest = toEth("4000")
             await mint(user1, amount);
-            await submit(user1, amount)
-            await expect(requestWithdraw(user1, amountToRequest))
+            await submit(user1, amount, testers[2].address)
+            await expect(requestWithdraw(user1, amountToRequest, testers[4].address))
                 .revertedWith("Invalid amount")
 
-            await expect(requestWithdraw(user1, 0))
+            await expect(requestWithdraw(user1, 0, testers[4].address))
                 .revertedWith("Invalid amount")
         })
 
@@ -1472,7 +1485,7 @@ describe("Starting to test StMATIC contract", () => {
                     ).toFixed(3)
                 );
                 await mint(testers[i], toEth(submitAmounts[i]));
-                await submit(testers[i], toEth(submitAmounts[i]));
+                await submit(testers[i], toEth(submitAmounts[i]), testers[3].address);
                 usersBalance[i] = await stMATIC.balanceOf(testers[i].address)
             }
 
@@ -1487,7 +1500,7 @@ describe("Starting to test StMATIC contract", () => {
                         minAmount
                     ).toFixed(3)
                 );
-                await requestWithdraw(testers[i], toEth(withdrawAmounts[i]));
+                await requestWithdraw(testers[i], toEth(withdrawAmounts[i]), testers[4].address);
                 expect(await stMATIC.balanceOf(testers[i].address), `${i}-BalanceOf`).eq(usersBalance[i].sub(toEth(withdrawAmounts[i])))
                 expect((await poLidoNFT.getOwnedTokens(testers[i].address)).length, `${i}-getOwnedTokens`).not.eq(0)
                 usersBalance[i] = await stMATIC.balanceOf(testers[i].address)
@@ -1522,7 +1535,7 @@ describe("Starting to test StMATIC contract", () => {
                     ).toFixed(3)
                 );
                 await mint(testers[i], toEth(submitAmounts[i]));
-                await submit(testers[i], toEth(submitAmounts[i]));
+                await submit(testers[i], toEth(submitAmounts[i]), testers[3].address);
                 usersBalance[i] = await stMATIC.balanceOf(testers[i].address)
             }
 
@@ -1531,7 +1544,7 @@ describe("Starting to test StMATIC contract", () => {
                 withdrawAmounts.push(
                     (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
-                await requestWithdraw(testers[i], toEth(withdrawAmounts[i]));
+                await requestWithdraw(testers[i], toEth(withdrawAmounts[i]), testers[4].address);
                 expect(await stMATIC.balanceOf(testers[i].address), `${i}-BalanceOf`).eq(usersBalance[i].sub(toEth(withdrawAmounts[i])))
                 expect((await poLidoNFT.getOwnedTokens(testers[i].address)).length, `${i}-getOwnedTokens`).not.eq(0)
                 usersBalance[i] = await stMATIC.balanceOf(testers[i].address)
@@ -1560,7 +1573,7 @@ describe("Starting to test StMATIC contract", () => {
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
 
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[3].address);
             }
 
             await stMATIC.delegate();
@@ -1573,7 +1586,7 @@ describe("Starting to test StMATIC contract", () => {
                     (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
                 const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-                await requestWithdraw(testers[i], withdrawAmountWei);
+                await requestWithdraw(testers[i], withdrawAmountWei, testers[4].address);
                 ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
             }
 
@@ -1611,7 +1624,7 @@ describe("Starting to test StMATIC contract", () => {
                 );
                 const submitAmountWei = ethers.utils.parseEther(submitAmounts[i]);
                 await mint(testers[i], submitAmountWei);
-                await submit(testers[i], submitAmountWei);
+                await submit(testers[i], submitAmountWei, testers[3].address);
             }
 
             await stMATIC.delegate();
@@ -1621,7 +1634,7 @@ describe("Starting to test StMATIC contract", () => {
                     (Math.random() * (Number(submitAmounts[i]) - minAmount) + minAmount).toFixed(3)
                 );
                 const withdrawAmountWei = ethers.utils.parseEther(withdrawAmounts[i]);
-                await requestWithdraw(testers[i], withdrawAmountWei);
+                await requestWithdraw(testers[i], withdrawAmountWei, testers[4].address);
                 ownedTokens.push(await poLidoNFT.getOwnedTokens(testers[i].address));
             }
 
@@ -1649,19 +1662,19 @@ describe("Starting to test StMATIC contract", () => {
 
             const amount = toEth("3000")
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
 
             await stMATIC.delegate()
             await nodeOperatorRegistry.removeNodeOperator(1)
 
-            await expect(requestWithdraw(user1, amount))
+            await expect(requestWithdraw(user1, amount, testers[4].address))
                 .revertedWith("Too much to withdraw")
 
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
 
             expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(0)
-            await requestWithdraw(user1, amount)
+            await requestWithdraw(user1, amount, testers[4].address)
 
             expect((await poLidoNFT.getOwnedTokens(user1.address)).length).eq(1)
             expect(await stMATIC.getMaticFromTokenId(1)).eq(amount)
@@ -1750,7 +1763,8 @@ describe("Starting to test StMATIC contract", () => {
                         );
                         await submit(
                             testers[i],
-                            ethers.utils.parseEther(amountSubmittedPerUser.toString())
+                            ethers.utils.parseEther(amountSubmittedPerUser.toString()),
+                            testers[3].address
                         );
 
                         // transfer some tokens to the validatorShare contracts to mimic rewards.
@@ -1823,7 +1837,7 @@ describe("Starting to test StMATIC contract", () => {
             const validatorShareRewards = [1000, 10];
             for (let i = 1; i <= numOperators; i++) {
                 await mint(testers[i], ethers.utils.parseEther("10"));
-                await submit(testers[i], ethers.utils.parseEther(String(10)));
+                await submit(testers[i], ethers.utils.parseEther(String(10)), testers[3].address);
 
                 // transfer some tokens to the validatorShare contracts to mimic rewards.
                 const rewardAmount = validatorShareRewards[i - 1];
@@ -1870,7 +1884,7 @@ describe("Starting to test StMATIC contract", () => {
 
             for (let i = 1; i <= numOperators; i++) {
                 await mint(testers[i], ethers.utils.parseEther("10"));
-                await submit(testers[i], ethers.utils.parseEther(String(10)));
+                await submit(testers[i], ethers.utils.parseEther(String(10)), testers[3].address);
 
                 // transfer some tokens to the validatorShare contracts to mimic rewards.
                 await mint(deployer, ethers.utils.parseEther("1"));
@@ -1892,7 +1906,7 @@ describe("Starting to test StMATIC contract", () => {
             
             const amount = ethers.utils.parseEther("100")
             await mint(user1, amount);
-            await submit(user1, amount)
+            await submit(user1, amount, testers[2].address)
             await addOperator("1", user1.address);
             await stMATIC.delegate();
 
@@ -1964,7 +1978,7 @@ describe("Starting to test StMATIC contract", () => {
                     if (delegate) {
                         for (let i = 1; i <= 3; i++) {
                             await mint(testers[i], ethers.utils.parseEther("10"));
-                            await submit(testers[i], ethers.utils.parseEther("10"));
+                            await submit(testers[i], ethers.utils.parseEther("10"), testers[3].address);
                         }
                         await stMATIC.delegate();
                     }
@@ -1983,7 +1997,7 @@ describe("Starting to test StMATIC contract", () => {
                             tokenIds[i]
                         );
                         expect(withdrawRequest.validatorNonce).not.eq(0);
-                        expect(withdrawRequest.requestEpoch).not.eq(epoch);
+                        expect(withdrawRequest.requestTime).not.eq(epoch);
                     }
                 });
             }
@@ -2008,7 +2022,7 @@ describe("Starting to test StMATIC contract", () => {
             const amountToDelegate = toEth("100");
             for (let i = 1; i <= 3; i++) {
                 await mint(testers[i], amountToDelegate);
-                await submit(testers[i], amountToDelegate);
+                await submit(testers[i], amountToDelegate, testers[3].address);
             }
             await stMATIC.delegate();
             const vs = (await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, validatorId)).validatorShare
@@ -2032,10 +2046,10 @@ describe("Starting to test StMATIC contract", () => {
             const amountToDelegate = toEth("100");
             for (let i = 1; i <= 3; i++) {
                 await mint(testers[i], amountToDelegate);
-                await submit(testers[i], amountToDelegate);
+                await submit(testers[i], amountToDelegate, testers[3].address);
             }
             await stMATIC.delegate();
-            await stMATIC.connect(user3).requestWithdraw(toEth("10"));
+            await stMATIC.connect(user3).requestWithdraw(toEth("10"), testers[4].address);
 
             await expect(stMATIC.connect(user2).claimTokensFromValidatorToContract(1))
                 .revertedWith("invalid index")
@@ -2045,7 +2059,7 @@ describe("Starting to test StMATIC contract", () => {
             const amountToDelegate = toEth("100");
             for (let i = 1; i <= 3; i++) {
                 await mint(testers[i], amountToDelegate);
-                await submit(testers[i], amountToDelegate);
+                await submit(testers[i], amountToDelegate, testers[3].address);
             }
             await stMATIC.delegate();
             await nodeOperatorRegistry.removeNodeOperator(validatorId);
@@ -2115,9 +2129,9 @@ describe("Starting to test StMATIC contract", () => {
 
             const submitAmount = toEth("3000");
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
-            await requestWithdraw(user1, toEth("30"));
+            await requestWithdraw(user1, toEth("30"), testers[4].address);
             expect(await stMATIC.getMaticFromTokenId(1)).eq(toEth("30"));
         });
 
@@ -2133,9 +2147,9 @@ describe("Starting to test StMATIC contract", () => {
             const requestAmount = toEth("50");
 
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
             await stMATIC.delegate();
-            await requestWithdraw(user1, requestAmount);
+            await requestWithdraw(user1, requestAmount, testers[4].address);
             expect(await stMATIC.getMaticFromTokenId(1)).eq(requestAmount);
         });
 
@@ -2150,8 +2164,8 @@ describe("Starting to test StMATIC contract", () => {
             const submitAmount = toEth("300");
 
             await mint(user1, submitAmount);
-            await submit(user1, submitAmount);
-            await requestWithdraw(user1, submitAmount);
+            await submit(user1, submitAmount, testers[3].address);
+            await requestWithdraw(user1, submitAmount, testers[4].address);
 
             expect(await stMATIC.getTotalPooledMatic(), "getTotalPooledMatic").eq(0);
             expect(await stMATIC.getMaticFromTokenId(1), "getMaticFromTokenId").eq(submitAmount);
@@ -2169,7 +2183,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountToDelegate = toEth("300");
             await mint(user1, amountToDelegate);
-            await submit(user1, amountToDelegate);
+            await submit(user1, amountToDelegate, testers[3].address);
             await stMATIC.delegate();
 
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
@@ -2210,7 +2224,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountToDelegate = toEth("300");
             await mint(user1, amountToDelegate);
-            await submit(user1, amountToDelegate);
+            await submit(user1, amountToDelegate, testers[3].address);
             await stMATIC.delegate();
 
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
@@ -2302,7 +2316,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountToDelegate = toEth("300");
             await mint(user1, amountToDelegate);
-            await submit(user1, amountToDelegate);
+            await submit(user1, amountToDelegate, testers[3].address);
             await stMATIC.delegate();
 
             expect(await stMATIC.getTotalPooledMatic()).eq(amountToDelegate);
@@ -2396,7 +2410,7 @@ describe("Starting to test StMATIC contract", () => {
 
             for (let i = 1; i <= 10; i++) {
                 await mint(testers[i], toEth("10"));
-                await submit(testers[i], toEth("10"));
+                await submit(testers[i], toEth("10"), testers[3].address);
             }
 
             await stMATIC.delegate();
@@ -2424,7 +2438,7 @@ describe("Starting to test StMATIC contract", () => {
 
             for (let i = 1; i <= 10; i++) {
                 await mint(testers[i], toEth("10"));
-                await submit(testers[i], toEth("10"));
+                await submit(testers[i], toEth("10"), testers[3].address);
             }
 
             await nodeOperatorRegistry.removeNodeOperator(1);
@@ -2459,7 +2473,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             await stMATIC.delegate();
             const vs = (await nodeOperatorRegistry["getNodeOperator(uint256)"].call(this, 1)).validatorShare
             await nodeOperatorRegistry.removeNodeOperator(1);
@@ -2469,9 +2483,9 @@ describe("Starting to test StMATIC contract", () => {
             await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
 
             await stMATIC.claimTokensFromValidatorToContract(0);
-            expect(await stMATIC.connect(user1).requestWithdraw(amountSubmit))
+            expect(await stMATIC.connect(user1).requestWithdraw(amountSubmit, testers[4].address))
                 .emit(stMATIC, "RequestWithdrawEvent")
-                .withArgs(user1.address, amountSubmit);
+                .withArgs(user1.address, amountSubmit, testers[4].address);
 
             const req = await stMATIC.token2WithdrawRequests(1, 0);
             expect(req.validatorAddress).eq(ethers.constants.AddressZero);
@@ -2488,11 +2502,11 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             await stMATIC.delegate();
             await nodeOperatorRegistry.removeNodeOperator(1);
 
-            await expect(stMATIC.connect(user1).requestWithdraw(amountSubmit))
+            await expect(stMATIC.connect(user1).requestWithdraw(amountSubmit, testers[4].address))
                 .revertedWith("Too much to withdraw");
         });
     });
@@ -2501,7 +2515,7 @@ describe("Starting to test StMATIC contract", () => {
         it("Should get total pooled matic after submit", async () => {
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             expect(await stMATIC.getTotalPooledMatic()).eq(amountSubmit);
         });
 
@@ -2514,7 +2528,7 @@ describe("Starting to test StMATIC contract", () => {
             }
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             await stMATIC.delegate();
             expect(await stMATIC.getTotalPooledMatic()).eq(amountSubmit);
         });
@@ -2529,7 +2543,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             await stMATIC.delegate();
             await nodeOperatorRegistry.removeNodeOperator(1);
             expect(await stMATIC.getTotalPooledMatic()).eq(amountSubmit);
@@ -2545,7 +2559,7 @@ describe("Starting to test StMATIC contract", () => {
 
             const amountSubmit = toEth("100");
             await mint(user1, amountSubmit);
-            await submit(user1, amountSubmit);
+            await submit(user1, amountSubmit, testers[3].address);
             await stMATIC.delegate();
             await nodeOperatorRegistry.removeNodeOperator(1);
 
@@ -2581,7 +2595,7 @@ describe("Starting to test StMATIC contract", () => {
         for (let i = 0; i < requestWithdraw.length; i++) {
             expect(res[i].amount2WithdrawFromStMATIC, tokenId + "--amount2WithdrawFromStMATIC").eq(requestWithdraw[i].amount2WithdrawFromStMATIC)
             expect(res[i].validatorNonce, tokenId + "--validatorNonce").eq(requestWithdraw[i].validatorNonce)
-            expect(res[i].requestEpoch, tokenId + "--requestEpoch").not.eq(0)
+            expect(res[i].requestTime, tokenId + "--requestEpoch").not.eq(0)
             if (requestWithdraw[i].validatorAddress) {
                 expect(res[i].validatorAddress, tokenId + "--validatorAddress").eq(requestWithdraw[i].validatorAddress)
             } else {
