@@ -201,6 +201,13 @@ contract StMATIC is
         uint256 tokenId;
 
         {
+            uint256 totalPooledMatic = _getTotalPooledMatic(getTotalStakeAcrossAllValidators());
+            uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
+                _amount,
+                totalPooledMatic
+            );
+            _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
+
             (
                 INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
                 uint256 totalDelegated,
@@ -210,14 +217,7 @@ contract StMATIC is
                 uint256[] memory smallNodeOperatorIds,
                 uint256[] memory allowedAmountToRequestFromOperators,
                 uint256 totalValidatorsToWithdrawFrom
-            ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(_amount);
-
-            uint256 totalPooledMatic = _getTotalPooledMatic(totalDelegated);
-            uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
-                _amount,
-                totalPooledMatic
-            );
-            _require(totalAmount2WithdrawInMatic > 0, "Withdraw ZERO Matic");
+            ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(totalAmount2WithdrawInMatic);
 
             {
                 uint256 localActiveBalance = totalBuffered > reservedFunds
