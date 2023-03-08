@@ -1374,6 +1374,76 @@ describe("Starting to test StMATIC contract", () => {
             expect(afterBalanceMatic, "user balance").eq(beforeBalanceMatic.add(expectedAmountInMatic))
         })
 
+        it("Should preserve ratio on withdraw over multiple validators", async () => {
+            const checkWithdrawAndClaimAmounts = async(
+                staker: SignerWithAddress,
+                amount: BigNumber,
+                _refer: string,
+            ) => {
+                // TokenId = 1 is minted and attached to the user request.
+                const shouldClaimInMatic = (await stMATIC.convertStMaticToMatic(amount)).amountInMatic;
+                await requestWithdraw(staker, amount, _refer)
+                
+                const owned = await poLidoNFT.getOwnedTokens(staker.address);
+                const tokenToBurn = owned.at(owned.length - 1) as BigNumber;
+
+                const shouldClaimInMatic1 = await stMATIC.getMaticFromTokenId(tokenToBurn)
+                expect(shouldClaimInMatic1, "shouldClaimInMatic").eq(shouldClaimInMatic)
+
+                const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+                const currentEpoch = await mockStakeManager.epoch();
+                await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+        
+                const userMaticsBeforeClaim = await mockERC20.balanceOf(staker.address);
+                await claimTokens(staker, tokenToBurn);
+                const userMaticsAfterClaim = await mockERC20.balanceOf(staker.address);
+        
+                const claimedMatics = userMaticsAfterClaim.sub(userMaticsBeforeClaim);
+                expect(claimedMatics, "claimed MATICs != requested MATICs").eq(shouldClaimInMatic);
+            }
+            
+            const totalValidatorsLength = 2;
+
+            for (let i = 0; i < totalValidatorsLength; i++) {
+                await mint(testers[i], ethers.utils.parseEther("10"));
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await addOperator(validatorId.toString(), testers[i].address);
+            }
+
+            const staker = user3;
+            const _refer = testers[3].address;
+
+            const userStakeAmount = toEth("100");
+            await mint(staker, userStakeAmount);
+            await submit(staker, userStakeAmount, _refer);
+
+            await stMATIC.delegate();
+
+            // The protocol is balanced now:
+            // stake: [ 50, 50 ]
+
+            // Skewing stMATIC/MATIC ratio to spot the difference later
+            await stMATIC.setProtocolFee(50)
+            const rewardToDistribute = toEth("100");
+            await mint(deployer, rewardToDistribute);
+            await mockERC20.transfer(
+                await getValidatorShareAddress(1),
+                rewardToDistribute,
+            );
+            await stMATIC.distributeRewards()
+            expect((await stMATIC.convertStMaticToMatic(100)).amountInMatic, "unexpected stMATIC ratio").eq(150);
+
+            await checkWithdrawAndClaimAmounts(staker, toEth("20"), _refer);
+            // The protocol is unbalanced now:
+            // stake: [ 30; 50 ]
+
+            // Choising big enough value that cannot be covered by withdraw of N = 2 validators equally
+            // since minAmount = 30 and minAmount * N < claimAmountInStMatic and < totalDelegated
+            const claimAmountInStMatic = toEth("60")
+            await checkWithdrawAndClaimAmounts(staker, claimAmountInStMatic, _refer);
+        });
+
         it("Should request withdraw when total delegated is less than th requested amount, balanced", async () => {
             for (let i = 0; i < 3; i++) {
                 await stakeOperator(testers[i]);
@@ -1422,6 +1492,74 @@ describe("Starting to test StMATIC contract", () => {
             const res = await poLidoNFT.getOwnedTokens(user1.address)
             expect(res.length).eq(1)
             expect(res[0]).eq(1)
+        })
+
+        it("Should request withdraw exchange Matic/stMatic exchange rate is not 1/1", async () => {
+            for (let i = 0; i < 3; i++) {
+                await stakeOperator(testers[i]);
+                const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
+                await addOperator(validatorId.toString(), testers[i].address);
+            }
+
+            const amount = toEth("3000")
+            let totalPooled = amount
+            await mint(user1, amount);
+            await submit(user1, amount, testers[2].address)
+
+            await stMATIC.delegate()
+
+            // Skewing stMATIC/MATIC ratio to spot the difference later
+            await stMATIC.setProtocolFee(50)
+            const rewardToDistribute = toEth("6000");
+            await mint(deployer, rewardToDistribute);
+            await mockERC20.transfer(
+                await getValidatorShareAddress(1),
+                rewardToDistribute,
+            );
+            await stMATIC.distributeRewards()
+            expect((await stMATIC.convertStMaticToMatic(100)).amountInMatic, "unexpected stMATIC ratio").eq(200);
+
+            let requestAmountStMatic = toEth("3000")
+            const expectedAmountInMatic = (await stMATIC.convertStMaticToMatic(requestAmountStMatic)).amountInMatic
+
+            // balanced
+            await requestWithdraw(user1, requestAmountStMatic, testers[4].address)
+            await checkToken2WithdrawRequests(1, [
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("0"),
+                    validatorNonce: 1,
+                },
+                {
+                    amount2WithdrawFromStMATIC: toEth("3000"),
+                    validatorNonce: 0,
+                    validatorAddress: ethers.constants.AddressZero
+                }
+            ], false)
+
+            const tokenId = 1
+            expect(await stMATIC.balanceOf(user1.address), "balanceOf").eq(0)
+            expect(await stMATIC.reservedFunds(), "reservedFunds").eq(toEth("3000"))
+            expect(await stMATIC.getMaticFromTokenId(tokenId), "getMaticFromTokenId").eq(expectedAmountInMatic)
+            const res = await poLidoNFT.getOwnedTokens(user1.address)
+            expect(res.length).eq(tokenId)
+            expect(res[0]).eq(tokenId)
+
+            const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+            const currentEpoch = await mockStakeManager.epoch();
+            await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+
+            const userBalanceBefore = await mockERC20.balanceOf(user1.address)
+            await stMATIC.connect(user1).claimTokens(tokenId)
+            const userBalanceAfter = await mockERC20.balanceOf(user1.address)
+            expect(userBalanceAfter, "Expected amount to claim").eq(userBalanceBefore.add(expectedAmountInMatic))
         })
 
         it("Should request withdraw when total delegated is less than th requested amount, unbalanced", async () => {
