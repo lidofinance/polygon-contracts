@@ -276,17 +276,17 @@ interface IStMATIC is IERC20Upgradeable {
         uint256 _rewardDistributionLowerBound
     ) external;
 
-    /// @notice Allows to set LidoNFT.
-    /// @param _poLidoNFT new LidoNFT.
-    function setPoLidoNFT(address _poLidoNFT) external;
+    // /// @notice Allows to set LidoNFT.
+    // /// @param _poLidoNFT new LidoNFT.
+    // function setPoLidoNFT(address _poLidoNFT) external;
 
     /// @notice Allows to set fxStateRootTunnel.
     /// @param _fxStateRootTunnel new fxStateRootTunnel.
     function setFxStateRootTunnel(address _fxStateRootTunnel) external;
 
-    /// @notice Allows to set new version.
-    /// @param _newVersion new contract version.
-    function setVersion(string calldata _newVersion) external;
+    // /// @notice Allows to set new version.
+    // /// @param _newVersion new contract version.
+    // function setVersion(string calldata _newVersion) external;
 
     ////////////////////////////////////////////////////////////
     /////                                                    ///
