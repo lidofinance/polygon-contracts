@@ -1226,7 +1226,7 @@ contract StMATIC is
     ) external onlyRole(DAO) {
         _require(!recovered, "The protocol was recovered");
         _require(_usersAddress.length > 0 && _usersAddress.length == _amountOfStMaticToIncreaseForEachUser.length, "Invalid array length");
-        // transfer the compensated amount to multisig. 
+        // transfer the compensated amount to the affected user. 
         IERC20Upgradeable(token).safeTransfer(_compensatedAddress, _compensatedAmount);
 
         // Increse users stMatic balances
