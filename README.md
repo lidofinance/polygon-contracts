@@ -98,3 +98,9 @@ To initiate LidoNFT upgrade request:
 ```sh
 npx hardhat run scripts/multisigUpgrade/upgradeLidoNFT.ts --network <network-id>
 ```
+
+# 06-03-2023
+- Run simulation tests for recovery
+```sh
+npx hardhat test test/simulation/simulateRecover.test.ts --config hardhat.config_fork.ts
+```

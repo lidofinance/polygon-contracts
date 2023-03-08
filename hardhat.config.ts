@@ -53,13 +53,6 @@ const config: HardhatUserConfig = {
         }
     },
     networks: {
-        hardhat: {
-            // forking: {
-            //     url: ROOT_CHAIN_RPC,
-            //     // verify transactions from 31-01-2023
-            //     blockNumber: 16525764
-            // }
-        },
         localhost: {
             url: "http://127.0.0.1:8545"
         },
