@@ -3,6 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { StMATIC, ERC20, IAdminUpgradeabilityProxy } from "../typechain";
+import RECOVER_USER from "./recovery_data/users.json";
 
 describe("Starting to test StMATIC contract", () => {
   let stMATIC: StMATIC;
@@ -28,7 +29,7 @@ describe("Starting to test StMATIC contract", () => {
       "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0"
     )) as ERC20;
 
-    // DAO signer
+    // DAO signer impersonateAccount
     {
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
@@ -43,7 +44,7 @@ describe("Starting to test StMATIC contract", () => {
       DAOSigner = await ethers.getSigner(DAO_ADDRESS);
     }
 
-    // MATIC whale
+    // MATIC whale impersonateAccount
     {
       await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
@@ -58,40 +59,53 @@ describe("Starting to test StMATIC contract", () => {
       MATIC_WHALE = await ethers.getSigner(MATIC_WHALE_ADDRESS);
     }
 
-    // Upgrade stMATIC
-    const stMaticFixFactory = await ethers.getContractFactory(
-      "StMATIC",
-      DAOSigner
-    );
-    const impl = await stMaticFixFactory.deploy();
-
     // Admin proxy to upgrade stMATIC
     const adminProxy = (await ethers.getContractAt(
       "IAdminUpgradeabilityProxy",
       "0x0833f5bD45803E05ef54E119a77E463cE6b1a963"
     )) as IAdminUpgradeabilityProxy;
 
+    // Upgrade stMATIC contract.
+    const stMaticFixFactory = await ethers.getContractFactory(
+      "StMATIC",
+      DAOSigner
+    );
+    const impl = await stMaticFixFactory.deploy();
     await adminProxy.connect(DAOSigner).upgrade(STMATIC_ADDRESS, impl.address);
 
     expect(
       await adminProxy.getProxyImplementation(STMATIC_ADDRESS),
-      "Wrong impl address"
+      "Wrong stMatic impl address"
     ).eq(impl.address);
   });
 
   it("Simulate recover", async () => {
-    const userAddresses: string[] = [accounts[0].address];
-    const userBalances: BigNumber[] = [ethers.utils.parseEther("1")];
-    const lostAmount = ethers.utils.parseEther("1300");
-    const compensateAmount = ethers.utils.parseEther("102470");
-    const compensateAddress = accounts[1].address;
+    // user addresses
+    const userAddresses: string[] = [];
+
+    // user balances
+    const userBalances: BigNumber[] = [];
+
+    for (let i = 0; i < RECOVER_USER.length; i++) {
+      userAddresses.push(RECOVER_USER[i].user);
+      userBalances.push(
+        ethers.utils.parseUnits(RECOVER_USER[i].stMATIC_to_mint)
+      );
+    }
+    const lostAmount = ethers.utils.parseUnits("1309.42584359816", 18);
+    const compensateAmount = ethers.utils.parseUnits("102470.7609", 18);
+    const compensateAddress = DAOSigner.address;
     const stMATICBalanceBeforeRecover = await MATIC.balanceOf(stMATIC.address);
     const compensateAddressBalanceBeforeRecover = await MATIC.balanceOf(
       compensateAddress
     );
+
+    // get user balances before the recover.
     const usersBalanceBeforeTheFix = [];
-    for (let i = 0; i < userAddresses.length; i++) {
-      usersBalanceBeforeTheFix.push(await MATIC.balanceOf(userAddresses[i]));
+    for (let i = 0; i < RECOVER_USER.length; i++) {
+      usersBalanceBeforeTheFix.push(
+        await stMATIC.balanceOf(RECOVER_USER[i].user)
+      );
     }
     {
       // Exec recover
@@ -110,10 +124,11 @@ describe("Starting to test StMATIC contract", () => {
 
     // Check if the users received the correct stMatic.
     for (let i = 0; i < userAddresses.length; i++) {
+      const balanceAfterRecover = await stMATIC.balanceOf(userAddresses[i]);
       expect(
-        await stMATIC.balanceOf(userAddresses[i]),
+        balanceAfterRecover.sub(usersBalanceBeforeTheFix[i]),
         "User stMatic balance"
-      ).eq(usersBalanceBeforeTheFix[i].add(userBalances[i]));
+      ).eq(userBalances[i]);
     }
 
     // Check stMatic contract, Matic balance.
