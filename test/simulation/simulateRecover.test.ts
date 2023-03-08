@@ -65,7 +65,7 @@ describe("Starting to test StMATIC contract", () => {
     );
     const impl = await stMaticFixFactory.deploy();
 
-    // Polygon stakeManager contract
+    // Admin proxy to upgrade stMATIC
     const adminProxy = (await ethers.getContractAt(
       "IAdminUpgradeabilityProxy",
       "0x0833f5bD45803E05ef54E119a77E463cE6b1a963"
@@ -116,13 +116,13 @@ describe("Starting to test StMATIC contract", () => {
       ).eq(usersBalanceBeforeTheFix[i].add(userBalances[i]));
     }
 
-    // Check stMatic contract Matic balance.
+    // Check stMatic contract, Matic balance.
     const stMATICBalanceAfterRecover = await MATIC.balanceOf(stMATIC.address);
     expect(stMATICBalanceAfterRecover, "stMATICBalanceAfterRecover").eq(
       stMATICBalanceBeforeRecover.add(lostAmount).sub(compensateAmount)
     );
 
-    // Check if the stMatic contract received the lost amount.
+    // Check if the compensateAddress received the compensate Amount.
     const compensateAddressBalanceAfterRecover = await MATIC.balanceOf(
       compensateAddress
     );
