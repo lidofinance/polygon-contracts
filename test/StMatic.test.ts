@@ -1195,7 +1195,7 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[0]).eq(1)
         })
 
-        it.only("Should request withdraw unbalance and balance cases", async () => {
+        it("Should request withdraw unbalance and balance cases", async () => {
             for (let i = 0; i < 3; i++) {
                 await stakeOperator(testers[i]);
                 const validatorId = await mockStakeManager.getValidatorId(testers[i].address)
@@ -1324,6 +1324,54 @@ describe("Starting to test StMATIC contract", () => {
             expect(res[2]).eq(3)
             expect(res[3]).eq(4)
             expect(res[4]).eq(5)
+        })
+
+        it("Should request withdraw exchange rate between stMatic and output Matic when withdraw from multiple validators", async () => {
+            for (let i = 0; i < 6; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await mockStakeManager.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+            }           
+
+            // User stake
+            const amount = toEth("300")
+            await mint(user1, amount);
+            await submit(user1, amount, user1.address)
+            await stMATIC.delegate()
+
+            // Set the protocol fees to 50% to have clean test output
+            await stMATIC.setProtocolFee(50)
+
+            // Simulate rewards
+            const rewards = toEth("600")
+            await mint(user1, rewards);  
+            await mockERC20.connect(user1).transfer(stMATIC.address, rewards)
+            await stMATIC.distributeRewards()
+
+            // Check if the exchange rate is correct
+            const rateMaticToStMatic = (await stMATIC.convertMaticToStMatic(toEth("1"))).amountInStMatic
+            const rateStMaticToMatic = (await stMATIC.convertStMaticToMatic(toEth("1"))).amountInMatic
+            expect(rateMaticToStMatic, "rateMaticToStMatic").eq(ethers.utils.parseUnits("0.5"))
+            expect(rateStMaticToMatic, "rateStMaticToMatic").eq(ethers.utils.parseUnits("2"))
+
+            // User request withdraw
+            const withdrawAmountInStMatic = toEth("150")
+            await stMATIC.connect(user1).requestWithdraw(withdrawAmountInStMatic, ethers.constants.AddressZero)
+            const tokenId = 1
+            const expectedAmountInMatic = rateStMaticToMatic.mul(withdrawAmountInStMatic).div(toEth("1"))
+            expect((await stMATIC.getToken2WithdrawRequests(tokenId)).length, "getToken2WithdrawRequests").eq(6)
+            expect(await stMATIC.getMaticFromTokenId(tokenId), "getMaticFromTokenId").eq(expectedAmountInMatic)
+
+            // User claim
+            const withdrawalDelay = await mockStakeManager.withdrawalDelay();
+            const currentEpoch = await mockStakeManager.epoch();
+            await mockStakeManager.setEpoch(withdrawalDelay.add(currentEpoch));
+
+            const beforeBalanceMatic = await mockERC20.balanceOf(user1.address)
+            await stMATIC.connect(user1).claimTokens(tokenId)
+            const afterBalanceMatic = await mockERC20.balanceOf(user1.address)
+
+            expect(afterBalanceMatic, "user balance").eq(beforeBalanceMatic.add(expectedAmountInMatic))
         })
 
         it("Should request withdraw when total delegated is less than th requested amount, balanced", async () => {
@@ -2579,6 +2627,116 @@ describe("Starting to test StMATIC contract", () => {
 
             expect(await stMATIC.getTotalPooledMatic()).eq(amountSubmit);
             expect(await stMATIC.calculatePendingBufferedTokens()).eq(0);
+        });
+    });
+
+    describe("Test recovery", async () => {
+        it("Should recover some users", async () => {
+            const amountsTostake = [
+                toEth("300"), toEth("200"), toEth("150"), toEth("250"), toEth("400"),
+                toEth("100"), toEth("150"), toEth("250"), toEth("100"), toEth("500")
+            ]
+
+            for (let i = 0; i < amountsTostake.length; i++) {
+                await mint(accounts[i], amountsTostake[i]);
+                await submit(accounts[i], amountsTostake[i], ethers.constants.AddressZero)
+            }
+
+            const getUsersStMaticBalances = []
+            const totalUsersToRecover = 5
+            // totalUsersToRecover
+            const amountStMaticToIncreaseForEachUser = [toEth('20'), toEth('10'), toEth('5'), toEth('15'), toEth('25')]
+            const compensatedAddress = signer.address
+            const compensatedAmount = toEth("50")
+
+            for (let i = 0; i < accounts.length; i++) {
+                const balance = await stMATIC.balanceOf(accounts[i].address)
+                getUsersStMaticBalances.push(balance)
+            }
+
+            const usersToRecover = []
+            const usersNoRecover = []
+            for (let i = 0; i < totalUsersToRecover; i++) {
+                if (i < totalUsersToRecover) {
+                    usersToRecover.push(accounts[i].address)
+                } else {
+                    usersNoRecover.push(accounts[i].address)
+                }
+            }
+            
+            let totalAmountStMaticToIncreaseForEachUser = BigNumber.from("0")
+            for (let i = 0; i < amountStMaticToIncreaseForEachUser.length; i++) {
+                totalAmountStMaticToIncreaseForEachUser = totalAmountStMaticToIncreaseForEachUser.add(amountStMaticToIncreaseForEachUser[i])
+            }
+
+            const signerBalanceBeforeRecovery = await mockERC20.balanceOf(compensatedAddress)
+            const stMaticBalanceBeforeRecovery = await mockERC20.balanceOf(stMATIC.address)
+            const stMaticTotalSupplyBeforeRecovery = await stMATIC.totalSupply()
+
+            const beforeUsersStMaticBalance = []
+            for (let i = 0; i < accounts.length; i++) {
+                beforeUsersStMaticBalance.push(await stMATIC.balanceOf(accounts[i].address))
+            }
+
+            // No DAO try to call recover
+            const noDAO = accounts[15]
+            await expect(stMATIC.connect(noDAO).recover(
+                usersToRecover,
+                amountStMaticToIncreaseForEachUser,
+                compensatedAddress,
+                compensatedAmount
+            )).revertedWith(
+                `AccessControl: account ${noDAO.address.toLowerCase()} is missing role 0xd0a4ad96d49edb1c33461cebc6fb2609190f32c904e3c3f5877edb4488dee91e`
+            )
+
+            // Call recovery with wrong params
+            await expect(stMATIC.recover(
+                usersToRecover,
+                [],
+                compensatedAddress,
+                compensatedAmount
+            )).revertedWith("Invalid array length")
+
+            // Call recovery with wrong params
+            await expect(stMATIC.recover(
+                [],
+                [],
+                compensatedAddress,
+                compensatedAmount
+            )).revertedWith("Invalid array length")
+
+            // DAO recover the protcol
+            await stMATIC.recover(
+                usersToRecover,
+                amountStMaticToIncreaseForEachUser,
+                compensatedAddress,
+                compensatedAmount
+            )
+
+            const signerBalanceAfterRecovery = await mockERC20.balanceOf(compensatedAddress)
+            const stMaticBalanceAfterRecovery = await mockERC20.balanceOf(stMATIC.address)
+            const stMaticTotalSupplyAfterRecovery = await stMATIC.totalSupply()
+            expect(signerBalanceAfterRecovery, "signerBalanceRecovery").eq(signerBalanceBeforeRecovery.add(compensatedAmount))
+            expect(stMaticBalanceAfterRecovery, "stMaticBalanceRecovery").eq(stMaticBalanceBeforeRecovery.sub(compensatedAmount))
+            expect(stMaticTotalSupplyAfterRecovery, "stMaticTotalSupplyRecovery")
+                .eq(stMaticTotalSupplyBeforeRecovery.add(totalAmountStMaticToIncreaseForEachUser))
+
+            for (let i = 0; i < beforeUsersStMaticBalance.length; i++) {
+                if (i < totalUsersToRecover) {
+                    expect(await stMATIC.balanceOf(accounts[i].address), "User stMatic balance to compensate")
+                        .eq(beforeUsersStMaticBalance[i].add(amountStMaticToIncreaseForEachUser[i]))
+                } else {
+                    expect(await stMATIC.balanceOf(accounts[i].address), "User stMatic balance not compensate")
+                        .eq(beforeUsersStMaticBalance[i])
+                }
+            }
+
+            await expect(stMATIC.recover(
+                usersToRecover,
+                amountStMaticToIncreaseForEachUser,
+                compensatedAddress,
+                compensatedAmount
+            )).revertedWith("The protocol was recovered")
         });
     });
 
