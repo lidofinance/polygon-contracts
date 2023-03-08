@@ -1436,10 +1436,11 @@ describe("Starting to test StMATIC contract", () => {
 
             await checkWithdrawAndClaimAmounts(staker, toEth("20"), _refer);
             // The protocol is unbalanced now:
-            // stake: [ 30; 50 ]
+            // the exchange rate between stMatic<>Matic is 1.5 (1 stMatic = 1.5 Matic)
+            // stake after request: [ 20; 50 ]
 
             // Choising big enough value that cannot be covered by withdraw of N = 2 validators equally
-            // since minAmount = 30 and minAmount * N < claimAmountInStMatic and < totalDelegated
+            // since minAmount = 20 and minAmount * N < claimAmountInStMatic and < totalDelegated
             const claimAmountInStMatic = toEth("60")
             await checkWithdrawAndClaimAmounts(staker, claimAmountInStMatic, _refer);
         });

@@ -1266,7 +1266,7 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setDistanceThreshold(102)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
-            await checkRequestWithdraw("1", true, toEth("700"), {
+            await checkRequestWithdraw("1", false, toEth("700"), {
                 activeNodeOperatorsLength: 6,
                 totalDelegated: toEth("7300"),
                 operatorAmountCanBeRequested: [
@@ -1302,7 +1302,7 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setDistanceThreshold(102)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
-            await checkRequestWithdraw("1", true, toEth("3300"), {
+            await checkRequestWithdraw("1", false, toEth("3300"), {
                 activeNodeOperatorsLength: 6,
                 totalDelegated: toEth("7500"),
                 operatorAmountCanBeRequested: [
@@ -1725,7 +1725,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it("getValidatorsRequestWithdraw when withdraw more than delegated in not balanced system", async function () {
+        it("getValidatorsRequestWithdraw withdraw all the delegated tokens from validators when the protocol is not balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
