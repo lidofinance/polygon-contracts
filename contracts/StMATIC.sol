@@ -272,7 +272,7 @@ contract StMATIC is
                     }
                 }
 
-                if (_amount > totalDelegated) {
+                if (totalAmount2WithdrawInMatic > totalDelegated) {
                     token2WithdrawRequests[tokenId].push(
                         RequestWithdraw(
                             currentAmount2WithdrawInMatic,
