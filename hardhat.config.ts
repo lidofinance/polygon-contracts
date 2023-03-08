@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-etherscan";
 import '@openzeppelin/hardhat-defender';
 
 // import "hardhat-gas-reporter";
-// import "hardhat-contract-sizer";
+import "hardhat-contract-sizer";
 
 import {
     verify,
@@ -53,6 +53,13 @@ const config: HardhatUserConfig = {
         }
     },
     networks: {
+        hardhat: {
+            // forking: {
+            //     url: ROOT_CHAIN_RPC,
+            //     // verify transactions from 31-01-2023
+            //     blockNumber: 16525764
+            // }
+        },
         localhost: {
             url: "http://127.0.0.1:8545"
         },
@@ -86,7 +93,7 @@ const config: HardhatUserConfig = {
         target: "ethers-v5"
     },
     mocha: {
-        timeout: 100000
+        timeout: 1500000
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY
