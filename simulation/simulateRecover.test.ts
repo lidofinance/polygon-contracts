@@ -2,7 +2,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { StMATIC, ERC20, IAdminUpgradeabilityProxy } from "../../typechain";
+import { StMATIC, ERC20, IAdminUpgradeabilityProxy } from "../typechain";
 
 describe("Starting to test StMATIC contract", () => {
   let stMATIC: StMATIC;
