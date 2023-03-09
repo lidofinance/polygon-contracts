@@ -1109,13 +1109,13 @@ contract StMATIC is
         );
     }
 
-    // /// @notice Function that sets the poLidoNFT address
-    // /// @param _newLidoNFT new poLidoNFT address
-    // function setPoLidoNFT(address _newLidoNFT) external override onlyRole(DAO) {
-    //     address oldPoLidoNFT = address(poLidoNFT);
-    //     poLidoNFT = IPoLidoNFT(_newLidoNFT);
-    //     emit SetLidoNFT(oldPoLidoNFT, _newLidoNFT);
-    // }
+    /// @notice Function that sets the poLidoNFT address
+    /// @param _newLidoNFT new poLidoNFT address
+    function setPoLidoNFT(address _newLidoNFT) external override onlyRole(DAO) {
+        address oldPoLidoNFT = address(poLidoNFT);
+        poLidoNFT = IPoLidoNFT(_newLidoNFT);
+        emit SetLidoNFT(oldPoLidoNFT, _newLidoNFT);
+    }
 
     /// @notice Function that sets the fxStateRootTunnel address
     /// @param _newFxStateRootTunnel address of fxStateRootTunnel
@@ -1130,16 +1130,16 @@ contract StMATIC is
         emit SetFxStateRootTunnel(oldFxStateRootTunnel, _newFxStateRootTunnel);
     }
 
-    // /// @notice Function that sets the new version
-    // /// @param _newVersion - New version that will be set
-    // function setVersion(string calldata _newVersion)
-    //     external
-    //     override
-    //     onlyRole(DAO)
-    // {
-    //     emit Version(version, _newVersion);
-    //     version = _newVersion;
-    // }
+    /// @notice Function that sets the new version
+    /// @param _newVersion - New version that will be set
+    function setVersion(string calldata _newVersion)
+        external
+        override
+        onlyRole(DAO)
+    {
+        emit Version(version, _newVersion);
+        version = _newVersion;
+    }
 
     /// @notice Function that retrieves the amount of matic that will be claimed from the NFT token
     /// @param _tokenId - Id of the PolidoNFT
@@ -1215,25 +1215,5 @@ contract StMATIC is
         );
         uint256 rate = validatorShare.exchangeRate();
         return (_amountInMatic * exchangeRatePrecision) / rate;
-    }
-
-    // @notice delete after execution
-    function recover(
-        address[] memory _usersAddress,
-        uint256[] memory _amountOfStMaticToIncreaseForEachUser,
-        address _compensatedAddress,
-        uint256 _compensatedAmount
-    ) external onlyRole(DAO) {
-        _require(!recovered, "The protocol was recovered");
-        _require(_usersAddress.length > 0 && _usersAddress.length == _amountOfStMaticToIncreaseForEachUser.length, "Invalid array length");
-        // transfer the compensated amount to the affected user. 
-        IERC20Upgradeable(token).safeTransfer(_compensatedAddress, _compensatedAmount);
-        totalBuffered -= _compensatedAmount;
-
-        // Increse users stMatic balances
-        for (uint256 idx = 0; idx < _usersAddress.length; idx++) {
-            _mint(_usersAddress[idx], _amountOfStMaticToIncreaseForEachUser[idx]);
-        }
-        recovered = true;
     }
 }
