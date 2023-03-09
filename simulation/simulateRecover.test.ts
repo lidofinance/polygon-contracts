@@ -85,8 +85,8 @@ describe("Starting to test StMATIC contract", () => {
 
     // user balances
     const userBalances: BigNumber[] = [];
-    console.log("1111111111111111111111111111111111111");
 
+    // Prepare recover inputs
     let totalStMaticToMint = BigNumber.from("0");
     for (let i = 0; i < RECOVER_USER.length; i++) {
       userAddresses.push(RECOVER_USER[i].user);
@@ -101,30 +101,21 @@ describe("Starting to test StMATIC contract", () => {
     const lostAmount = ethers.utils.parseUnits("1309.42584359816", 18);
     const compensateAmount = ethers.utils.parseUnits("102470.7609", 18);
     const compensateAddress = DAOSigner.address;
-    const stMATICBalanceBeforeRecover = await MATIC.balanceOf(stMATIC.address);
     const compensateAddressBalanceBeforeRecover = await MATIC.balanceOf(
       compensateAddress
     );
 
-    console.log("1111111111111111111111111111111111111");
-
-    // get user balances before the recover.
+    // get user balances, totalPooled and the totalSupply before the recover.
     const usersBalanceBeforeTheFix = [];
     for (let i = 0; i < RECOVER_USER.length; i++) {
       usersBalanceBeforeTheFix.push(
         await stMATIC.balanceOf(RECOVER_USER[i].user)
       );
     }
-    console.log("1111111111111111111111111111111111111");
-
     const totalPooledBefore = await stMATIC.getTotalPooledMatic();
     const totalSupplyBefore = await stMATIC.totalSupply();
 
-    // amount to submit for including the lost tokens with the totalBuffered.
-    const amount = ethers.utils.parseEther("1");
-    console.log("1111111111111111111111111111111111111");
-
-    // Exec recover
+    // Exec the recover function
     await stMATIC
       .connect(DAOSigner)
       .recover(
@@ -133,14 +124,10 @@ describe("Starting to test StMATIC contract", () => {
         compensateAddress,
         compensateAmount.sub(lostAmount)
       );
-    console.log("22222222222222222222222222222222222222");
 
-    const totalPooledAfterRecover = await stMATIC.getTotalPooledMatic();
-    const totalSupplyAfterRecover = await stMATIC.totalSupply();
-
-    // transfer lost tokens to stMatic contract.
-    await MATIC.connect(MATIC_WHALE).transfer(compensateAddress, lostAmount);
-    console.log("22222222222222222222222222222222222222");
+    // get utotalPooled and the totalSupply after the recover.
+    const totalPooledMaticAfter = await stMATIC.getTotalPooledMatic();
+    const totalSupplyAfter = await stMATIC.totalSupply();
 
     // Check if the users received the correct stMatic.
     for (let i = 0; i < userAddresses.length; i++) {
@@ -150,57 +137,29 @@ describe("Starting to test StMATIC contract", () => {
         "User stMatic balance"
       ).eq(userBalances[i]);
     }
-    console.log("3333333333333333333333333333333333333");
 
+    // Check if the totalSupplied stMatic is correct
     expect(
-      totalSupplyAfterRecover.sub(totalSupplyBefore),
+      totalSupplyAfter.sub(totalSupplyBefore),
       "totalSupplyAfterRecover"
     ).eq(totalStMaticToMint);
 
-    console.log("3333333333333333333333333333333333333");
-
-    // // Check stMatic contract, Matic balance.
-    // const stMATICBalanceAfterRecover = await MATIC.balanceOf(stMATIC.address);
-    // expect(
-    //   stMATICBalanceAfterRecover.sub(amount),
-    //   "stMATICBalanceAfterRecover"
-    // ).eq(stMATICBalanceBeforeRecover.add(lostAmount).sub(compensateAmount));
-    // console.log("3333333333333333333333333333333333333");
-
-    // // Check if the compensateAddress received the compensate Amount.
-    // const compensateAddressBalanceAfterRecover = await MATIC.balanceOf(
-    //   compensateAddress
-    // );
-
-    // expect(
-    //   compensateAddressBalanceAfterRecover,
-    //   "compensateAddressBalanceAfterRecover"
-    // ).eq(compensateAddressBalanceBeforeRecover.add(compensateAmount));
-
-    // console.log("3333333333333333333333333333333333333");
-    // const totalSupplyAfter = await stMATIC.totalSupply();
-
-    console.log(
-      "totalPooledAfter",
-      totalPooledBefore
-        .mul(ethers.utils.parseEther("1"))
-        .div(totalPooledAfterRecover)
-        .toString()
-    );
-    console.log(
-      "totalSupplyAfter",
-      totalSupplyAfterRecover
-        .mul(ethers.utils.parseEther("1"))
-        .div(totalSupplyBefore)
-        .toString()
+    // Check if the totalBuffered stMatic is correct
+    expect(totalPooledMaticAfter, "totalBuffered").eq(
+      totalPooledBefore.sub(compensateAmount.sub(lostAmount))
     );
 
-    // expect(
-    //   totalSupplyAfterRecover.sub(totalSupplyBefore),
-    //   "totalSupplyAfterRecover"
-    // ).eq(totalStMaticToMint);
-    // const rate = 0.1268127;
+    // transfer lost tokens to stMatic contract (We already transfered the half from the recover).
+    await MATIC.connect(MATIC_WHALE).transfer(compensateAddress, lostAmount);
+
+    // Check if the compensateAddress received the compensate Amount.
+    const compensateAddressBalanceAfterRecover = await MATIC.balanceOf(
+      compensateAddress
+    );
+
+    expect(
+      compensateAddressBalanceAfterRecover,
+      "compensateAddressBalanceAfterRecover"
+    ).eq(compensateAddressBalanceBeforeRecover.add(compensateAmount));
   });
 });
-
-999999988385797191;
