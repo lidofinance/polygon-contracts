@@ -106,5 +106,5 @@ ROOT_CHAIN_RPC=https://eth-mainnet.g.alchemy.com/v2/XXX
 ```
 2. Run simulation tests for recovery
 ```sh
-npx hardhat test test/simulation/simulateRecover.test.ts --config hardhat.config_fork.ts
+npx hardhat test simulation/simulateRecover.test.ts --config hardhat.config_fork.ts
 ```

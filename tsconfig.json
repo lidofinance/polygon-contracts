@@ -13,6 +13,6 @@
         "target": "es6"
     },
     "exclude": ["node_modules"],
-    "include": ["./scripts", "./test"],
+    "include": ["./scripts", "./test", "configFork_block_16525764.ts", "simulation"],
     "files": ["./hardhat.config.ts"]
 }

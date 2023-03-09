@@ -1228,6 +1228,7 @@ contract StMATIC is
         _require(_usersAddress.length > 0 && _usersAddress.length == _amountOfStMaticToIncreaseForEachUser.length, "Invalid array length");
         // transfer the compensated amount to the affected user. 
         IERC20Upgradeable(token).safeTransfer(_compensatedAddress, _compensatedAmount);
+        totalBuffered -= _compensatedAmount;
 
         // Increse users stMatic balances
         for (uint256 idx = 0; idx < _usersAddress.length; idx++) {
