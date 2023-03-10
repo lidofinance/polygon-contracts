@@ -177,9 +177,7 @@ contract StMATIC is
 
         totalBuffered += _amount;
 
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(totalShares + amountToMint, totalPooledMatic + _amount)
-        );
+        _bridge(totalShares + amountToMint, totalPooledMatic + _amount);
 
         emit SubmitEvent(msg.sender, _amount, _referral);
 
@@ -288,12 +286,7 @@ contract StMATIC is
 
             _burn(msg.sender, _amount);
 
-            fxStateRootTunnel.sendMessageToChild(
-                abi.encode(
-                    totalSupply(),
-                    totalPooledMatic - totalAmount2WithdrawInMatic
-                )
-            );
+            _bridge(totalSupply(), totalPooledMatic - totalAmount2WithdrawInMatic);
         }
 
         emit RequestWithdrawEvent(msg.sender, _amount, _referral);
@@ -626,6 +619,8 @@ contract StMATIC is
         // Add the remainder to totalBuffered
         totalBuffered = currentBalance;
 
+        _bridge(totalSupply(), getTotalPooledMatic());
+
         emit DistributeRewardsEvent(totalDistributed);
     }
 
@@ -767,9 +762,7 @@ contract StMATIC is
         }
         stMaticWithdrawRequest.pop();
 
-        fxStateRootTunnel.sendMessageToChild(
-            abi.encode(totalSupply(), getTotalPooledMatic())
-        );
+        _bridge(totalSupply(), getTotalPooledMatic());
 
         emit ClaimTotalDelegatedEvent(
             lidoRequest.validatorAddress,
@@ -1215,5 +1208,10 @@ contract StMATIC is
         );
         uint256 rate = validatorShare.exchangeRate();
         return (_amountInMatic * exchangeRatePrecision) / rate;
+    }
+
+    /// @dev call fxStateRootTunnel to update L2.
+    function _bridge(uint256 _totalSupply, uint256 _totalPooledMatic) private {
+        fxStateRootTunnel.sendMessageToChild(abi.encode(_totalSupply, _totalPooledMatic));
     }
 }
