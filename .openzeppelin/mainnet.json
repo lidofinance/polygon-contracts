@@ -2344,8 +2344,8 @@
       }
     },
     "32933df8244d54cd9876241b474dbd92334a708a3eb92f2e696539de3cfe2d28": {
-      "address": "0xCa7fB9581f1EFC89455D6B5B792E80726AC1Caaa",
-      "txHash": "0xfe48d3563b8acd0f2a7a48a65a72ce4835c55f23b13cd92ded516c38d4dac1b5",
+      "address": "0x15152eEE59752F18C2de8fbd4Bc83Ec20c448303",
+      "txHash": "0xe06991d8c8f01ec32c6b46a0f7ef02845b2c80529ebf9a2a56875a7b4423f338",
       "layout": {
         "storage": [
           {
