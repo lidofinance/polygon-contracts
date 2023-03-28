@@ -20,12 +20,12 @@
     "lido_nft_proxy": "0x60a91E2B7A1568f0848f3D43353C453730082E46",
     "lido_nft_impl": "0x8B747A13D2Af956Ea7B9a36E659807Ea5cF5E04A",
     "stMATIC_proxy": "0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599",
-    "stMATIC_impl": "0xCa7fB9581f1EFC89455D6B5B792E80726AC1Caaa",
+    "stMATIC_impl": "0x15152eEE59752F18C2de8fbd4Bc83Ec20c448303",
     "stMATIC_child": "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4",
     "node_operator_registry_proxy": "0x216B8b78e0632138dc38907dd089aAB601ED6EDC",
     "node_operator_registry_impl": "0x1b6c71EdbdB8174420Cf9B368B38A1B52bfDd7F3",
     "fx_state_root_tunnel": "0xc7dd5c30DcA04f487c9ede0c5AC580c91587fc66",
     "fx_state_child_tunnel": "0x0833f5bD45803E05ef54E119a77E463cE6b1a963",
     "rate_provider": "0xdEd6C522d803E35f65318a9a4d7333a22d582199",
-    "balancer_stable_pool": "0xaF5E0B5425dE1F5a630A8cB5AA9D97B8141C908D",
+    "balancer_stable_pool": "0xaF5E0B5425dE1F5a630A8cB5AA9D97B8141C908D"
 }

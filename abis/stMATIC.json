@@ -1208,6 +1208,34 @@
   {
     "inputs": [
       {
+        "internalType": "address[]",
+        "name": "_usersAddress",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_amountOfStMaticToIncreaseForEachUser",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "address",
+        "name": "_compensatedAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_compensatedAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "recover",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes32",
         "name": "role",
         "type": "bytes32"
@@ -1382,19 +1410,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "_newLidoNFT",
-        "type": "address"
-      }
-    ],
-    "name": "setPoLidoNFT",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint8",
         "name": "_newProtocolFee",
         "type": "uint8"
@@ -1414,19 +1429,6 @@
       }
     ],
     "name": "setRewardDistributionLowerBound",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "_newVersion",
-        "type": "string"
-      }
-    ],
-    "name": "setVersion",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

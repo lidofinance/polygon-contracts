@@ -98,3 +98,13 @@ To initiate LidoNFT upgrade request:
 ```sh
 npx hardhat run scripts/multisigUpgrade/upgradeLidoNFT.ts --network <network-id>
 ```
+
+# 06-03-2023
+1. Add envs
+```
+ROOT_CHAIN_RPC=https://eth-mainnet.g.alchemy.com/v2/XXX
+```
+2. Run simulation tests for recovery
+```sh
+npx hardhat test simulation/simulateRecover.test.ts --config hardhat.config_fork.ts
+```

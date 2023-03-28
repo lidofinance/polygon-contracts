@@ -9,7 +9,7 @@ import "@nomiclabs/hardhat-etherscan";
 import '@openzeppelin/hardhat-defender';
 
 // import "hardhat-gas-reporter";
-// import "hardhat-contract-sizer";
+import "hardhat-contract-sizer";
 
 import {
     verify,
@@ -86,7 +86,7 @@ const config: HardhatUserConfig = {
         target: "ethers-v5"
     },
     mocha: {
-        timeout: 100000
+        timeout: 1500000
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY

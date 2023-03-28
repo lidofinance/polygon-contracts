@@ -1255,6 +1255,116 @@ describe("NodeOperator", function () {
             })
         })
 
+        it("getValidatorsRequestWithdraw when system is unbalanced", async function () {
+            const stakePerValidator = [toEth("1500"), toEth("1100"), toEth("1200"), toEth("1000"), toEth("1200"), toEth("1300")]
+            for (let i = 0; i < 6; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await stakeManagerMock.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+                await increaseStakeFor(validatorId, stakePerValidator[i])
+            }           
+
+            await nodeOperatorRegistry.setDistanceThreshold(102)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+            await checkRequestWithdraw("1", false, toEth("700"), {
+                activeNodeOperatorsLength: 6,
+                totalDelegated: toEth("7300"),
+                operatorAmountCanBeRequested: [
+                    toEth("500"),
+                    toEth("100"),
+                    toEth("200"),
+                    toEth("0"),
+                    toEth("200"),
+                    toEth("300")
+                ],
+                bigNodeOperatorIds: [0, 5],
+                smallNodeOperatorIds: [1, 2, 3, 4],
+                rewardAddresses: [
+                    accounts[0].address,
+                    accounts[1].address,
+                    accounts[2].address,
+                    accounts[3].address,
+                    accounts[4].address,
+                    accounts[5].address,
+                ],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when user request huge amount when protocol not balances", async function () {
+            const stakePerValidator = [toEth("1150"), toEth("1400"), toEth("1200"), toEth("1250"), toEth("1200"), toEth("1300")]
+            for (let i = 0; i < 6; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await stakeManagerMock.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+                await increaseStakeFor(validatorId, stakePerValidator[i])
+            }           
+
+            await nodeOperatorRegistry.setDistanceThreshold(102)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+            await checkRequestWithdraw("1", false, toEth("3300"), {
+                activeNodeOperatorsLength: 6,
+                totalDelegated: toEth("7500"),
+                operatorAmountCanBeRequested: [
+                    toEth("450"),
+                    toEth("700"),
+                    toEth("500"),
+                    toEth("550"),
+                    toEth("500"),
+                    toEth("600")
+                ],
+                bigNodeOperatorIds: [1, 5],
+                smallNodeOperatorIds: [0, 2, 3, 4],
+                rewardAddresses: [
+                    accounts[0].address,
+                    accounts[1].address,
+                    accounts[2].address,
+                    accounts[3].address,
+                    accounts[4].address,
+                    accounts[5].address,
+                ],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when user request huge amount but validators are balanced", async function () {
+            const stakePerValidator = [toEth("1200"), toEth("1220"), toEth("1230"), toEth("1240"), toEth("1210"), toEth("1220")]
+            for (let i = 0; i < 6; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await stakeManagerMock.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+                await increaseStakeFor(validatorId, stakePerValidator[i])
+            }           
+
+            await nodeOperatorRegistry.setDistanceThreshold(102)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+
+            await checkRequestWithdraw("1", true, toEth("4320"), {
+                activeNodeOperatorsLength: 6,
+                totalDelegated: toEth("7320"),
+                operatorAmountCanBeRequested:[
+                    toEth("700"),
+                    toEth("720"),
+                    toEth("730"),
+                    toEth("740"),
+                    toEth("710"),
+                    toEth("720")
+                ],
+                bigNodeOperatorIds: [2, 3],
+                smallNodeOperatorIds: [0, 1, 4, 5],
+                rewardAddresses: [
+                    accounts[0].address,
+                    accounts[1].address,
+                    accounts[2].address,
+                    accounts[3].address,
+                    accounts[4].address,
+                    accounts[5].address,
+                ],
+                totalValidatorToWithdrawFrom: 0,
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
+
+        })
+
         it("getValidatorsRequestWithdraw when system is balanced by setDistanceThreshold", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
@@ -1286,7 +1396,7 @@ describe("NodeOperator", function () {
                 smallNodeOperatorIds: [0, 2],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is balanced and MinRequestWithdrawRange = 100%", async function () {
@@ -1320,7 +1430,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 3,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is not balanced", async function () {
@@ -1353,7 +1463,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [toEth("600"), toEth("600"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is not balanced with operator has zero", async function () {
@@ -1386,7 +1496,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [toEth("500"), toEth("300"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is balanced with MinRequestWithdrawDistanceThreshold = 50%", async function () {
@@ -1421,7 +1531,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 2,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is balanced with amount requested = 80%", async function () {
@@ -1456,7 +1566,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [toEth("840"), toEth("740"), toEth("340")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is balanced with a jailed an unstaked validator", async function () {
@@ -1493,7 +1603,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 2,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system is not balanced with a jailed an unstaked validator", async function () {
@@ -1530,7 +1640,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [toEth("500"), toEth("400"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when system there are no operators", async function () {
@@ -1615,7 +1725,7 @@ describe("NodeOperator", function () {
             })
         })
 
-        it("getValidatorsRequestWithdraw when withdraw more than delegated in not balanced system", async function () {
+        it("getValidatorsRequestWithdraw withdraw all the delegated tokens from validators when the protocol is not balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -1638,7 +1748,7 @@ describe("NodeOperator", function () {
 
             await nodeOperatorRegistry.setDistanceThreshold(120)
 
-            await checkRequestWithdraw("1", false, toEth("10000"), {
+            await checkRequestWithdraw("1", false, toEth("2400"), {
                 activeNodeOperatorsLength: 3,
                 totalDelegated: toEth("2400"),
                 bigNodeOperatorIds: [0, 1],
@@ -1646,7 +1756,7 @@ describe("NodeOperator", function () {
                 operatorAmountCanBeRequested: [toEth("1000"), toEth("900"), toEth("500")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
-            })
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
         it("getValidatorsRequestWithdraw when withdraw more than delegated in not balanced system", async function () {
@@ -2008,7 +2118,7 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
     smallNodeOperatorIds: Array<number>,
     rewardAddresses: Array<string>,
     totalValidatorToWithdrawFrom: number,
-}) {
+}, callback?: Function) {
     const res = await nodeOperatorRegistry.getValidatorsRequestWithdraw(withdrawAmount)
     if (log) {
         console.log(res)
@@ -2038,6 +2148,10 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
         expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
     expect(res.totalValidatorToWithdrawFrom, `${id}--res.totalValidatorToWithdrawFrom.length`).eq(data.totalValidatorToWithdrawFrom)
+
+    if (callback && res.totalValidatorToWithdrawFrom.eq(0)) {
+        callback(res, withdrawAmount)
+    }
 }
 
 async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigNumber, data: {
@@ -2159,4 +2273,12 @@ async function checkOperator(
     if (no.validatorShare) {
         expect(res.validatorShare, "validatorShare").equal(no.validatorShare);
     }
+}
+
+const checkIfCover = (res: any, withdrawAmount: any) => {
+    let totalCanWithdraw = BigNumber.from("0")
+    for (let i = 0; i < res.operatorAmountCanBeRequested.length; i++) {
+        totalCanWithdraw = totalCanWithdraw.add(res.operatorAmountCanBeRequested[i])
+    }
+    expect(totalCanWithdraw, "Total can withdraw doesn't cover th request").gte(withdrawAmount)
 }
