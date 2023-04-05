@@ -595,7 +595,7 @@ contract NodeOperatorRegistry is
 
         uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         require(
-            distanceThreshold >= distanceThresholdPercents && totalStaked > 0,
+            distanceThreshold > distanceThresholdPercents && totalStaked > 0,
             "The system is balanced"
         );
 

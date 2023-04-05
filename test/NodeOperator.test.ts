@@ -1127,6 +1127,49 @@ describe("NodeOperator", function () {
             })).revertedWith("There are no active validator");
         })
 
+        it.only("Should getValidatorsRebalanceAmount When validator delegation is false ", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            let validatorShare: ValidatorShareMock;
+            const validator1Stake = toEth("100")
+            const validator2Stake = toEth("103")
+            const validator3Stake = toEth("100")
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await nodeOperatorRegistry.setDistanceThreshold(103)
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+
+            await expect(checkgetValidatorsRebalanceAmount("case-1", toEth("0"), {
+                activeNodeOperatorsLength: 3,
+                totalRatio: toEth("303"),
+                operatorRatios: [
+                    toEth("0"),
+                    toEth("1"),
+                    toEth("0"),
+                ],
+                rewardAddresses: [
+                    user1.address, user2.address, user3.address
+                ],
+                totalToWithdraw: toEth("2")
+            })).revertedWith("The system is balanced");
+        })
+
         it("Should fail getValidatorsRebalanceAmount not enough operators", async function () {
             await nodeOperatorRegistry.setDistanceThreshold(120)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("0")))
