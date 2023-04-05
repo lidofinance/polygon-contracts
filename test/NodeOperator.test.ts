@@ -652,6 +652,48 @@ describe("NodeOperator", function () {
             }, false)
         })
 
+        it("Should getValidatorDelegationAmount When a validator has no delegation between validators with delegation", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("1200")
+            const validator2Stake = toEth("500")
+            const validator3Stake = toEth("0")
+            const validator4Stake = toEth("100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await checkGetValidatorDelegationAmount("1", toEth("0"), {
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
+                operatorRatios: [
+                    toEth("0"),
+                    toEth("0"),
+                    toEth("450"),
+                    toEth("350"),
+                ],
+                rewardAddresses: [
+                    user1.address, user2.address, user3.address, user4.address
+                ]
+            }, false)
+        })
+
         it("Should getValidatorDelegationAmount When not balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
@@ -1286,6 +1328,36 @@ describe("NodeOperator", function () {
                     accounts[3].address,
                     accounts[4].address,
                     accounts[5].address,
+                ],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
+        it("getValidatorsRequestWithdraw when system is unbalanced", async function () {
+            const stakePerValidator = [toEth("1500"), toEth("1100"), toEth("1300")]
+            for (let i = 0; i < stakePerValidator.length; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await stakeManagerMock.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+                await increaseStakeFor(validatorId, stakePerValidator[i])
+            }           
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+            await checkRequestWithdraw("1", false, toEth("900"), {
+                activeNodeOperatorsLength: 3,
+                totalDelegated: toEth("3900"),
+                operatorAmountCanBeRequested: [
+                    toEth("500"),
+                    toEth("100"),
+                    toEth("300"),
+                ],
+                bigNodeOperatorIds: [0],
+                smallNodeOperatorIds: [1, 2],
+                rewardAddresses: [
+                    accounts[0].address,
+                    accounts[1].address,
+                    accounts[2].address,
                 ],
                 totalValidatorToWithdrawFrom: 0,
             })
@@ -1997,6 +2069,41 @@ describe("NodeOperator", function () {
             expect(res.minAmount, "minAmount").eq(validator1Stake)
             expect(res.distanceThreshold, "minAmount")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
+        })
+
+        it("Get Protocol Stats when protocol is not balanced with empty validator", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user3)
+            await stakeOperator(user2)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("990")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("0")
+            const validator4Stake = toEth("1200")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(120)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(false)
+            expect(res.maxAmount, "maxAmount").eq(validator4Stake)
+            expect(res.minAmount, "minAmount").eq(0)
+            expect(res.distanceThreshold, "minAmount").eq(validator4Stake.mul(100))
         })
     })
 

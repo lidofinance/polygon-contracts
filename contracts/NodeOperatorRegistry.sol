@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/INodeOperatorRegistry.sol";
 import "./interfaces/IStMATIC.sol";
+import "hardhat/console.sol";
 
 /// @title NodeOperatorRegistry
 /// @author 2021 ShardLabs.
@@ -427,7 +428,7 @@ contract NodeOperatorRegistry is
         NodeOperatorRegistryStatus status;
 
         uint256 maxAmount;
-        uint256 minAmount;
+        uint256 minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
@@ -454,7 +455,7 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if (minAmount > amount || minAmount == 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
 
@@ -649,6 +650,7 @@ contract NodeOperatorRegistry is
 
         uint256 validatorId;
         IStakeManager.Validator memory validator;
+        minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
@@ -665,7 +667,7 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if ((minAmount > amount && amount != 0) || minAmount == 0) {
+            if (minAmount > amount && amount != 0) {
                 minAmount = amount;
             }
 
@@ -924,6 +926,8 @@ contract NodeOperatorRegistry is
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
+        minAmount = type(uint256).max;
+
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
             (
@@ -937,7 +941,7 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if (minAmount > amount || minAmount == 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
         }
