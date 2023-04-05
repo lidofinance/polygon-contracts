@@ -61,13 +61,8 @@ contract PoLidoNFT is
     /// @param _to - Address that will be the owner of minted token
     /// @return Index of the minted token
     function mint(address _to) external override isLido returns (uint256) {
-        uint256 currentIndex = tokenIdIndex + 1;
-
-        _mint(_to, currentIndex);
-
-        tokenIdIndex = currentIndex;
-
-        return currentIndex;
+        _mint(_to, ++tokenIdIndex);
+        return tokenIdIndex;
     }
 
     /// @notice Burn the token with specified _tokenId
