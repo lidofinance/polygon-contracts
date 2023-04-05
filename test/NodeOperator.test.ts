@@ -755,15 +755,15 @@ describe("NodeOperator", function () {
                 ]
             }, false)
 
-            // Case 3: setDistanceThreshold = 1000 this should ignore the validator 1 & 2 & 3
+            // Case 3: setDistanceThreshold = 1000 this should ignore the validator 1 & 2
             await nodeOperatorRegistry.setDistanceThreshold(1000)
             await checkGetValidatorDelegationAmount("3", toEth("0"), {
                 activeNodeOperatorsLength: 4,
-                totalRatio: toEth("450"),
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
-                    toEth("0"),
+                    toEth("350"),
                     toEth("450"),
                 ],
                 rewardAddresses: [
@@ -894,10 +894,10 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setDistanceThreshold(200)
             await checkGetValidatorDelegationAmount("2", toEth("0"), {
                 activeNodeOperatorsLength: 2,
-                totalRatio: toEth("0"),
+                totalRatio: toEth("400"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("0")
+                    toEth("400")
                 ],
                 rewardAddresses: [
                     user1.address, user2.address, ethers.constants.AddressZero
@@ -1457,7 +1457,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setDistanceThreshold(102)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
 
-            await checkRequestWithdraw("1", true, toEth("4320"), {
+            await checkRequestWithdraw("1", false, toEth("4320"), {
                 activeNodeOperatorsLength: 6,
                 totalDelegated: toEth("7320"),
                 operatorAmountCanBeRequested:[

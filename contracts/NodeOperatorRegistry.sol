@@ -542,14 +542,6 @@ contract NodeOperatorRegistry is
                 ? 0
                 : rebalanceTarget - stakePerOperator[idx];
 
-            if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
-                operatorRatioToDelegate = (rebalanceTarget * 100) /
-                    stakePerOperator[idx] >=
-                    distanceThresholdPercents
-                    ? operatorRatioToDelegate
-                    : 0;
-            }
-
             operatorRatios[idx] = operatorRatioToDelegate;
             totalRatio += operatorRatioToDelegate;
         }
