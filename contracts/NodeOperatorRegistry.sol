@@ -624,8 +624,8 @@ contract NodeOperatorRegistry is
     /// @return nonInactiveValidators all no inactive node operators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalDelegated the total amount delegated to all validators.
-    /// @return minAmount the distance between the min and max amount staked in a validator.
-    /// @return maxAmount the distance between the min and max amount staked in a validator.
+    /// @return minAmount minimum amount staked in a validator.
+    /// @return maxAmount maximum amount staked in a validator.
     function _getValidatorsRequestWithdraw()
         private
         view
