@@ -429,6 +429,9 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
                 .reverted
 
+            await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(user1.address))
+                .revertedWith("Invalid reward address")
+
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Invalid reward address")
 
@@ -1127,7 +1130,7 @@ describe("NodeOperator", function () {
             })).revertedWith("There are no active validator");
         })
 
-        it.only("Should getValidatorsRebalanceAmount When validator delegation is false ", async function () {
+        it("Should getValidatorsRebalanceAmount When validator delegation is false ", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)

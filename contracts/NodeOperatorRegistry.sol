@@ -242,6 +242,7 @@ contract NodeOperatorRegistry is
         override
         whenNotPaused
     {
+        require(_newRewardAddress != msg.sender, "Invalid reward address");
         uint256 validatorId = validatorRewardAddressToId[msg.sender];
         address oldRewardAddress = validatorIdToRewardAddress[validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
