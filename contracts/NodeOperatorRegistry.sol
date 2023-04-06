@@ -692,7 +692,6 @@ contract NodeOperatorRegistry is
                 rewardAddress
             );
         }
-        minAmount = minAmount == 0 ? 1 : minAmount;
     }
 
     /// @notice Calculate the validators to request withdrawal from depending if the system is balalnced or not.
