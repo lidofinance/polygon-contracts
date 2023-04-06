@@ -302,9 +302,7 @@ contract StMATIC is
         uint256 totalDelegated,
         uint256 currentAmount2WithdrawInMatic
     ) private returns (uint256) {
-        uint256 totalAmount = totalDelegated > totalAmount2WithdrawInMatic
-            ? totalAmount2WithdrawInMatic
-            : totalDelegated;
+        uint256 totalAmount = min(totalDelegated, totalAmount2WithdrawInMatic);
         uint256 amount2WithdrawFromValidator = totalAmount /
             totalValidatorsToWithdrawFrom;
 
@@ -344,12 +342,7 @@ contract StMATIC is
                 id
             ];
             if (amountCanBeRequested == 0) continue;
-
-            uint256 amount2WithdrawFromValidator = amountCanBeRequested >
-                currentAmount2WithdrawInMatic
-                ? currentAmount2WithdrawInMatic
-                : amountCanBeRequested;
-
+            uint256 amount2WithdrawFromValidator = min(amountCanBeRequested, currentAmount2WithdrawInMatic);
             address validatorShare = activeNodeOperators[id].validatorShare;
 
             _require(
@@ -1207,5 +1200,9 @@ contract StMATIC is
     /// @dev call fxStateRootTunnel to update L2.
     function _bridge(uint256 _totalSupply, uint256 _totalPooledMatic) private {
         fxStateRootTunnel.sendMessageToChild(abi.encode(_totalSupply, _totalPooledMatic));
+    }
+
+    function min(uint256 _valueA, uint256 _valueB) private pure returns(uint256) {
+        return _valueA > _valueB ? _valueB : _valueA;
     }
 }

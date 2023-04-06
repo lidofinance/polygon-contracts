@@ -765,9 +765,7 @@ contract NodeOperatorRegistry is
                 length) / 100) +
             1;
 
-        totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
-            ? length
-            : totalValidatorToWithdrawFrom;
+        totalValidatorToWithdrawFrom = min(totalValidatorToWithdrawFrom, length);
 
         if (
             (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS &&
@@ -793,9 +791,7 @@ contract NodeOperatorRegistry is
             ? (totalDelegated - _withdrawAmount) / length
             : 0;
 
-        rebalanceTarget = rebalanceTarget > minAmount
-            ? minAmount
-            : rebalanceTarget;
+        rebalanceTarget = min(rebalanceTarget, minAmount);
 
         uint256 averageTarget = totalDelegated / length;
         bigNodeOperatorIds = new uint256[](length);
@@ -1014,5 +1010,9 @@ contract NodeOperatorRegistry is
                 inactiveNodeOperator++;
             }
         }
+    }
+
+    function min(uint256 _valueA, uint256 _valueB) private pure returns(uint256) {
+        return _valueA > _valueB ? _valueB : _valueA;
     }
 }
