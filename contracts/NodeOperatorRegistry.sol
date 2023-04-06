@@ -665,12 +665,15 @@ contract NodeOperatorRegistry is
         uint256 validatorId;
         address rewardAddress;
         IStakeManager.Validator memory validator;
+        NodeOperatorRegistryStatus validatorStatus;
         minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
             rewardAddress = validatorIdToRewardAddress[validatorIds[i]];
-            (, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
+            (validatorStatus, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
+
+            if (validatorStatus ==  NodeOperatorRegistryStatus.INACTIVE) continue;
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
