@@ -120,7 +120,7 @@ interface INodeOperatorRegistry {
     /// status the function will revert.
     /// @param amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
+    /// @return operatorRatiosToDelegate a list of operator's ratio used to calculate the amount to delegate per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
     function getValidatorsDelegationAmount(uint256 amountToDelegate)
@@ -128,7 +128,7 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToDelegate,
             uint256 totalRatio
         );
 
@@ -138,7 +138,7 @@ interface INodeOperatorRegistry {
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param totalBuffered The total amount buffered in stMatic.
     /// @return validators all active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
+    /// @return operatorRatiosToRebalance a list of operator's ratio used to calculate the amount to withdraw per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 totalBuffered)
@@ -146,7 +146,7 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToRebalance,
             uint256 totalRatio,
             uint256 totalToWithdraw
         );

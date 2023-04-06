@@ -403,7 +403,7 @@ contract StMATIC is
         (
             INodeOperatorRegistry.ValidatorData[]
                 memory delegatableNodeOperators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToDelegate,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(
                 amountToDelegate
@@ -424,9 +424,9 @@ contract StMATIC is
         uint256 amountToDelegatePerOperator = amountToDelegate / totalDelegatableNodeOperators;
         for (uint256 i = 0; i < totalDelegatableNodeOperators; i++) {
             if (totalRatio != 0) {
-                if (operatorRatios[i] == 0) continue;
+                if (operatorRatiosToDelegate[i] == 0) continue;
                 amountToDelegatePerOperator =
-                    (operatorRatios[i] * amountToDelegate) /
+                    (operatorRatiosToDelegate[i] * amountToDelegate) /
                     totalRatio;
             }
             address _validatorAddress = delegatableNodeOperators[i]
@@ -651,7 +651,7 @@ contract StMATIC is
             calculatePendingBufferedTokens();
         (
             INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToRebalance,
             uint256 totalRatio,
             uint256 totalToWithdraw
         ) = nodeOperatorRegistry.getValidatorsRebalanceAmount(
@@ -661,10 +661,10 @@ contract StMATIC is
         uint256 amountToWithdraw;
         address _validatorAddress;
         for (uint256 i = 0; i < nodeOperators.length; i++) {
-            if (operatorRatios[i] == 0) continue;
+            if (operatorRatiosToRebalance[i] == 0) continue;
 
             amountToWithdraw =
-                (operatorRatios[i] * totalToWithdraw) /
+                (operatorRatiosToRebalance[i] * totalToWithdraw) /
                 totalRatio;
             if (amountToWithdraw == 0) continue;
 

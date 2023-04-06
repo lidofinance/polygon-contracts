@@ -2066,7 +2066,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(false)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceThreshold, "minAmount")
+            expect(res.distanceMinMaxStake, "minAmount")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
         })
 
@@ -2102,7 +2102,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(true)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceThreshold, "minAmount")
+            expect(res.distanceMinMaxStake, "minAmount")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
         })
 
@@ -2138,7 +2138,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(false)
             expect(res.maxAmount, "maxAmount").eq(validator4Stake)
             expect(res.minAmount, "minAmount").eq(0)
-            expect(res.distanceThreshold, "minAmount").eq(validator4Stake.mul(100))
+            expect(res.distanceMinMaxStake, "minAmount").eq(validator4Stake.mul(100))
         })
     })
 
@@ -2307,9 +2307,9 @@ async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigN
     expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
-    expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
-    for (let idx = 0; idx < res.operatorRatios.length; idx++) {
-        expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
+    expect(res.operatorRatiosToRebalance.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
+    for (let idx = 0; idx < res.operatorRatiosToRebalance.length; idx++) {
+        expect(res.operatorRatiosToRebalance[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
     expect(res.validators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
@@ -2332,9 +2332,9 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
     expect(res.validators.length, `${id}--totalActiveNodeOperator`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
-    expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
-    for (let idx = 0; idx < res.operatorRatios.length; idx++) {
-        expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
+    expect(res.operatorRatiosToDelegate.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
+    for (let idx = 0; idx < res.operatorRatiosToDelegate.length; idx++) {
+        expect(res.operatorRatiosToDelegate[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
     expect(res.validators.length, `${id}--res.totalActiveNodeOperator`).eq(data.rewardAddresses.length)

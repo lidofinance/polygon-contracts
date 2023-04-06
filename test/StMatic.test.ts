@@ -462,7 +462,7 @@ describe("Starting to test StMATIC contract", () => {
             );
             await validatorShareContract1.setExchangeRate(ethers.utils.parseEther("1000000"))
             
-            expect((await nodeOperatorRegistry.getProtocolStats()).distanceThreshold)
+            expect((await nodeOperatorRegistry.getProtocolStats()).distanceMinMaxStake)
                 .gt(await nodeOperatorRegistry.DISTANCE_THRESHOLD_PERCENTS())
             await expect(
                 stMATIC.connect(user1).requestWithdraw(submitAmount, testers[4].address)

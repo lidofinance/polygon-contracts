@@ -423,7 +423,7 @@ contract NodeOperatorRegistry is
     /// @return validators all active node operators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
-    /// @return distanceThreshold the distance between the min and max amount staked in a validator.
+    /// @return distanceMinMaxStake the distance between the min and max amount staked between validators.
     function _getValidatorsDelegationInfos()
         private
         view
@@ -431,7 +431,7 @@ contract NodeOperatorRegistry is
             ValidatorData[] memory validators,
             uint256[] memory stakePerOperator,
             uint256 totalStaked,
-            uint256 distanceThreshold
+            uint256 distanceMinMaxStake
         )
     {
         uint256 activeOperatorCount;
@@ -500,7 +500,7 @@ contract NodeOperatorRegistry is
 
         // The max amount is multiplied by 100 to have a precise value.
         minAmount = minAmount == 0 ? 1 : minAmount;
-        distanceThreshold = ((maxAmount * 100) / minAmount);
+        distanceMinMaxStake = ((maxAmount * 100) / minAmount);
 
         if (activeOperatorCount < length) {
             uint256 trim = length - activeOperatorCount;
@@ -516,7 +516,7 @@ contract NodeOperatorRegistry is
     /// status the function will revert.
     /// @param _amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
+    /// @return operatorRatiosToDelegate a list of operator's ratio used to calculate the amount to delegate per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
     function getValidatorsDelegationAmount(uint256 _amountToDelegate)
@@ -525,35 +525,35 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToDelegate,
             uint256 totalRatio
         )
     {
         require(validatorIds.length > 0, "Not enough operators to delegate");
         uint256[] memory stakePerOperator;
         uint256 totalStaked;
-        uint256 distanceThreshold;
+        uint256 distanceMinMaxStake;
         (
             validators,
             stakePerOperator,
             totalStaked,
-            distanceThreshold
+            distanceMinMaxStake
         ) = _getValidatorsDelegationInfos();
 
         uint256 totalActiveNodeOperator = validators.length;
         uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
-        bool isTheSystemBalanced = distanceThreshold <=
+        bool isTheSystemBalanced = distanceMinMaxStake <=
             distanceThresholdPercents;
         if (isTheSystemBalanced) {
             return (
                 validators,
-                operatorRatios,
+                operatorRatiosToDelegate,
                 totalRatio
             );
         }
 
         // If the system is not balanced calculate ratios
-        operatorRatios = new uint256[](totalActiveNodeOperator);
+        operatorRatiosToDelegate = new uint256[](totalActiveNodeOperator);
         uint256 rebalanceTarget = (totalStaked + _amountToDelegate) /
             totalActiveNodeOperator;
 
@@ -564,7 +564,7 @@ contract NodeOperatorRegistry is
                 ? 0
                 : rebalanceTarget - stakePerOperator[idx];
 
-            operatorRatios[idx] = operatorRatioToDelegate;
+            operatorRatiosToDelegate[idx] = operatorRatioToDelegate;
             totalRatio += operatorRatioToDelegate;
         }
     }
@@ -575,7 +575,7 @@ contract NodeOperatorRegistry is
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param _amountToReDelegate The total amount to redelegate in Matic.
     /// @return validators all active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
+    /// @return operatorRatiosToRebalance a list of operator's ratio used to calculate the amount to withdraw per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 _amountToReDelegate)
@@ -584,7 +584,7 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToRebalance,
             uint256 totalRatio,
             uint256 totalToWithdraw
         )
@@ -592,12 +592,12 @@ contract NodeOperatorRegistry is
         require(validatorIds.length > 1, "Not enough operator to rebalance");
         uint256[] memory stakePerOperator;
         uint256 totalStaked;
-        uint256 distanceThreshold;
+        uint256 distanceMinMaxStake;
         (
             validators,
             stakePerOperator,
             totalStaked,
-            distanceThreshold
+            distanceMinMaxStake
         ) = _getValidatorsDelegationInfos();
 
         uint256 totalActiveNodeOperator = validators.length;
@@ -608,11 +608,11 @@ contract NodeOperatorRegistry is
 
         uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         require(
-            distanceThreshold > distanceThresholdPercents && totalStaked > 0,
+            distanceMinMaxStake > distanceThresholdPercents && totalStaked > 0,
             "The system is balanced"
         );
 
-        operatorRatios = new uint256[](totalActiveNodeOperator);
+        operatorRatiosToRebalance = new uint256[](totalActiveNodeOperator);
         uint256 rebalanceTarget = totalStaked / totalActiveNodeOperator;
         uint256 operatorRatioToRebalance;
 
@@ -629,7 +629,7 @@ contract NodeOperatorRegistry is
                     : 0;
             }
 
-            operatorRatios[idx] = operatorRatioToRebalance;
+            operatorRatiosToRebalance[idx] = operatorRatioToRebalance;
             totalRatio += operatorRatioToRebalance;
         }
         totalToWithdraw = totalRatio > _amountToReDelegate
@@ -643,7 +643,7 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Returns operators info.
-    /// @return nonInactiveValidators all no inactive node operators.
+    /// @return activeValidators all no active node operators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalDelegated the total amount delegated to all validators.
     /// @return minAmount minimum amount staked in a validator.
@@ -652,7 +652,7 @@ contract NodeOperatorRegistry is
         private
         view
         returns (
-            ValidatorData[] memory nonInactiveValidators,
+            ValidatorData[] memory activeValidators,
             uint256[] memory stakePerOperator,
             uint256 totalDelegated,
             uint256 minAmount,
@@ -660,7 +660,7 @@ contract NodeOperatorRegistry is
         )
     {
         uint256 length = validatorIds.length;
-        nonInactiveValidators = new ValidatorData[](length);
+        activeValidators = new ValidatorData[](length);
         stakePerOperator = new uint256[](length);
 
         uint256 validatorId;
@@ -688,7 +688,7 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            nonInactiveValidators[i] = ValidatorData(
+            activeValidators[i] = ValidatorData(
                 validator.contractAddress,
                 rewardAddress
             );
@@ -927,7 +927,7 @@ contract NodeOperatorRegistry is
 
     /// @notice Return the statistics about the protocol as a list
     /// @return isBalanced if the system is balanced or not.
-    /// @return distanceThreshold the distance threshold
+    /// @return distanceMinMaxStake the distance threshold
     /// @return minAmount min amount delegated to a validator.
     /// @return maxAmount max amount delegated to a validator.
     function getProtocolStats()
@@ -936,7 +936,7 @@ contract NodeOperatorRegistry is
         override
         returns (
             bool isBalanced,
-            uint256 distanceThreshold,
+            uint256 distanceMinMaxStake,
             uint256 minAmount,
             uint256 maxAmount
         )
@@ -966,8 +966,8 @@ contract NodeOperatorRegistry is
         }
 
         uint256 min = minAmount == 0 ? 1 : minAmount;
-        distanceThreshold = ((maxAmount * 100) / min);
-        isBalanced = distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS;
+        distanceMinMaxStake = ((maxAmount * 100) / min);
+        isBalanced = distanceMinMaxStake <= DISTANCE_THRESHOLD_PERCENTS;
     }
 
     /// @notice List all the node operator statuses in the system.
