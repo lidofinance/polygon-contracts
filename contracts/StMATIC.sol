@@ -478,6 +478,8 @@ contract StMATIC is
         );
 
         poLidoNFT.burn(_tokenId);
+        delete token2WithdrawRequests[_tokenId];
+
         uint256 length = usersRequest.length;
         uint256 amountToClaim;
 
@@ -511,7 +513,7 @@ contract StMATIC is
 
     /// @notice Claims tokens v1
     function _claimTokensV1(uint256 _tokenId) private {
-        RequestWithdraw storage usersRequest = token2WithdrawRequest[_tokenId];
+        RequestWithdraw memory usersRequest = token2WithdrawRequest[_tokenId];
 
         _require(
             stakeManager.epoch() >= usersRequest.requestEpoch,
@@ -519,6 +521,7 @@ contract StMATIC is
         );
 
         poLidoNFT.burn(_tokenId);
+        delete token2WithdrawRequest[_tokenId];
 
         uint256 amountToClaim;
 

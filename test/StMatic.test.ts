@@ -112,10 +112,6 @@ describe("Starting to test StMATIC contract", () => {
         };
 
         slash = async (validatorId, percentage) => {
-            if (percentage <= 0 || percentage > 100) {
-                throw new RangeError("Percentage not in valid range");
-            }
-
             const validatorShareAddress = (
                 await nodeOperatorRegistry["getNodeOperator(uint256)"](validatorId)
             ).validatorShare;
@@ -1372,6 +1368,8 @@ describe("Starting to test StMATIC contract", () => {
             const afterBalanceMatic = await mockERC20.balanceOf(user1.address)
 
             expect(afterBalanceMatic, "user balance").eq(beforeBalanceMatic.add(expectedAmountInMatic))
+            const res = await stMATIC.getToken2WithdrawRequests(tokenId)
+            expect(res.length).eq(0)
         })
 
         it("Should preserve ratio on withdraw over multiple validators", async () => {
@@ -1561,6 +1559,8 @@ describe("Starting to test StMATIC contract", () => {
             await stMATIC.connect(user1).claimTokens(tokenId)
             const userBalanceAfter = await mockERC20.balanceOf(user1.address)
             expect(userBalanceAfter, "Expected amount to claim").eq(userBalanceBefore.add(expectedAmountInMatic))
+            const res1 = await stMATIC.getToken2WithdrawRequests(tokenId)
+            expect(res1.length).eq(0)
         })
 
         it("Should request withdraw when total delegated is less than th requested amount, unbalanced", async () => {
