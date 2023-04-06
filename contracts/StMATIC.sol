@@ -348,7 +348,7 @@ contract StMATIC is
             uint256 amount2WithdrawFromValidator = amountCanBeRequested >
                 currentAmount2WithdrawInMatic
                 ? currentAmount2WithdrawInMatic
-                : allowedAmountToRequestFromOperators[id];
+                : amountCanBeRequested;
 
             address validatorShare = activeNodeOperators[id].validatorShare;
 
