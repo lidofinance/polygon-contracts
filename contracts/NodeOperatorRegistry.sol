@@ -621,11 +621,13 @@ contract NodeOperatorRegistry is
                 ? stakePerOperator[idx] - rebalanceTarget
                 : 0;
 
-            operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
-                rebalanceTarget >=
-                distanceThresholdPercents
-                ? operatorRatioToRebalance
-                : 0;
+            if (operatorRatioToRebalance > 0) {
+                operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
+                    rebalanceTarget >=
+                    distanceThresholdPercents
+                    ? operatorRatioToRebalance
+                    : 0;
+            }
 
             operatorRatios[idx] = operatorRatioToRebalance;
             totalRatio += operatorRatioToRebalance;
