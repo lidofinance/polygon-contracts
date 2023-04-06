@@ -102,27 +102,24 @@ interface INodeOperatorRegistry {
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
-    /// @return totalActiveNodeOperators total active node operators.
     function listDelegatedNodeOperators()
         external
         view
-        returns (ValidatorData[] memory, uint256);
+        returns (ValidatorData[] memory);
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.
     /// @return nodeOperators a list of ACTIVE, JAILED or UNSTAKED node operator.
-    /// @return totalNodeOperators total number of node operators.
     function listWithdrawNodeOperators()
         external
         view
-        returns (ValidatorData[] memory, uint256);
+        returns (ValidatorData[] memory);
 
     /// @notice  Calculate how total buffered should be delegated between the active validators,
     /// depending on if the system is balanced or not. If validators are in EJECTED or UNSTAKED
     /// status the function will revert.
     /// @param amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
@@ -131,7 +128,6 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         );
@@ -142,7 +138,6 @@ interface INodeOperatorRegistry {
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param totalBuffered The total amount buffered in stMatic.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
@@ -151,7 +146,6 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw

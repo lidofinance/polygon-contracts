@@ -455,14 +455,12 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
-            let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            let allActiveOperators = res[0]
-            let totalActiveValidators = res[1]
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(3);
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             expect(allActiveOperators.length).to.equal(3);
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -480,35 +478,29 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
-            let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            let allActiveOperators = res[0]
-            let totalActiveValidators = res[1]
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(3);
 
             let expectedRewardAddress = [user1.address, user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.unstake(validatorId1);
-            res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            allActiveOperators = res[0]
-            totalActiveValidators = res[1]
-            expect(totalActiveValidators).to.equal(2);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(2);
 
             expectedRewardAddress = [user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.slash(validatorId2);
-            res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            allActiveOperators = res[0]
-            totalActiveValidators = res[1]
-            expect(totalActiveValidators).to.equal(1);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(1);
 
             expectedRewardAddress = [user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -525,9 +517,8 @@ describe("NodeOperator", function () {
 
             await stakeManagerMock.unstake(validatorId1);
             await stakeManagerMock.slash(validatorId2);
-            const res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            const totalActiveValidators = res[1]
-            expect(totalActiveValidators).eq(0);
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).eq(0);
         });
 
     })
@@ -539,9 +530,10 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
             await nodeOperatorRegistry.removeNodeOperator(validatorId);
 
-            const res = await nodeOperatorRegistry.listWithdrawNodeOperators();
-            expect(res[0].length).eq(0)
-            expect(res[1]).eq(0)
+            const withdrawValidators = await nodeOperatorRegistry.listWithdrawNodeOperators();
+            // const withdrawValidators = res[0]
+            // const totalNodeOperators = res[1]
+            expect(withdrawValidators.length).eq(0)
         });
 
         it("should return all withdraw node operators", async function () {
@@ -562,13 +554,10 @@ describe("NodeOperator", function () {
 
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
-            const res = await nodeOperatorRegistry.listWithdrawNodeOperators();
-            const nodeOperators = res[0]
-            const numberNodeOperators = res[1]
+            const nodeOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
             expect(nodeOperators.length).to.equal(3);
-            expect(numberNodeOperators).to.equal(3);
 
-            for (let idx = 0; idx < numberNodeOperators.toNumber(); idx++) {
+            for (let idx = 0; idx < nodeOperators.length; idx++) {
                 expect(nodeOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -784,7 +773,7 @@ describe("NodeOperator", function () {
                     toEth("600"),
                 ],
                 rewardAddresses: [
-                    user1.address, user3.address, user4.address, ethers.constants.AddressZero
+                    user1.address, user3.address, user4.address
                 ]
             }, false)
         })
@@ -886,7 +875,7 @@ describe("NodeOperator", function () {
                     toEth("400")
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, ethers.constants.AddressZero
+                    user1.address, user2.address
                 ]
             }, false)
 
@@ -900,7 +889,7 @@ describe("NodeOperator", function () {
                     toEth("400")
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, ethers.constants.AddressZero
+                    user1.address, user2.address
                 ]
             }, false)
         })
@@ -2315,7 +2304,7 @@ async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigN
     totalToWithdraw: BigNumber,
 }) {
     let res = await nodeOperatorRegistry.getValidatorsRebalanceAmount(totalBuffered)
-    expect(res.totalActiveNodeOperator, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
     expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
@@ -2324,7 +2313,7 @@ async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigN
     }
 
     expect(res.validators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
-    for (let idx = 0; idx < res.totalActiveNodeOperator.toNumber(); idx++) {
+    for (let idx = 0; idx < res.validators.length; idx++) {
         expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
     expect(res.totalToWithdraw, `${id}--res.totalToWithdraw.length`).eq(data.totalToWithdraw)
@@ -2340,7 +2329,7 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
     if (log) {
         console.log(res)
     }
-    expect(res.totalActiveNodeOperator, `${id}--totalActiveNodeOperator`).eq(data.activeNodeOperatorsLength)
+    expect(res.validators.length, `${id}--totalActiveNodeOperator`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
     expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)

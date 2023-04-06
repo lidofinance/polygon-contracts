@@ -410,13 +410,13 @@ contract StMATIC is
         (
             INodeOperatorRegistry.ValidatorData[]
                 memory delegatableNodeOperators,
-            uint256 totalDelegatableNodeOperators,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         ) = nodeOperatorRegistry.getValidatorsDelegationAmount(
                 amountToDelegate
             );
 
+        uint256 totalDelegatableNodeOperators = delegatableNodeOperators.length; 
         uint256 remainder;
         uint256 amountDelegated;
 
@@ -562,10 +562,8 @@ contract StMATIC is
     /// @notice Distributes rewards claimed from validator shares based on fees defined
     /// in entityFee.
     function distributeRewards() external override whenNotPaused nonReentrant {
-        (
-            INodeOperatorRegistry.ValidatorData[] memory operatorInfos,
-            uint256 totalActiveOperatorInfos
-        ) = nodeOperatorRegistry.listDelegatedNodeOperators();
+        INodeOperatorRegistry.ValidatorData[] memory operatorInfos = nodeOperatorRegistry.listDelegatedNodeOperators();
+        uint256 totalActiveOperatorInfos = operatorInfos.length;
 
         for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
             IValidatorShare validatorShare = IValidatorShare(
@@ -662,7 +660,6 @@ contract StMATIC is
             calculatePendingBufferedTokens();
         (
             INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
-            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
@@ -672,7 +669,7 @@ contract StMATIC is
 
         uint256 amountToWithdraw;
         address _validatorAddress;
-        for (uint256 i = 0; i < totalActiveNodeOperator; i++) {
+        for (uint256 i = 0; i < nodeOperators.length; i++) {
             if (operatorRatios[i] == 0) continue;
 
             amountToWithdraw =
@@ -877,12 +874,9 @@ contract StMATIC is
         returns (uint256)
     {
         uint256 totalStake;
-        (
-            INodeOperatorRegistry.ValidatorData[] memory nodeOperators,
-            uint256 operatorsLength
-        ) = nodeOperatorRegistry.listWithdrawNodeOperators();
+        INodeOperatorRegistry.ValidatorData[] memory nodeOperators = nodeOperatorRegistry.listWithdrawNodeOperators();
 
-        for (uint256 i = 0; i < operatorsLength; i++) {
+        for (uint256 i = 0; i < nodeOperators.length; i++) {
             (uint256 currValidatorShare, ) = getTotalStake(
                 IValidatorShare(nodeOperators[i].validatorShare)
             );

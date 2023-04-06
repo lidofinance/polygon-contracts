@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/INodeOperatorRegistry.sol";
 import "./interfaces/IStMATIC.sol";
-import "hardhat/console.sol";
 
 /// @title NodeOperatorRegistry
 /// @author 2021 ShardLabs.
@@ -340,19 +339,19 @@ contract NodeOperatorRegistry is
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
-    /// @return totalActiveNodeOperators total active node operators.
     function listDelegatedNodeOperators()
         external
         view
         override
-        returns (ValidatorData[] memory, uint256)
+        returns (ValidatorData[] memory)
     {
         uint256 totalActiveNodeOperators = 0;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory activeValidators = new ValidatorData[](validatorIds.length);
+        uint256 validatorLength = validatorIds.length;
+        ValidatorData[] memory activeValidators = new ValidatorData[](validatorLength);
 
-        for (uint256 i = 0; i < validatorIds.length; i++) {
+        for (uint256 i = 0; i < validatorLength; i++) {
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
                 validatorIds[i]
             );
@@ -367,18 +366,24 @@ contract NodeOperatorRegistry is
                 totalActiveNodeOperators++;
             }
         }
-        return (activeValidators, totalActiveNodeOperators);
+
+        if (totalActiveNodeOperators < validatorLength) {
+            uint256 trim = validatorLength - totalActiveNodeOperators;
+            assembly {
+                mstore(activeValidators, sub(mload(activeValidators), trim))
+            }
+        }
+        return activeValidators;
     }
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this
     /// includes ACTIVE, JAILED, ejected, and UNSTAKED operators.
     /// @return nodeOperators a list of ACTIVE, JAILED, EJECTED or UNSTAKED node operator.
-    /// @return totalNodeOperators total number of node operators.
     function listWithdrawNodeOperators()
         external
         view
         override
-        returns (ValidatorData[] memory, uint256)
+        returns (ValidatorData[] memory)
     {
         uint256 totalNodeOperators = 0;
         uint256[] memory memValidatorIds = validatorIds;
@@ -400,12 +405,18 @@ contract NodeOperatorRegistry is
             totalNodeOperators++;
         }
 
-        return (withdrawValidators, totalNodeOperators);
+        if (totalNodeOperators < length) {
+            uint256 trim = length - totalNodeOperators;
+            assembly {
+                mstore(withdrawValidators, sub(mload(withdrawValidators), trim))
+            }
+        }
+
+        return withdrawValidators;
     }
 
     /// @notice Returns operators delegation infos.
     /// @return validators all active node operators.
-    /// @return activeOperatorCount count only active validators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
     /// @return distanceThreshold the distance between the min and max amount staked in a validator.
@@ -414,12 +425,12 @@ contract NodeOperatorRegistry is
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 activeOperatorCount,
             uint256[] memory stakePerOperator,
             uint256 totalStaked,
             uint256 distanceThreshold
         )
     {
+        uint256 activeOperatorCount;
         uint256 length = validatorIds.length;
         validators = new ValidatorData[](length);
         stakePerOperator = new uint256[](length);
@@ -484,6 +495,14 @@ contract NodeOperatorRegistry is
         // The max amount is multiplied by 100 to have a precise value.
         minAmount = minAmount == 0 ? 1 : minAmount;
         distanceThreshold = ((maxAmount * 100) / minAmount);
+
+        if (activeOperatorCount < length) {
+            uint256 trim = length - activeOperatorCount;
+            assembly {
+                mstore(validators, sub(mload(validators), trim))
+                mstore(stakePerOperator, sub(mload(stakePerOperator), trim))
+            }
+        }
     }
 
     /// @notice  Calculate how total buffered should be delegated between the active validators,
@@ -491,7 +510,6 @@ contract NodeOperatorRegistry is
     /// status the function will revert.
     /// @param _amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
@@ -501,7 +519,6 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio
         )
@@ -512,19 +529,18 @@ contract NodeOperatorRegistry is
         uint256 distanceThreshold;
         (
             validators,
-            totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
+        uint256 totalActiveNodeOperator = validators.length;
         uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         bool isTheSystemBalanced = distanceThreshold <=
             distanceThresholdPercents;
         if (isTheSystemBalanced) {
             return (
                 validators,
-                totalActiveNodeOperator,
                 operatorRatios,
                 totalRatio
             );
@@ -553,7 +569,6 @@ contract NodeOperatorRegistry is
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param _amountToReDelegate The total amount to redelegate in Matic.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
     /// @return operatorRatios is a list of operator's ratio.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
@@ -563,7 +578,6 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
             uint256[] memory operatorRatios,
             uint256 totalRatio,
             uint256 totalToWithdraw
@@ -575,12 +589,12 @@ contract NodeOperatorRegistry is
         uint256 distanceThreshold;
         (
             validators,
-            totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
             distanceThreshold
         ) = _getValidatorsDelegationInfos();
 
+        uint256 totalActiveNodeOperator = validators.length;
         require(
             totalActiveNodeOperator > 1,
             "Not enough active operators to rebalance"
