@@ -132,9 +132,7 @@ contract PoLidoNFT is
                 token2Index[lastOwnerTokenId] = burnedTokenIndexInOwnerTokens;
                 // Copy currently last token to the place of a token we want to burn.
                 // So updated pointer in token2Index points to a slot with the correct value.
-                ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[
-                    lastOwnerTokensIndex
-                ];
+                ownerTokens[burnedTokenIndexInOwnerTokens] = lastOwnerTokenId;
             }
             ownerTokens.pop();
             delete token2Index[tokenId];
