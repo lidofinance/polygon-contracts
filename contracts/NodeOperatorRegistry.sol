@@ -345,37 +345,7 @@ contract NodeOperatorRegistry is
         override
         returns (ValidatorData[] memory)
     {
-        uint256 totalActiveNodeOperators = 0;
-        IStakeManager.Validator memory validator;
-        NodeOperatorRegistryStatus operatorStatus;
-        uint256 validatorLength = validatorIds.length;
-        ValidatorData[] memory activeValidators = new ValidatorData[](validatorLength);
-
-        for (uint256 i = 0; i < validatorLength; i++) {
-            address rewardAddress = validatorIdToRewardAddress[validatorIds[i]];
-            (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                validatorIds[i],
-                rewardAddress
-            );
-            if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
-                if (!IValidatorShare(validator.contractAddress).delegation())
-                    continue;
-
-                activeValidators[totalActiveNodeOperators] = ValidatorData(
-                    validator.contractAddress,
-                    rewardAddress
-                );
-                totalActiveNodeOperators++;
-            }
-        }
-
-        if (totalActiveNodeOperators < validatorLength) {
-            uint256 trim = validatorLength - totalActiveNodeOperators;
-            assembly {
-                mstore(activeValidators, sub(mload(activeValidators), trim))
-            }
-        }
-        return activeValidators;
+        return _listNodeOperators(true);
     }
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this
@@ -387,12 +357,39 @@ contract NodeOperatorRegistry is
         override
         returns (ValidatorData[] memory)
     {
+        return _listNodeOperators(false);
+    }
+
+    function _listNodeOperatorCondition(
+        NodeOperatorRegistryStatus _operatorStatus,
+        address _validatorAddress,
+        bool _isForDelegation
+    ) private view returns (bool) {
+        if (_isForDelegation) {
+            if (
+                _operatorStatus == NodeOperatorRegistryStatus.ACTIVE &&
+                IValidatorShare(_validatorAddress).delegation()
+            ) return true;
+            return false;
+        } else {
+            if (_operatorStatus != NodeOperatorRegistryStatus.INACTIVE) return true;
+            return false;
+        }
+    }
+
+    /// @notice List all the operators on the stakeManager that can be withdrawn from this
+    /// includes ACTIVE, JAILED, ejected, and UNSTAKED operators.
+    /// @return nodeOperators a list of ACTIVE, JAILED, EJECTED or UNSTAKED node operator.
+    function _listNodeOperators(bool _isForDelegation)
+        private
+        view
+        returns (ValidatorData[] memory){
         uint256 totalNodeOperators = 0;
-        uint256[] memory memValidatorIds = validatorIds;
-        uint256 length = memValidatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory withdrawValidators = new ValidatorData[](length);
+        uint256[] memory memValidatorIds = validatorIds;
+        uint256 length = memValidatorIds.length;
+        ValidatorData[] memory activeValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
             address rewardAddress = validatorIdToRewardAddress[memValidatorIds[i]];
@@ -400,9 +397,11 @@ contract NodeOperatorRegistry is
                 memValidatorIds[i],
                 rewardAddress
             );
-            if (operatorStatus == NodeOperatorRegistryStatus.INACTIVE) continue;
 
-            withdrawValidators[totalNodeOperators] = ValidatorData(
+            bool condition = _listNodeOperatorCondition(operatorStatus, validator.contractAddress, _isForDelegation);
+            if (!condition) continue;
+
+            activeValidators[totalNodeOperators] = ValidatorData(
                 validator.contractAddress,
                 rewardAddress
             );
@@ -412,11 +411,11 @@ contract NodeOperatorRegistry is
         if (totalNodeOperators < length) {
             uint256 trim = length - totalNodeOperators;
             assembly {
-                mstore(withdrawValidators, sub(mload(withdrawValidators), trim))
+                mstore(activeValidators, sub(mload(activeValidators), trim))
             }
         }
 
-        return withdrawValidators;
+        return activeValidators;
     }
 
     /// @notice Returns operators delegation infos.
