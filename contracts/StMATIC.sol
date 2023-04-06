@@ -419,16 +419,11 @@ contract StMATIC is
             amountToDelegate
         );
 
+        // If the total Ratio is equal to ZERO that means the system is balanced so we
+        // distribute the buffered tokens equally between the validators
+        uint256 amountToDelegatePerOperator = amountToDelegate / totalDelegatableNodeOperators;
         for (uint256 i = 0; i < totalDelegatableNodeOperators; i++) {
-            uint256 amountToDelegatePerOperator;
-
-            // If the total Ratio is equal to ZERO that means the system is balanced so we
-            // distribute the buffered tokens equally between the validators
-            if (totalRatio == 0) {
-                amountToDelegatePerOperator =
-                    amountToDelegate /
-                    totalDelegatableNodeOperators;
-            } else {
+            if (totalRatio != 0) {
                 if (operatorRatios[i] == 0) continue;
                 amountToDelegatePerOperator =
                     (operatorRatios[i] * amountToDelegate) /
