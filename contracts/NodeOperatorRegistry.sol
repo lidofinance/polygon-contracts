@@ -786,9 +786,7 @@ contract NodeOperatorRegistry is
         }
         totalValidatorToWithdrawFrom = 0;
         operatorAmountCanBeRequested = new uint256[](length);
-        withdrawAmountPercentage = withdrawAmountPercentage == 0
-            ? 1
-            : withdrawAmountPercentage;
+
         uint256 rebalanceTarget = totalDelegated > _withdrawAmount
             ? (totalDelegated - _withdrawAmount) / length
             : 0;
