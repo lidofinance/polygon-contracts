@@ -201,7 +201,7 @@ contract NodeOperatorRegistry is
         uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length - 1; idx++) {
             if (_validatorId == validatorIds[idx]) {
-                validatorIds[idx] = validatorIds[validatorIds.length - 1];
+                validatorIds[idx] = validatorIds[length - 1];
                 break;
             }
         }
@@ -965,8 +965,8 @@ contract NodeOperatorRegistry is
             }
         }
 
-        uint256 min = minAmount == 0 ? 1 : minAmount;
-        distanceMinMaxStake = ((maxAmount * 100) / min);
+        uint256 _min = minAmount == 0 ? 1 : minAmount;
+        distanceMinMaxStake = ((maxAmount * 100) / _min);
         isBalanced = distanceMinMaxStake <= DISTANCE_THRESHOLD_PERCENTS;
     }
 

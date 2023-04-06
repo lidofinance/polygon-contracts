@@ -221,8 +221,10 @@ contract StMATIC is
             ) = nodeOperatorRegistry.getValidatorsRequestWithdraw(totalAmount2WithdrawInMatic);
 
             {
-                uint256 localActiveBalance = totalBuffered > reservedFunds
-                    ? totalBuffered - reservedFunds
+                uint256 totalBufferedMem = totalBuffered;
+                uint256 reservedFundsMem = reservedFunds;
+                uint256 localActiveBalance = totalBufferedMem > reservedFundsMem
+                    ? totalBufferedMem - reservedFundsMem
                     : 0;
                 uint256 liquidity = totalDelegated + localActiveBalance;
                 _require(
@@ -413,8 +415,9 @@ contract StMATIC is
         uint256 remainder;
         uint256 amountDelegated;
 
-        IERC20Upgradeable(token).safeApprove(address(stakeManager), 0);
-        IERC20Upgradeable(token).safeApprove(
+        address maticTokenAddress = token;
+        IERC20Upgradeable(maticTokenAddress).safeApprove(address(stakeManager), 0);
+        IERC20Upgradeable(maticTokenAddress).safeApprove(
             address(stakeManager),
             amountToDelegate
         );
@@ -483,7 +486,8 @@ contract StMATIC is
         uint256 length = usersRequest.length;
         uint256 amountToClaim;
 
-        uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+        address maticTokenAddress = token;
+        uint256 balanceBeforeClaim = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         );
 
@@ -503,10 +507,10 @@ contract StMATIC is
         }
 
         amountToClaim +=
-            IERC20Upgradeable(token).balanceOf(address(this)) -
+            IERC20Upgradeable(maticTokenAddress).balanceOf(address(this)) -
             balanceBeforeClaim;
 
-        IERC20Upgradeable(token).safeTransfer(msg.sender, amountToClaim);
+        IERC20Upgradeable(maticTokenAddress).safeTransfer(msg.sender, amountToClaim);
 
         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
     }
@@ -525,8 +529,9 @@ contract StMATIC is
 
         uint256 amountToClaim;
 
+        address maticTokenAddress = token;
         if (usersRequest.validatorAddress != address(0)) {
-            uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+            uint256 balanceBeforeClaim = IERC20Upgradeable(maticTokenAddress).balanceOf(
                 address(this)
             );
 
@@ -536,7 +541,7 @@ contract StMATIC is
             );
 
             amountToClaim =
-                IERC20Upgradeable(token).balanceOf(address(this)) -
+                IERC20Upgradeable(maticTokenAddress).balanceOf(address(this)) -
                 balanceBeforeClaim;
         } else {
             amountToClaim = usersRequest.amount2WithdrawFromStMATIC;
@@ -545,7 +550,7 @@ contract StMATIC is
             totalBuffered -= amountToClaim;
         }
 
-        IERC20Upgradeable(token).safeTransfer(msg.sender, amountToClaim);
+        IERC20Upgradeable(maticTokenAddress).safeTransfer(msg.sender, amountToClaim);
 
         emit ClaimTokensEvent(msg.sender, _tokenId, amountToClaim, 0);
     }
@@ -569,7 +574,8 @@ contract StMATIC is
             }
         }
 
-        uint256 totalRewards = IERC20Upgradeable(token).balanceOf(
+        address maticTokenAddress = token;
+        uint256 totalRewards = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         ) - totalBuffered;
 
@@ -580,7 +586,7 @@ contract StMATIC is
             "Amount to distribute lower than minimum"
         );
 
-        uint256 balanceBeforeDistribution = IERC20Upgradeable(token).balanceOf(
+        uint256 balanceBeforeDistribution = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         );
 
@@ -589,8 +595,8 @@ contract StMATIC is
         uint256 operatorsRewards = (protocolRewards * entityFees.operators) / 100;
         uint256 operatorReward = operatorsRewards / totalActiveOperatorInfos;
 
-        IERC20Upgradeable(token).safeTransfer(dao, daoRewards);
-        IERC20Upgradeable(token).safeTransfer(insurance, insuranceRewards);
+        IERC20Upgradeable(maticTokenAddress).safeTransfer(dao, daoRewards);
+        IERC20Upgradeable(maticTokenAddress).safeTransfer(insurance, insuranceRewards);
 
         for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
             IERC20Upgradeable(token).safeTransfer(
@@ -599,7 +605,7 @@ contract StMATIC is
             );
         }
 
-        uint256 currentBalance = IERC20Upgradeable(token).balanceOf(
+        uint256 currentBalance = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         );
 
@@ -730,7 +736,8 @@ contract StMATIC is
             "Not able to claim yet"
         );
 
-        uint256 balanceBeforeClaim = IERC20Upgradeable(token).balanceOf(
+        address maticTokenAddress = token;
+        uint256 balanceBeforeClaim = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         );
 
@@ -739,7 +746,7 @@ contract StMATIC is
             lidoRequest.validatorNonce
         );
 
-        uint256 claimedAmount = IERC20Upgradeable(token).balanceOf(
+        uint256 claimedAmount = IERC20Upgradeable(maticTokenAddress).balanceOf(
             address(this)
         ) - balanceBeforeClaim;
 
