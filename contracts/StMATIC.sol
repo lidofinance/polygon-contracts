@@ -202,7 +202,7 @@ contract StMATIC is
         uint256 tokenId;
 
         {
-            uint256 totalPooledMatic = _getTotalPooledMatic(getTotalStakeAcrossAllValidators());
+            uint256 totalPooledMatic = getTotalPooledMatic();
             uint256 totalAmount2WithdrawInMatic = _convertStMaticToMatic(
                 _amount,
                 totalPooledMatic
