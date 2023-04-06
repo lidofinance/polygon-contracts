@@ -176,17 +176,17 @@ contract NodeOperatorRegistry is
         whenNotPaused
         nonReentrant
     {
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(_validatorId);
+        ) = _getOperatorStatusAndValidator(_validatorId, rewardAddress);
 
         require(
             operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
                 operatorStatus == NodeOperatorRegistryStatus.EJECTED,
             "Cannot remove valid operator."
         );
-        address rewardAddress = validatorIdToRewardAddress[_validatorId];
 
         _removeOperator(_validatorId, validator.contractAddress, rewardAddress);
 
@@ -352,8 +352,10 @@ contract NodeOperatorRegistry is
         ValidatorData[] memory activeValidators = new ValidatorData[](validatorLength);
 
         for (uint256 i = 0; i < validatorLength; i++) {
+            address rewardAddress = validatorIdToRewardAddress[validatorIds[i]];
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                validatorIds[i]
+                validatorIds[i],
+                rewardAddress
             );
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 if (!IValidatorShare(validator.contractAddress).delegation())
@@ -361,7 +363,7 @@ contract NodeOperatorRegistry is
 
                 activeValidators[totalActiveNodeOperators] = ValidatorData(
                     validator.contractAddress,
-                    validatorIdToRewardAddress[validatorIds[i]]
+                    rewardAddress
                 );
                 totalActiveNodeOperators++;
             }
@@ -393,14 +395,16 @@ contract NodeOperatorRegistry is
         ValidatorData[] memory withdrawValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
+            address rewardAddress = validatorIdToRewardAddress[memValidatorIds[i]];
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                memValidatorIds[i]
+                memValidatorIds[i],
+                rewardAddress
             );
             if (operatorStatus == NodeOperatorRegistryStatus.INACTIVE) continue;
 
             withdrawValidators[totalNodeOperators] = ValidatorData(
                 validator.contractAddress,
-                validatorIdToRewardAddress[memValidatorIds[i]]
+                rewardAddress
             );
             totalNodeOperators++;
         }
@@ -436,6 +440,7 @@ contract NodeOperatorRegistry is
         stakePerOperator = new uint256[](length);
 
         uint256 validatorId;
+        address rewardAddress;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus status;
 
@@ -444,7 +449,8 @@ contract NodeOperatorRegistry is
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
-            (status, validator) = _getOperatorStatusAndValidator(validatorId);
+            rewardAddress = validatorIdToRewardAddress[validatorId];
+            (status, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
             if (status == NodeOperatorRegistryStatus.INACTIVE) continue;
 
             require(
@@ -656,12 +662,14 @@ contract NodeOperatorRegistry is
         stakePerOperator = new uint256[](length);
 
         uint256 validatorId;
+        address rewardAddress;
         IStakeManager.Validator memory validator;
         minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
-            (, validator) = _getOperatorStatusAndValidator(validatorId);
+            rewardAddress = validatorIdToRewardAddress[validatorIds[i]];
+            (, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
@@ -680,7 +688,7 @@ contract NodeOperatorRegistry is
 
             nonInactiveValidators[i] = ValidatorData(
                 validator.contractAddress,
-                validatorIdToRewardAddress[validatorIds[i]]
+                rewardAddress
             );
         }
         minAmount = minAmount == 0 ? 1 : minAmount;
@@ -822,7 +830,10 @@ contract NodeOperatorRegistry is
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(_validatorId);
+        ) = _getOperatorStatusAndValidator(
+            _validatorId,
+            validatorIdToRewardAddress[_validatorId]
+        );
         nodeOperator.validatorShare = validator.contractAddress;
         nodeOperator.validatorId = _validatorId;
         nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
@@ -843,7 +854,7 @@ contract NodeOperatorRegistry is
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(validatorId);
+        ) = _getOperatorStatusAndValidator(validatorId, _rewardAddress);
 
         nodeOperator.status = operatorStatus;
         nodeOperator.rewardAddress = _rewardAddress;
@@ -861,14 +872,17 @@ contract NodeOperatorRegistry is
         override
         returns (NodeOperatorRegistryStatus operatorStatus)
     {
-        (operatorStatus, ) = _getOperatorStatusAndValidator(_validatorId);
+        (operatorStatus, ) = _getOperatorStatusAndValidator(
+            _validatorId,
+            validatorIdToRewardAddress[_validatorId]
+        );
     }
 
     /// @notice Returns a node operator status.
     /// @param  _validatorId is the id of the node operator.
     /// @return operatorStatus is the operator status.
     /// @return validator is the validator info.
-    function _getOperatorStatusAndValidator(uint256 _validatorId)
+    function _getOperatorStatusAndValidator(uint256 _validatorId, address _rewardAddress)
         private
         view
         returns (
@@ -876,8 +890,8 @@ contract NodeOperatorRegistry is
             IStakeManager.Validator memory validator
         )
     {
-        address rewardAddress = validatorIdToRewardAddress[_validatorId];
-        require(rewardAddress != address(0), "Operator not found");
+        require(_validatorId != 0, "Operator not found");
+        require(_rewardAddress != address(0), "Operator not found");
         validator = stakeManager.validators(_validatorId);
 
         if (
@@ -933,14 +947,16 @@ contract NodeOperatorRegistry is
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
+        address rewardAddress;
         minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
+            rewardAddress = validatorIdToRewardAddress[validatorId];
             (
                 ,
                 IStakeManager.Validator memory validator
-            ) = _getOperatorStatusAndValidator(validatorId);
+            ) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
 
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
                 .getTotalStake(address(stMATIC));
@@ -977,11 +993,15 @@ contract NodeOperatorRegistry is
         )
     {
         uint256 length = validatorIds.length;
+        uint256 validatorId;
+        address rewardAddress;
         for (uint256 idx = 0; idx < length; idx++) {
+            validatorId = validatorIds[idx];
+            rewardAddress = validatorIdToRewardAddress[validatorId];
             (
                 NodeOperatorRegistryStatus operatorStatus,
 
-            ) = _getOperatorStatusAndValidator(validatorIds[idx]);
+            ) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 activeNodeOperator++;
             } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
