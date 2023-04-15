@@ -955,7 +955,7 @@ contract NodeOperatorRegistry is
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
-        minAmount = type(uint256).max;
+        minAmount = length == 0 ? 0 : type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
@@ -976,7 +976,8 @@ contract NodeOperatorRegistry is
         }
 
         uint256 _min = minAmount == 0 ? 1 : minAmount;
-        distanceMinMaxStake = ((maxAmount * 100) / _min);
+        uint256 _max = maxAmount == 0 ? 1 : maxAmount;
+        distanceMinMaxStake = ((_max * 100) / _min);
         isBalanced = distanceMinMaxStake <= DISTANCE_THRESHOLD_PERCENTS;
     }
 

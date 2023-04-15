@@ -2135,7 +2135,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(false)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceMinMaxStake, "minAmount")
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
         })
 
@@ -2171,7 +2171,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(true)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceMinMaxStake, "minAmount")
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
         })
 
@@ -2208,6 +2208,16 @@ describe("NodeOperator", function () {
             expect(res.maxAmount, "maxAmount").eq(validator4Stake)
             expect(res.minAmount, "minAmount").eq(0)
             expect(res.distanceMinMaxStake, "minAmount").eq(validator4Stake.mul(100))
+        })
+
+        it("Get Protocol Stats when protocol is empty", async function () {
+            const distanceThreshold = 100
+            await nodeOperatorRegistry.setDistanceThreshold(distanceThreshold)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(true)
+            expect(res.maxAmount, "maxAmount").eq(0)
+            expect(res.minAmount, "minAmount").eq(0)
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake").eq(distanceThreshold)
         })
     })
 
