@@ -269,11 +269,12 @@ contract StMATIC is
                 }
 
                 if (totalAmount2WithdrawInMatic > totalDelegated) {
+                    IStakeManager stakeManagerMem = stakeManager;
                     token2WithdrawRequests[tokenId].push(
                         RequestWithdraw(
                             currentAmount2WithdrawInMatic,
                             0,
-                            stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                            stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                             address(0)
                         )
                     );
@@ -373,11 +374,12 @@ contract StMATIC is
             type(uint256).max
         );
 
+        IStakeManager stakeManagerMem = stakeManager;
         token2WithdrawRequests[tokenId].push(
             RequestWithdraw(
                 0,
                 IValidatorShare(validatorShare).unbondNonces(address(this)),
-                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                 validatorShare
             )
         );
@@ -411,9 +413,10 @@ contract StMATIC is
         uint256 amountDelegated;
 
         address maticTokenAddress = token;
-        IERC20Upgradeable(maticTokenAddress).safeApprove(address(stakeManager), 0);
+        address stakeManagerAddress = address(stakeManager);
+        IERC20Upgradeable(maticTokenAddress).safeApprove(stakeManagerAddress, 0);
         IERC20Upgradeable(maticTokenAddress).safeApprove(
-            address(stakeManager),
+            stakeManagerAddress,
             amountToDelegate
         );
 
@@ -594,7 +597,7 @@ contract StMATIC is
         IERC20Upgradeable(maticTokenAddress).safeTransfer(insurance, insuranceRewards);
 
         for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
-            IERC20Upgradeable(token).safeTransfer(
+            IERC20Upgradeable(maticTokenAddress).safeTransfer(
                 operatorInfos[i].rewardAddress,
                 operatorReward
             );
@@ -687,11 +690,12 @@ contract StMATIC is
         private
     {
         sellVoucher_new(_validatorShare, amount, type(uint256).max);
+        IStakeManager stakeManagerMem = stakeManager;
         stMaticWithdrawRequest.push(
             RequestWithdraw(
                 0,
                 IValidatorShare(_validatorShare).unbondNonces(address(this)),
-                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                 _validatorShare
             )
         );
@@ -1205,4 +1209,14 @@ contract StMATIC is
     function min(uint256 _valueA, uint256 _valueB) private pure returns(uint256) {
         return _valueA > _valueB ? _valueB : _valueA;
     }
+
+    // function approveToStakeManager(uint256 _amountToDelegate) private {
+    //     address maticTokenAddress = token;
+    //     address stakeManagerAddress = address(stakeManager);
+    //     IERC20Upgradeable(maticTokenAddress).safeApprove(stakeManagerAddress, 0);
+    //     IERC20Upgradeable(maticTokenAddress).safeApprove(
+    //         stakeManagerAddress,
+    //         _amountToDelegate
+    //     );
+    // }
 }

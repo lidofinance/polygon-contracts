@@ -433,20 +433,20 @@ contract NodeOperatorRegistry is
         )
     {
         uint256 activeOperatorCount;
-        uint256 length = validatorIds.length;
-        validators = new ValidatorData[](length);
-        stakePerOperator = new uint256[](length);
+        uint256[] memory validatorIdMem = validatorIds;
+        validators = new ValidatorData[](validatorIdMem.length);
+        stakePerOperator = new uint256[](validatorIdMem.length);
+        address stMaticAddress = address(stMATIC);
 
         uint256 validatorId;
         address rewardAddress;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus status;
-
         uint256 maxAmount;
         uint256 minAmount = type(uint256).max;
 
-        for (uint256 i = 0; i < length; i++) {
-            validatorId = validatorIds[i];
+        for (uint256 i = 0; i < validatorIdMem.length; i++) {
+            validatorId = validatorIdMem[i];
             rewardAddress = validatorIdToRewardAddress[validatorId];
             (status, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
             if (status == NodeOperatorRegistryStatus.INACTIVE) continue;
@@ -463,7 +463,7 @@ contract NodeOperatorRegistry is
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
-                .getTotalStake(address(stMATIC));
+                .getTotalStake(stMaticAddress);
 
             totalStaked += amount;
 
@@ -475,13 +475,9 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            bool isDelegationEnabled = IValidatorShare(
-                validator.contractAddress
-            ).delegation();
-
             if (
                 status == NodeOperatorRegistryStatus.ACTIVE &&
-                isDelegationEnabled
+                IValidatorShare(validator.contractAddress).delegation()
             ) {
                 stakePerOperator[activeOperatorCount] = amount;
 
@@ -500,7 +496,7 @@ contract NodeOperatorRegistry is
         minAmount = minAmount == 0 ? 1 : minAmount;
         distanceMinMaxStake = ((maxAmount * 100) / minAmount);
 
-        if (activeOperatorCount < length) {
+        if (activeOperatorCount < validatorIdMem.length) {
             assembly {
                 mstore(validators, activeOperatorCount)
                 mstore(stakePerOperator, activeOperatorCount)
@@ -655,27 +651,25 @@ contract NodeOperatorRegistry is
             uint256 maxAmount
         )
     {
-        uint256 length = validatorIds.length;
-        activeValidators = new ValidatorData[](length);
-        stakePerOperator = new uint256[](length);
+        uint256[] memory validatorIdsMem = validatorIds;
+        activeValidators = new ValidatorData[](validatorIdsMem.length);
+        stakePerOperator = new uint256[](validatorIdsMem.length);
+        address stMaticAddress = address(stMATIC);
 
-        uint256 validatorId;
         address rewardAddress;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus validatorStatus;
         minAmount = type(uint256).max;
         uint256 activeValidatorsCounter;
 
-        for (uint256 i = 0; i < length; i++) {
-            validatorId = validatorIds[i];
-            rewardAddress = validatorIdToRewardAddress[validatorIds[i]];
-            (validatorStatus, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
+        for (uint256 i = 0; i < validatorIdsMem.length; i++) {
+            rewardAddress = validatorIdToRewardAddress[validatorIdsMem[i]];
+            (validatorStatus, validator) = _getOperatorStatusAndValidator(validatorIdsMem[i], rewardAddress);
 
             if (validatorStatus ==  NodeOperatorRegistryStatus.INACTIVE) continue;
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
-            (uint256 amount, ) = IValidatorShare(validator.contractAddress)
-                .getTotalStake(address(stMATIC));
+            (uint256 amount, ) = IValidatorShare(validator.contractAddress).getTotalStake(stMaticAddress);
 
             stakePerOperator[activeValidatorsCounter] = amount;
             totalDelegated += amount;
@@ -695,7 +689,7 @@ contract NodeOperatorRegistry is
             activeValidatorsCounter++;
         }
 
-        if (activeValidatorsCounter < length) {
+        if (activeValidatorsCounter < validatorIdsMem.length) {
             assembly {
                 mstore(activeValidators, activeValidatorsCounter)
                 mstore(stakePerOperator, activeValidatorsCounter)
