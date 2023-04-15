@@ -1606,6 +1606,75 @@ describe("NodeOperator", function () {
             }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
+        it.only("getValidatorsRequestWithdraw when there is one no active validator", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("0")
+            const validator3Stake = toEth("800")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await stakeManagerMock.setValidatorStatus(2, 0)
+            expect((await stakeManagerMock.validators(2)).status).eq(0)
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 2,
+                totalDelegated: toEth("1800"),
+                bigNodeOperatorIds: [0],
+                smallNodeOperatorIds: [1],
+                operatorAmountCanBeRequested: [toEth("250"), toEth("50")],
+                rewardAddresses: [user1.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
+        })
+
+        it.only("getValidatorsRequestWithdraw when there is one validator with zero delegation", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("0")
+            const validator3Stake = toEth("800")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 3,
+                totalDelegated: toEth("1800"),
+                bigNodeOperatorIds: [0, 2],
+                smallNodeOperatorIds: [1],
+                operatorAmountCanBeRequested: [toEth("1000"), toEth("0"), toEth("800")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
+        })
+
         it("getValidatorsRequestWithdraw when system is balanced with MinRequestWithdrawDistanceThreshold = 50%", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)

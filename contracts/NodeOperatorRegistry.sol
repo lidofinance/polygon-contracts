@@ -667,6 +667,7 @@ contract NodeOperatorRegistry is
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus validatorStatus;
         minAmount = type(uint256).max;
+        uint256 activeValidatorsCounter;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
@@ -679,7 +680,7 @@ contract NodeOperatorRegistry is
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
                 .getTotalStake(address(stMATIC));
 
-            stakePerOperator[i] = amount;
+            stakePerOperator[activeValidatorsCounter] = amount;
             totalDelegated += amount;
 
             if (maxAmount < amount) {
@@ -690,10 +691,19 @@ contract NodeOperatorRegistry is
                 minAmount = amount;
             }
 
-            activeValidators[i] = ValidatorData(
+            activeValidators[activeValidatorsCounter] = ValidatorData(
                 validator.contractAddress,
                 rewardAddress
             );
+            activeValidatorsCounter++;
+        }
+
+        if (activeValidatorsCounter < length) {
+            uint256 trim = length - activeValidatorsCounter;
+            assembly {
+                mstore(activeValidators, sub(mload(activeValidators), trim))
+                mstore(stakePerOperator, sub(mload(stakePerOperator), trim))
+            }
         }
     }
 

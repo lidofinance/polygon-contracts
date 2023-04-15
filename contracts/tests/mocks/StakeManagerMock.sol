@@ -135,6 +135,10 @@ contract StakeManagerMock is IStakeManager {
         smValidators[_validatorId].status = IStakeManager.Status.Active;
     }
 
+    function setValidatorStatus(uint256 _validatorId, IStakeManager.Status _status) external {
+        smValidators[_validatorId].status = _status;
+    }
+
     function withdrawalDelay() external override pure returns (uint256) {
         return (2**13);
     }
