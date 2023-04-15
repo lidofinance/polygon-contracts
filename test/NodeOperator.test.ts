@@ -1606,7 +1606,7 @@ describe("NodeOperator", function () {
             }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
-        it.only("getValidatorsRequestWithdraw when there is one no active validator", async function () {
+        it("getValidatorsRequestWithdraw when there is one no active validator", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)
@@ -1642,7 +1642,7 @@ describe("NodeOperator", function () {
             }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
         })
 
-        it.only("getValidatorsRequestWithdraw when there is one validator with zero delegation", async function () {
+        it("getValidatorsRequestWithdraw when there is one validator with zero delegation", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
             await stakeOperator(user3)

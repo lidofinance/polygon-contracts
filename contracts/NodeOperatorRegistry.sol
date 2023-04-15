@@ -540,9 +540,8 @@ contract NodeOperatorRegistry is
         ) = _getValidatorsDelegationInfos();
 
         uint256 totalActiveNodeOperator = validators.length;
-        uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         bool isTheSystemBalanced = distanceMinMaxStake <=
-            distanceThresholdPercents;
+            DISTANCE_THRESHOLD_PERCENTS;
         if (isTheSystemBalanced) {
             return (
                 validators,
@@ -954,16 +953,14 @@ contract NodeOperatorRegistry is
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
-        address rewardAddress;
         minAmount = type(uint256).max;
 
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
-            rewardAddress = validatorIdToRewardAddress[validatorId];
             (
                 ,
                 IStakeManager.Validator memory validator
-            ) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
+            ) = _getOperatorStatusAndValidator(validatorId, validatorIdToRewardAddress[validatorId]);
 
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
                 .getTotalStake(address(stMATIC));
@@ -1001,14 +998,12 @@ contract NodeOperatorRegistry is
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
-        address rewardAddress;
         for (uint256 idx = 0; idx < length; idx++) {
             validatorId = validatorIds[idx];
-            rewardAddress = validatorIdToRewardAddress[validatorId];
             (
                 NodeOperatorRegistryStatus operatorStatus,
 
-            ) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
+            ) = _getOperatorStatusAndValidator(validatorId, validatorIdToRewardAddress[validatorId]);
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 activeNodeOperator++;
             } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
