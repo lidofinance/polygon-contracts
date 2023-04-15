@@ -155,9 +155,7 @@ interface INodeOperatorRegistry {
     /// @param _withdrawAmount The amount to withdraw.
     /// @return validators all node operators.
     /// @return totalDelegated total amount delegated.
-    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
     /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
-    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
     /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
@@ -167,9 +165,7 @@ interface INodeOperatorRegistry {
         returns (
             ValidatorData[] memory validators,
             uint256 totalDelegated,
-            uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
-            uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom

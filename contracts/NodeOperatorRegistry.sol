@@ -409,9 +409,8 @@ contract NodeOperatorRegistry is
         }
 
         if (totalNodeOperators < length) {
-            uint256 trim = length - totalNodeOperators;
             assembly {
-                mstore(activeValidators, sub(mload(activeValidators), trim))
+                mstore(activeValidators, totalNodeOperators)
             }
         }
 
@@ -502,10 +501,9 @@ contract NodeOperatorRegistry is
         distanceMinMaxStake = ((maxAmount * 100) / minAmount);
 
         if (activeOperatorCount < length) {
-            uint256 trim = length - activeOperatorCount;
             assembly {
-                mstore(validators, sub(mload(validators), trim))
-                mstore(stakePerOperator, sub(mload(stakePerOperator), trim))
+                mstore(validators, activeOperatorCount)
+                mstore(stakePerOperator, activeOperatorCount)
             }
         }
     }
@@ -698,10 +696,9 @@ contract NodeOperatorRegistry is
         }
 
         if (activeValidatorsCounter < length) {
-            uint256 trim = length - activeValidatorsCounter;
             assembly {
-                mstore(activeValidators, sub(mload(activeValidators), trim))
-                mstore(stakePerOperator, sub(mload(stakePerOperator), trim))
+                mstore(activeValidators, activeValidatorsCounter)
+                mstore(stakePerOperator, activeValidatorsCounter)
             }
         }
     }
@@ -710,9 +707,7 @@ contract NodeOperatorRegistry is
     /// @param _withdrawAmount The amount to withdraw.
     /// @return validators all node operators.
     /// @return totalDelegated total amount delegated.
-    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
     /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
-    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
     /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
@@ -723,9 +718,7 @@ contract NodeOperatorRegistry is
         returns (
             ValidatorData[] memory validators,
             uint256 totalDelegated,
-            uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
-            uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
@@ -735,9 +728,7 @@ contract NodeOperatorRegistry is
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -759,9 +750,7 @@ contract NodeOperatorRegistry is
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -786,9 +775,7 @@ contract NodeOperatorRegistry is
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -804,6 +791,8 @@ contract NodeOperatorRegistry is
         rebalanceTarget = min(rebalanceTarget, minAmount);
 
         uint256 averageTarget = totalDelegated / length;
+        uint256 bigNodeOperatorLength;
+        uint256 smallNodeOperatorLength;
         bigNodeOperatorIds = new uint256[](length);
         smallNodeOperatorIds = new uint256[](length);
 
@@ -821,6 +810,18 @@ contract NodeOperatorRegistry is
                 ? stakePerOperator[idx] - rebalanceTarget
                 : 0;
             operatorAmountCanBeRequested[idx] = operatorRatioToRebalance;
+        }
+
+        if (bigNodeOperatorLength < length) {
+            assembly {
+                mstore(bigNodeOperatorIds, bigNodeOperatorLength)
+            }
+        }
+
+        if (smallNodeOperatorLength < length) {
+            assembly {
+                mstore(smallNodeOperatorIds, smallNodeOperatorLength)
+            }
         }
     }
 

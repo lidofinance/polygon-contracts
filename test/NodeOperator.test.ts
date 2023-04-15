@@ -2335,14 +2335,14 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
         console.log(res)
     }
     expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
-    expect(res.bigNodeOperatorLength, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
-    expect(res.smallNodeOperatorLength, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
+    expect(res.bigNodeOperatorIds.length, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
+    expect(res.smallNodeOperatorIds.length, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
 
-    for (let idx = 0; idx < res.bigNodeOperatorLength.toNumber(); idx++) {
+    for (let idx = 0; idx < res.bigNodeOperatorIds.length; idx++) {
         expect(res.bigNodeOperatorIds[idx], `${id}--${idx}--bigNodeOperatorIds`).eq(data.bigNodeOperatorIds[idx])
     }
 
-    for (let idx = 0; idx < res.smallNodeOperatorLength.toNumber(); idx++) {
+    for (let idx = 0; idx < res.smallNodeOperatorIds.length; idx++) {
         expect(res.smallNodeOperatorIds[idx], `${id}--${idx}--smallNodeOperatorIds`).eq(data.smallNodeOperatorIds[idx])
     }
 

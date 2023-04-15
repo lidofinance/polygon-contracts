@@ -212,9 +212,7 @@ contract StMATIC is
             (
                 INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
                 uint256 totalDelegated,
-                uint256 bigNodeOperatorLength,
                 uint256[] memory bigNodeOperatorIds,
-                uint256 smallNodeOperatorLength,
                 uint256[] memory smallNodeOperatorIds,
                 uint256[] memory allowedAmountToRequestFromOperators,
                 uint256 totalValidatorsToWithdrawFrom
@@ -252,7 +250,6 @@ contract StMATIC is
                         currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
                             tokenId,
                             activeNodeOperators,
-                            bigNodeOperatorLength,
                             bigNodeOperatorIds,
                             allowedAmountToRequestFromOperators,
                             currentAmount2WithdrawInMatic
@@ -263,7 +260,6 @@ contract StMATIC is
                             currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
                                 tokenId,
                                 activeNodeOperators,
-                                smallNodeOperatorLength,
                                 smallNodeOperatorIds,
                                 allowedAmountToRequestFromOperators,
                                 currentAmount2WithdrawInMatic
@@ -333,12 +329,11 @@ contract StMATIC is
     function _requestWithdrawUnbalanced(
         uint256 tokenId,
         INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
-        uint256 nodeOperatorLength,
         uint256[] memory nodeOperatorIds,
         uint256[] memory allowedAmountToRequestFromOperators,
         uint256 currentAmount2WithdrawInMatic
     ) private returns (uint256) {
-        for (uint256 idx = 0; idx < nodeOperatorLength; idx++) {
+        for (uint256 idx = 0; idx < nodeOperatorIds.length; idx++) {
             uint256 id = nodeOperatorIds[idx];
             uint256 amountCanBeRequested = allowedAmountToRequestFromOperators[
                 id
