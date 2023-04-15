@@ -686,7 +686,7 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if (minAmount > amount && amount != 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
 
@@ -771,8 +771,8 @@ contract NodeOperatorRegistry is
         totalValidatorToWithdrawFrom = min(totalValidatorToWithdrawFrom, length);
 
         if (
-            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS &&
-            minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount
+            minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount &&
+            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS
         ) {
             return (
                 validators,

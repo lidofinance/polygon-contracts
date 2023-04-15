@@ -1600,7 +1600,7 @@ describe("NodeOperator", function () {
                 totalDelegated: toEth("1800"),
                 bigNodeOperatorIds: [0, 1],
                 smallNodeOperatorIds: [2],
-                operatorAmountCanBeRequested: [toEth("500"), toEth("300"), toEth("0")],
+                operatorAmountCanBeRequested: [toEth("1000"), toEth("800"), toEth("0")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
             }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
