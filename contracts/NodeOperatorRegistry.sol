@@ -834,16 +834,17 @@ contract NodeOperatorRegistry is
         override
         returns (FullNodeOperatorRegistry memory nodeOperator)
     {
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
         ) = _getOperatorStatusAndValidator(
             _validatorId,
-            validatorIdToRewardAddress[_validatorId]
+            rewardAddress
         );
         nodeOperator.validatorShare = validator.contractAddress;
         nodeOperator.validatorId = _validatorId;
-        nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
+        nodeOperator.rewardAddress = rewardAddress;
         nodeOperator.status = operatorStatus;
         nodeOperator.commissionRate = validator.commissionRate;
     }
