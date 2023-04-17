@@ -1209,14 +1209,4 @@ contract StMATIC is
     function min(uint256 _valueA, uint256 _valueB) private pure returns(uint256) {
         return _valueA > _valueB ? _valueB : _valueA;
     }
-
-    // function approveToStakeManager(uint256 _amountToDelegate) private {
-    //     address maticTokenAddress = token;
-    //     address stakeManagerAddress = address(stakeManager);
-    //     IERC20Upgradeable(maticTokenAddress).safeApprove(stakeManagerAddress, 0);
-    //     IERC20Upgradeable(maticTokenAddress).safeApprove(
-    //         stakeManagerAddress,
-    //         _amountToDelegate
-    //     );
-    // }
 }
