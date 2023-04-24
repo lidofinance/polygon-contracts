@@ -212,9 +212,7 @@ contract StMATIC is
             (
                 INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
                 uint256 totalDelegated,
-                uint256 bigNodeOperatorLength,
                 uint256[] memory bigNodeOperatorIds,
-                uint256 smallNodeOperatorLength,
                 uint256[] memory smallNodeOperatorIds,
                 uint256[] memory allowedAmountToRequestFromOperators,
                 uint256 totalValidatorsToWithdrawFrom
@@ -252,7 +250,6 @@ contract StMATIC is
                         currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
                             tokenId,
                             activeNodeOperators,
-                            bigNodeOperatorLength,
                             bigNodeOperatorIds,
                             allowedAmountToRequestFromOperators,
                             currentAmount2WithdrawInMatic
@@ -263,7 +260,6 @@ contract StMATIC is
                             currentAmount2WithdrawInMatic = _requestWithdrawUnbalanced(
                                 tokenId,
                                 activeNodeOperators,
-                                smallNodeOperatorLength,
                                 smallNodeOperatorIds,
                                 allowedAmountToRequestFromOperators,
                                 currentAmount2WithdrawInMatic
@@ -273,11 +269,12 @@ contract StMATIC is
                 }
 
                 if (totalAmount2WithdrawInMatic > totalDelegated) {
+                    IStakeManager stakeManagerMem = stakeManager;
                     token2WithdrawRequests[tokenId].push(
                         RequestWithdraw(
                             currentAmount2WithdrawInMatic,
                             0,
-                            stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                            stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                             address(0)
                         )
                     );
@@ -333,12 +330,11 @@ contract StMATIC is
     function _requestWithdrawUnbalanced(
         uint256 tokenId,
         INodeOperatorRegistry.ValidatorData[] memory activeNodeOperators,
-        uint256 nodeOperatorLength,
         uint256[] memory nodeOperatorIds,
         uint256[] memory allowedAmountToRequestFromOperators,
         uint256 currentAmount2WithdrawInMatic
     ) private returns (uint256) {
-        for (uint256 idx = 0; idx < nodeOperatorLength; idx++) {
+        for (uint256 idx = 0; idx < nodeOperatorIds.length; idx++) {
             uint256 id = nodeOperatorIds[idx];
             uint256 amountCanBeRequested = allowedAmountToRequestFromOperators[
                 id
@@ -378,11 +374,12 @@ contract StMATIC is
             type(uint256).max
         );
 
+        IStakeManager stakeManagerMem = stakeManager;
         token2WithdrawRequests[tokenId].push(
             RequestWithdraw(
                 0,
                 IValidatorShare(validatorShare).unbondNonces(address(this)),
-                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                 validatorShare
             )
         );
@@ -416,9 +413,10 @@ contract StMATIC is
         uint256 amountDelegated;
 
         address maticTokenAddress = token;
-        IERC20Upgradeable(maticTokenAddress).safeApprove(address(stakeManager), 0);
+        address stakeManagerAddress = address(stakeManager);
+        IERC20Upgradeable(maticTokenAddress).safeApprove(stakeManagerAddress, 0);
         IERC20Upgradeable(maticTokenAddress).safeApprove(
-            address(stakeManager),
+            stakeManagerAddress,
             amountToDelegate
         );
 
@@ -599,7 +597,7 @@ contract StMATIC is
         IERC20Upgradeable(maticTokenAddress).safeTransfer(insurance, insuranceRewards);
 
         for (uint256 i = 0; i < totalActiveOperatorInfos; i++) {
-            IERC20Upgradeable(token).safeTransfer(
+            IERC20Upgradeable(maticTokenAddress).safeTransfer(
                 operatorInfos[i].rewardAddress,
                 operatorReward
             );
@@ -692,11 +690,12 @@ contract StMATIC is
         private
     {
         sellVoucher_new(_validatorShare, amount, type(uint256).max);
+        IStakeManager stakeManagerMem = stakeManager;
         stMaticWithdrawRequest.push(
             RequestWithdraw(
                 0,
                 IValidatorShare(_validatorShare).unbondNonces(address(this)),
-                stakeManager.epoch() + stakeManager.withdrawalDelay(),
+                stakeManagerMem.epoch() + stakeManagerMem.withdrawalDelay(),
                 _validatorShare
             )
         );
