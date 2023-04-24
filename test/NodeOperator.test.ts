@@ -429,6 +429,9 @@ describe("NodeOperator", function () {
             await expect(nodeOperatorRegistry.connect(user2).setRewardAddress(user2.address))
                 .reverted
 
+            await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(user1.address))
+                .revertedWith("Invalid reward address")
+
             await expect(nodeOperatorRegistry.connect(user1).setRewardAddress(ethers.constants.AddressZero))
                 .revertedWith("Invalid reward address")
 
@@ -452,14 +455,12 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
-            let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            let allActiveOperators = res[0]
-            let totalActiveValidators = res[1]
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(3);
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
             expect(allActiveOperators.length).to.equal(3);
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -477,35 +478,29 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId2, user2.address);
             await nodeOperatorRegistry.addNodeOperator(validatorId3, user3.address);
 
-            let res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            let allActiveOperators = res[0]
-            let totalActiveValidators = res[1]
+            let allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
             expect(allActiveOperators.length).to.equal(3);
 
             let expectedRewardAddress = [user1.address, user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.unstake(validatorId1);
-            res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            allActiveOperators = res[0]
-            totalActiveValidators = res[1]
-            expect(totalActiveValidators).to.equal(2);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(2);
 
             expectedRewardAddress = [user2.address, user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
 
             await stakeManagerMock.slash(validatorId2);
-            res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            allActiveOperators = res[0]
-            totalActiveValidators = res[1]
-            expect(totalActiveValidators).to.equal(1);
+            allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).to.equal(1);
 
             expectedRewardAddress = [user3.address];
-            for (let idx = 0; idx < totalActiveValidators.toNumber(); idx++) {
+            for (let idx = 0; idx < allActiveOperators.length; idx++) {
                 expect(allActiveOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -522,9 +517,8 @@ describe("NodeOperator", function () {
 
             await stakeManagerMock.unstake(validatorId1);
             await stakeManagerMock.slash(validatorId2);
-            const res = await nodeOperatorRegistry.listDelegatedNodeOperators();
-            const totalActiveValidators = res[1]
-            expect(totalActiveValidators).eq(0);
+            const allActiveOperators = await nodeOperatorRegistry.listDelegatedNodeOperators();
+            expect(allActiveOperators.length).eq(0);
         });
 
     })
@@ -536,9 +530,10 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
             await nodeOperatorRegistry.removeNodeOperator(validatorId);
 
-            const res = await nodeOperatorRegistry.listWithdrawNodeOperators();
-            expect(res[0].length).eq(0)
-            expect(res[1]).eq(0)
+            const withdrawValidators = await nodeOperatorRegistry.listWithdrawNodeOperators();
+            // const withdrawValidators = res[0]
+            // const totalNodeOperators = res[1]
+            expect(withdrawValidators.length).eq(0)
         });
 
         it("should return all withdraw node operators", async function () {
@@ -559,13 +554,10 @@ describe("NodeOperator", function () {
 
 
             const expectedRewardAddress = [user1.address, user2.address, user3.address];
-            const res = await nodeOperatorRegistry.listWithdrawNodeOperators();
-            const nodeOperators = res[0]
-            const numberNodeOperators = res[1]
+            const nodeOperators = await nodeOperatorRegistry.listWithdrawNodeOperators();
             expect(nodeOperators.length).to.equal(3);
-            expect(numberNodeOperators).to.equal(3);
 
-            for (let idx = 0; idx < numberNodeOperators.toNumber(); idx++) {
+            for (let idx = 0; idx < nodeOperators.length; idx++) {
                 expect(nodeOperators[idx].rewardAddress).to.equal(expectedRewardAddress[idx]);
             }
         });
@@ -652,6 +644,48 @@ describe("NodeOperator", function () {
             }, false)
         })
 
+        it("Should getValidatorDelegationAmount When a validator has no delegation between validators with delegation", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("1200")
+            const validator2Stake = toEth("500")
+            const validator3Stake = toEth("0")
+            const validator4Stake = toEth("100")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await checkGetValidatorDelegationAmount("1", toEth("0"), {
+                activeNodeOperatorsLength: 4,
+                totalRatio: toEth("800"),
+                operatorRatios: [
+                    toEth("0"),
+                    toEth("0"),
+                    toEth("450"),
+                    toEth("350"),
+                ],
+                rewardAddresses: [
+                    user1.address, user2.address, user3.address, user4.address
+                ]
+            }, false)
+        })
+
         it("Should getValidatorDelegationAmount When not balanced", async function () {
             await stakeOperator(user1)
             await stakeOperator(user2)
@@ -710,15 +744,15 @@ describe("NodeOperator", function () {
                 ]
             }, false)
 
-            // Case 3: setDistanceThreshold = 1000 this should ignore the validator 1 & 2 & 3
+            // Case 3: setDistanceThreshold = 1000 this should ignore the validator 1 & 2
             await nodeOperatorRegistry.setDistanceThreshold(1000)
             await checkGetValidatorDelegationAmount("3", toEth("0"), {
                 activeNodeOperatorsLength: 4,
-                totalRatio: toEth("450"),
+                totalRatio: toEth("800"),
                 operatorRatios: [
                     toEth("0"),
                     toEth("0"),
-                    toEth("0"),
+                    toEth("350"),
                     toEth("450"),
                 ],
                 rewardAddresses: [
@@ -739,7 +773,7 @@ describe("NodeOperator", function () {
                     toEth("600"),
                 ],
                 rewardAddresses: [
-                    user1.address, user3.address, user4.address, ethers.constants.AddressZero
+                    user1.address, user3.address, user4.address
                 ]
             }, false)
         })
@@ -841,7 +875,7 @@ describe("NodeOperator", function () {
                     toEth("400")
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, ethers.constants.AddressZero
+                    user1.address, user2.address
                 ]
             }, false)
 
@@ -849,13 +883,13 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setDistanceThreshold(200)
             await checkGetValidatorDelegationAmount("2", toEth("0"), {
                 activeNodeOperatorsLength: 2,
-                totalRatio: toEth("0"),
+                totalRatio: toEth("400"),
                 operatorRatios: [
                     toEth("0"),
-                    toEth("0")
+                    toEth("400")
                 ],
                 rewardAddresses: [
-                    user1.address, user2.address, ethers.constants.AddressZero
+                    user1.address, user2.address
                 ]
             }, false)
         })
@@ -1085,6 +1119,49 @@ describe("NodeOperator", function () {
             })).revertedWith("There are no active validator");
         })
 
+        it("Should getValidatorsRebalanceAmount When validator delegation is false ", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            let validatorShare: ValidatorShareMock;
+            const validator1Stake = toEth("100")
+            const validator2Stake = toEth("103")
+            const validator3Stake = toEth("100")
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorShare = await getValidatorShare(validatorId);
+            await nodeOperatorRegistry.setDistanceThreshold(103)
+            await nodeOperatorRegistry.setMaxWithdrawPercentagePerRebalance(100)
+
+            await expect(checkgetValidatorsRebalanceAmount("case-1", toEth("0"), {
+                activeNodeOperatorsLength: 3,
+                totalRatio: toEth("303"),
+                operatorRatios: [
+                    toEth("0"),
+                    toEth("1"),
+                    toEth("0"),
+                ],
+                rewardAddresses: [
+                    user1.address, user2.address, user3.address
+                ],
+                totalToWithdraw: toEth("2")
+            })).revertedWith("The system is balanced");
+        })
+
         it("Should fail getValidatorsRebalanceAmount not enough operators", async function () {
             await nodeOperatorRegistry.setDistanceThreshold(120)
             await expect(nodeOperatorRegistry.getValidatorsRebalanceAmount(toEth("0")))
@@ -1291,6 +1368,36 @@ describe("NodeOperator", function () {
             })
         })
 
+        it("getValidatorsRequestWithdraw when system is unbalanced", async function () {
+            const stakePerValidator = [toEth("1500"), toEth("1100"), toEth("1300")]
+            for (let i = 0; i < stakePerValidator.length; i++) {
+                await stakeOperator(accounts[i])
+                let validatorId = await stakeManagerMock.getValidatorId(accounts[i].address)
+                await nodeOperatorRegistry.addNodeOperator(validatorId, accounts[i].address)
+                await increaseStakeFor(validatorId, stakePerValidator[i])
+            }           
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
+            await checkRequestWithdraw("1", false, toEth("900"), {
+                activeNodeOperatorsLength: 3,
+                totalDelegated: toEth("3900"),
+                operatorAmountCanBeRequested: [
+                    toEth("500"),
+                    toEth("100"),
+                    toEth("300"),
+                ],
+                bigNodeOperatorIds: [0],
+                smallNodeOperatorIds: [1, 2],
+                rewardAddresses: [
+                    accounts[0].address,
+                    accounts[1].address,
+                    accounts[2].address,
+                ],
+                totalValidatorToWithdrawFrom: 0,
+            })
+        })
+
         it("getValidatorsRequestWithdraw when user request huge amount when protocol not balances", async function () {
             const stakePerValidator = [toEth("1150"), toEth("1400"), toEth("1200"), toEth("1250"), toEth("1200"), toEth("1300")]
             for (let i = 0; i < 6; i++) {
@@ -1339,7 +1446,7 @@ describe("NodeOperator", function () {
             await nodeOperatorRegistry.setDistanceThreshold(102)
             await nodeOperatorRegistry.setMinRequestWithdrawRange(20)
 
-            await checkRequestWithdraw("1", true, toEth("4320"), {
+            await checkRequestWithdraw("1", false, toEth("4320"), {
                 activeNodeOperatorsLength: 6,
                 totalDelegated: toEth("7320"),
                 operatorAmountCanBeRequested:[
@@ -1493,7 +1600,76 @@ describe("NodeOperator", function () {
                 totalDelegated: toEth("1800"),
                 bigNodeOperatorIds: [0, 1],
                 smallNodeOperatorIds: [2],
-                operatorAmountCanBeRequested: [toEth("500"), toEth("300"), toEth("0")],
+                operatorAmountCanBeRequested: [toEth("1000"), toEth("800"), toEth("0")],
+                rewardAddresses: [user1.address, user2.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
+        })
+
+        it("getValidatorsRequestWithdraw when there is one no active validator", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("0")
+            const validator3Stake = toEth("800")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await stakeManagerMock.setValidatorStatus(2, 0)
+            expect((await stakeManagerMock.validators(2)).status).eq(0)
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 2,
+                totalDelegated: toEth("1800"),
+                bigNodeOperatorIds: [0],
+                smallNodeOperatorIds: [1],
+                operatorAmountCanBeRequested: [toEth("250"), toEth("50")],
+                rewardAddresses: [user1.address, user3.address],
+                totalValidatorToWithdrawFrom: 0,
+            }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
+        })
+
+        it("getValidatorsRequestWithdraw when there is one validator with zero delegation", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user2)
+            await stakeOperator(user3)
+
+            const validator1Stake = toEth("1000")
+            const validator2Stake = toEth("0")
+            const validator3Stake = toEth("800")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(100)
+            await checkRequestWithdraw("1", false, toEth("300"), {
+                activeNodeOperatorsLength: 3,
+                totalDelegated: toEth("1800"),
+                bigNodeOperatorIds: [0, 2],
+                smallNodeOperatorIds: [1],
+                operatorAmountCanBeRequested: [toEth("1000"), toEth("0"), toEth("800")],
                 rewardAddresses: [user1.address, user2.address, user3.address],
                 totalValidatorToWithdrawFrom: 0,
             }, (res:any, withdrawAmount:any) => checkIfCover(res, withdrawAmount))
@@ -1959,7 +2135,7 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(false)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceThreshold, "minAmount")
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
         })
 
@@ -1995,8 +2171,53 @@ describe("NodeOperator", function () {
             expect(res.isBalanced, "isBalanced").eq(true)
             expect(res.maxAmount, "maxAmount").eq(validator3Stake)
             expect(res.minAmount, "minAmount").eq(validator1Stake)
-            expect(res.distanceThreshold, "minAmount")
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake")
                 .eq(validator3Stake.mul(100).div(validator1Stake))
+        })
+
+        it("Get Protocol Stats when protocol is not balanced with empty validator", async function () {
+            await stakeOperator(user1)
+            await stakeOperator(user3)
+            await stakeOperator(user2)
+            await stakeOperator(user4)
+
+            const validator1Stake = toEth("990")
+            const validator2Stake = toEth("1000")
+            const validator3Stake = toEth("0")
+            const validator4Stake = toEth("1200")
+
+            let validatorId = await stakeManagerMock.getValidatorId(user1.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user1.address)
+            await increaseStakeFor(validatorId, validator1Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user2.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user2.address)
+            await increaseStakeFor(validatorId, validator2Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user3.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user3.address)
+            await increaseStakeFor(validatorId, validator3Stake)
+
+            validatorId = await stakeManagerMock.getValidatorId(user4.address)
+            await nodeOperatorRegistry.addNodeOperator(validatorId, user4.address)
+            await increaseStakeFor(validatorId, validator4Stake)
+
+            await nodeOperatorRegistry.setDistanceThreshold(120)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(false)
+            expect(res.maxAmount, "maxAmount").eq(validator4Stake)
+            expect(res.minAmount, "minAmount").eq(0)
+            expect(res.distanceMinMaxStake, "minAmount").eq(validator4Stake.mul(100))
+        })
+
+        it("Get Protocol Stats when protocol is empty", async function () {
+            const distanceThreshold = 100
+            await nodeOperatorRegistry.setDistanceThreshold(distanceThreshold)
+            const res = await nodeOperatorRegistry.getProtocolStats()
+            expect(res.isBalanced, "isBalanced").eq(true)
+            expect(res.maxAmount, "maxAmount").eq(0)
+            expect(res.minAmount, "minAmount").eq(0)
+            expect(res.distanceMinMaxStake, "distanceMinMaxStake").eq(distanceThreshold)
         })
     })
 
@@ -2124,14 +2345,14 @@ async function checkRequestWithdraw(id: string, log: boolean, withdrawAmount: Bi
         console.log(res)
     }
     expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
-    expect(res.bigNodeOperatorLength, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
-    expect(res.smallNodeOperatorLength, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
+    expect(res.bigNodeOperatorIds.length, `${id}--bigNodeOperatorLength`).eq(data.bigNodeOperatorIds.length)
+    expect(res.smallNodeOperatorIds.length, `${id}--smallNodeOperatorLength`).eq(data.smallNodeOperatorIds.length)
 
-    for (let idx = 0; idx < res.bigNodeOperatorLength.toNumber(); idx++) {
+    for (let idx = 0; idx < res.bigNodeOperatorIds.length; idx++) {
         expect(res.bigNodeOperatorIds[idx], `${id}--${idx}--bigNodeOperatorIds`).eq(data.bigNodeOperatorIds[idx])
     }
 
-    for (let idx = 0; idx < res.smallNodeOperatorLength.toNumber(); idx++) {
+    for (let idx = 0; idx < res.smallNodeOperatorIds.length; idx++) {
         expect(res.smallNodeOperatorIds[idx], `${id}--${idx}--smallNodeOperatorIds`).eq(data.smallNodeOperatorIds[idx])
     }
 
@@ -2162,16 +2383,16 @@ async function checkgetValidatorsRebalanceAmount(id: string, totalBuffered: BigN
     totalToWithdraw: BigNumber,
 }) {
     let res = await nodeOperatorRegistry.getValidatorsRebalanceAmount(totalBuffered)
-    expect(res.totalActiveNodeOperator, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
+    expect(res.validators.length, `${id}--nodeOperators`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
-    expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
-    for (let idx = 0; idx < res.operatorRatios.length; idx++) {
-        expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
+    expect(res.operatorRatiosToRebalance.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
+    for (let idx = 0; idx < res.operatorRatiosToRebalance.length; idx++) {
+        expect(res.operatorRatiosToRebalance[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
     expect(res.validators.length, `${id}--res.nodeOperators.length`).eq(data.rewardAddresses.length)
-    for (let idx = 0; idx < res.totalActiveNodeOperator.toNumber(); idx++) {
+    for (let idx = 0; idx < res.validators.length; idx++) {
         expect(res.validators[idx].rewardAddress, `${id}--${idx}--rewardAddress[1]`).eq(data.rewardAddresses[idx])
     }
     expect(res.totalToWithdraw, `${id}--res.totalToWithdraw.length`).eq(data.totalToWithdraw)
@@ -2187,12 +2408,12 @@ async function checkGetValidatorDelegationAmount(id: string, totalBuffered: BigN
     if (log) {
         console.log(res)
     }
-    expect(res.totalActiveNodeOperator, `${id}--totalActiveNodeOperator`).eq(data.activeNodeOperatorsLength)
+    expect(res.validators.length, `${id}--totalActiveNodeOperator`).eq(data.activeNodeOperatorsLength)
     expect(res.totalRatio, `${id}--totalRatio`).eq(data.totalRatio)
 
-    expect(res.operatorRatios.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
-    for (let idx = 0; idx < res.operatorRatios.length; idx++) {
-        expect(res.operatorRatios[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
+    expect(res.operatorRatiosToDelegate.length, `${id}--res.operatorRatios.length`).eq(data.operatorRatios.length)
+    for (let idx = 0; idx < res.operatorRatiosToDelegate.length; idx++) {
+        expect(res.operatorRatiosToDelegate[idx], `${id}--operatorRatios[1]`).eq(data.operatorRatios[idx])
     }
 
     expect(res.validators.length, `${id}--res.totalActiveNodeOperator`).eq(data.rewardAddresses.length)

@@ -102,28 +102,25 @@ interface INodeOperatorRegistry {
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
-    /// @return totalActiveNodeOperators total active node operators.
     function listDelegatedNodeOperators()
         external
         view
-        returns (ValidatorData[] memory, uint256);
+        returns (ValidatorData[] memory);
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this includes ACTIVE, JAILED, and
     /// @notice UNSTAKED operators.
     /// @return nodeOperators a list of ACTIVE, JAILED or UNSTAKED node operator.
-    /// @return totalNodeOperators total number of node operators.
     function listWithdrawNodeOperators()
         external
         view
-        returns (ValidatorData[] memory, uint256);
+        returns (ValidatorData[] memory);
 
     /// @notice  Calculate how total buffered should be delegated between the active validators,
     /// depending on if the system is balanced or not. If validators are in EJECTED or UNSTAKED
     /// status the function will revert.
     /// @param amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
+    /// @return operatorRatiosToDelegate a list of operator's ratio used to calculate the amount to delegate per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
     function getValidatorsDelegationAmount(uint256 amountToDelegate)
@@ -131,8 +128,7 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToDelegate,
             uint256 totalRatio
         );
 
@@ -142,8 +138,7 @@ interface INodeOperatorRegistry {
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param totalBuffered The total amount buffered in stMatic.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
+    /// @return operatorRatiosToRebalance a list of operator's ratio used to calculate the amount to withdraw per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 totalBuffered)
@@ -151,8 +146,7 @@ interface INodeOperatorRegistry {
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToRebalance,
             uint256 totalRatio,
             uint256 totalToWithdraw
         );
@@ -161,9 +155,7 @@ interface INodeOperatorRegistry {
     /// @param _withdrawAmount The amount to withdraw.
     /// @return validators all node operators.
     /// @return totalDelegated total amount delegated.
-    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
     /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
-    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
     /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
@@ -173,9 +165,7 @@ interface INodeOperatorRegistry {
         returns (
             ValidatorData[] memory validators,
             uint256 totalDelegated,
-            uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
-            uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom

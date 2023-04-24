@@ -176,17 +176,17 @@ contract NodeOperatorRegistry is
         whenNotPaused
         nonReentrant
     {
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(_validatorId);
+        ) = _getOperatorStatusAndValidator(_validatorId, rewardAddress);
 
         require(
             operatorStatus == NodeOperatorRegistryStatus.UNSTAKED ||
                 operatorStatus == NodeOperatorRegistryStatus.EJECTED,
             "Cannot remove valid operator."
         );
-        address rewardAddress = validatorIdToRewardAddress[_validatorId];
 
         _removeOperator(_validatorId, validator.contractAddress, rewardAddress);
 
@@ -201,7 +201,7 @@ contract NodeOperatorRegistry is
         uint256 length = validatorIds.length;
         for (uint256 idx = 0; idx < length - 1; idx++) {
             if (_validatorId == validatorIds[idx]) {
-                validatorIds[idx] = validatorIds[validatorIds.length - 1];
+                validatorIds[idx] = validatorIds[length - 1];
                 break;
             }
         }
@@ -241,6 +241,7 @@ contract NodeOperatorRegistry is
         override
         whenNotPaused
     {
+        require(_newRewardAddress != msg.sender, "Invalid reward address");
         uint256 validatorId = validatorRewardAddressToId[msg.sender];
         address oldRewardAddress = validatorIdToRewardAddress[validatorId];
         require(oldRewardAddress == msg.sender, "Unauthorized");
@@ -338,100 +339,116 @@ contract NodeOperatorRegistry is
 
     /// @notice List all the ACTIVE operators on the stakeManager.
     /// @return activeNodeOperators a list of ACTIVE node operator.
-    /// @return totalActiveNodeOperators total active node operators.
     function listDelegatedNodeOperators()
         external
         view
         override
-        returns (ValidatorData[] memory, uint256)
+        returns (ValidatorData[] memory)
     {
-        uint256 totalActiveNodeOperators = 0;
-        IStakeManager.Validator memory validator;
-        NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory activeValidators = new ValidatorData[](validatorIds.length);
-
-        for (uint256 i = 0; i < validatorIds.length; i++) {
-            (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                validatorIds[i]
-            );
-            if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
-                if (!IValidatorShare(validator.contractAddress).delegation())
-                    continue;
-
-                activeValidators[totalActiveNodeOperators] = ValidatorData(
-                    validator.contractAddress,
-                    validatorIdToRewardAddress[validatorIds[i]]
-                );
-                totalActiveNodeOperators++;
-            }
-        }
-        return (activeValidators, totalActiveNodeOperators);
+        return _listNodeOperators(true);
     }
 
     /// @notice List all the operators on the stakeManager that can be withdrawn from this
     /// includes ACTIVE, JAILED, ejected, and UNSTAKED operators.
     /// @return nodeOperators a list of ACTIVE, JAILED, EJECTED or UNSTAKED node operator.
-    /// @return totalNodeOperators total number of node operators.
     function listWithdrawNodeOperators()
         external
         view
         override
-        returns (ValidatorData[] memory, uint256)
+        returns (ValidatorData[] memory)
     {
+        return _listNodeOperators(false);
+    }
+
+    function _listNodeOperatorCondition(
+        NodeOperatorRegistryStatus _operatorStatus,
+        address _validatorAddress,
+        bool _isForDelegation
+    ) private view returns (bool) {
+        if (_isForDelegation) {
+            if (
+                _operatorStatus == NodeOperatorRegistryStatus.ACTIVE &&
+                IValidatorShare(_validatorAddress).delegation()
+            ) return true;
+            return false;
+        } else {
+            if (_operatorStatus != NodeOperatorRegistryStatus.INACTIVE) return true;
+            return false;
+        }
+    }
+
+    /// @notice List all the operators on the stakeManager that can be withdrawn from this
+    /// includes ACTIVE, JAILED, ejected, and UNSTAKED operators.
+    /// @return nodeOperators a list of ACTIVE, JAILED, EJECTED or UNSTAKED node operator.
+    function _listNodeOperators(bool _isForDelegation)
+        private
+        view
+        returns (ValidatorData[] memory){
         uint256 totalNodeOperators = 0;
-        uint256[] memory memValidatorIds = validatorIds;
-        uint256 length = memValidatorIds.length;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus operatorStatus;
-        ValidatorData[] memory withdrawValidators = new ValidatorData[](length);
+        uint256[] memory memValidatorIds = validatorIds;
+        uint256 length = memValidatorIds.length;
+        ValidatorData[] memory activeValidators = new ValidatorData[](length);
 
         for (uint256 i = 0; i < length; i++) {
+            address rewardAddress = validatorIdToRewardAddress[memValidatorIds[i]];
             (operatorStatus, validator) = _getOperatorStatusAndValidator(
-                memValidatorIds[i]
+                memValidatorIds[i],
+                rewardAddress
             );
-            if (operatorStatus == NodeOperatorRegistryStatus.INACTIVE) continue;
 
-            withdrawValidators[totalNodeOperators] = ValidatorData(
+            bool condition = _listNodeOperatorCondition(operatorStatus, validator.contractAddress, _isForDelegation);
+            if (!condition) continue;
+
+            activeValidators[totalNodeOperators] = ValidatorData(
                 validator.contractAddress,
-                validatorIdToRewardAddress[memValidatorIds[i]]
+                rewardAddress
             );
             totalNodeOperators++;
         }
 
-        return (withdrawValidators, totalNodeOperators);
+        if (totalNodeOperators < length) {
+            assembly {
+                mstore(activeValidators, totalNodeOperators)
+            }
+        }
+
+        return activeValidators;
     }
 
     /// @notice Returns operators delegation infos.
     /// @return validators all active node operators.
-    /// @return activeOperatorCount count only active validators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalStaked the total amount staked in all validators.
-    /// @return distanceThreshold the distance between the min and max amount staked in a validator.
+    /// @return distanceMinMaxStake the distance between the min and max amount staked between validators.
     function _getValidatorsDelegationInfos()
         private
         view
         returns (
             ValidatorData[] memory validators,
-            uint256 activeOperatorCount,
             uint256[] memory stakePerOperator,
             uint256 totalStaked,
-            uint256 distanceThreshold
+            uint256 distanceMinMaxStake
         )
     {
-        uint256 length = validatorIds.length;
-        validators = new ValidatorData[](length);
-        stakePerOperator = new uint256[](length);
+        uint256 activeOperatorCount;
+        uint256[] memory validatorIdMem = validatorIds;
+        validators = new ValidatorData[](validatorIdMem.length);
+        stakePerOperator = new uint256[](validatorIdMem.length);
+        address stMaticAddress = address(stMATIC);
 
         uint256 validatorId;
+        address rewardAddress;
         IStakeManager.Validator memory validator;
         NodeOperatorRegistryStatus status;
-
         uint256 maxAmount;
-        uint256 minAmount;
+        uint256 minAmount = type(uint256).max;
 
-        for (uint256 i = 0; i < length; i++) {
-            validatorId = validatorIds[i];
-            (status, validator) = _getOperatorStatusAndValidator(validatorId);
+        for (uint256 i = 0; i < validatorIdMem.length; i++) {
+            validatorId = validatorIdMem[i];
+            rewardAddress = validatorIdToRewardAddress[validatorId];
+            (status, validator) = _getOperatorStatusAndValidator(validatorId, rewardAddress);
             if (status == NodeOperatorRegistryStatus.INACTIVE) continue;
 
             require(
@@ -446,7 +463,7 @@ contract NodeOperatorRegistry is
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
-                .getTotalStake(address(stMATIC));
+                .getTotalStake(stMaticAddress);
 
             totalStaked += amount;
 
@@ -454,17 +471,13 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if (minAmount > amount || minAmount == 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
 
-            bool isDelegationEnabled = IValidatorShare(
-                validator.contractAddress
-            ).delegation();
-
             if (
                 status == NodeOperatorRegistryStatus.ACTIVE &&
-                isDelegationEnabled
+                IValidatorShare(validator.contractAddress).delegation()
             ) {
                 stakePerOperator[activeOperatorCount] = amount;
 
@@ -481,7 +494,14 @@ contract NodeOperatorRegistry is
 
         // The max amount is multiplied by 100 to have a precise value.
         minAmount = minAmount == 0 ? 1 : minAmount;
-        distanceThreshold = ((maxAmount * 100) / minAmount);
+        distanceMinMaxStake = ((maxAmount * 100) / minAmount);
+
+        if (activeOperatorCount < validatorIdMem.length) {
+            assembly {
+                mstore(validators, activeOperatorCount)
+                mstore(stakePerOperator, activeOperatorCount)
+            }
+        }
     }
 
     /// @notice  Calculate how total buffered should be delegated between the active validators,
@@ -489,8 +509,7 @@ contract NodeOperatorRegistry is
     /// status the function will revert.
     /// @param _amountToDelegate The total that can be delegated.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios a list of operator's ratio. It will be calculated if the system is not balanced.
+    /// @return operatorRatiosToDelegate a list of operator's ratio used to calculate the amount to delegate per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     ///  It will be calculated if the system is not balanced.
     function getValidatorsDelegationAmount(uint256 _amountToDelegate)
@@ -499,37 +518,34 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToDelegate,
             uint256 totalRatio
         )
     {
         require(validatorIds.length > 0, "Not enough operators to delegate");
         uint256[] memory stakePerOperator;
         uint256 totalStaked;
-        uint256 distanceThreshold;
+        uint256 distanceMinMaxStake;
         (
             validators,
-            totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
-            distanceThreshold
+            distanceMinMaxStake
         ) = _getValidatorsDelegationInfos();
 
-        uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
-        bool isTheSystemBalanced = distanceThreshold <=
-            distanceThresholdPercents;
+        uint256 totalActiveNodeOperator = validators.length;
+        bool isTheSystemBalanced = distanceMinMaxStake <=
+            DISTANCE_THRESHOLD_PERCENTS;
         if (isTheSystemBalanced) {
             return (
                 validators,
-                totalActiveNodeOperator,
-                operatorRatios,
+                operatorRatiosToDelegate,
                 totalRatio
             );
         }
 
         // If the system is not balanced calculate ratios
-        operatorRatios = new uint256[](totalActiveNodeOperator);
+        operatorRatiosToDelegate = new uint256[](totalActiveNodeOperator);
         uint256 rebalanceTarget = (totalStaked + _amountToDelegate) /
             totalActiveNodeOperator;
 
@@ -540,15 +556,7 @@ contract NodeOperatorRegistry is
                 ? 0
                 : rebalanceTarget - stakePerOperator[idx];
 
-            if (operatorRatioToDelegate != 0 && stakePerOperator[idx] != 0) {
-                operatorRatioToDelegate = (rebalanceTarget * 100) /
-                    stakePerOperator[idx] >=
-                    distanceThresholdPercents
-                    ? operatorRatioToDelegate
-                    : 0;
-            }
-
-            operatorRatios[idx] = operatorRatioToDelegate;
+            operatorRatiosToDelegate[idx] = operatorRatioToDelegate;
             totalRatio += operatorRatioToDelegate;
         }
     }
@@ -559,8 +567,7 @@ contract NodeOperatorRegistry is
     /// @notice Calculate the operator ratios to rebalance the system.
     /// @param _amountToReDelegate The total amount to redelegate in Matic.
     /// @return validators all active node operators.
-    /// @return totalActiveNodeOperator total active node operators.
-    /// @return operatorRatios is a list of operator's ratio.
+    /// @return operatorRatiosToRebalance a list of operator's ratio used to calculate the amount to withdraw per node.
     /// @return totalRatio the total ratio. If ZERO that means the system is balanced.
     /// @return totalToWithdraw the total amount to withdraw.
     function getValidatorsRebalanceAmount(uint256 _amountToReDelegate)
@@ -569,8 +576,7 @@ contract NodeOperatorRegistry is
         override
         returns (
             ValidatorData[] memory validators,
-            uint256 totalActiveNodeOperator,
-            uint256[] memory operatorRatios,
+            uint256[] memory operatorRatiosToRebalance,
             uint256 totalRatio,
             uint256 totalToWithdraw
         )
@@ -578,15 +584,15 @@ contract NodeOperatorRegistry is
         require(validatorIds.length > 1, "Not enough operator to rebalance");
         uint256[] memory stakePerOperator;
         uint256 totalStaked;
-        uint256 distanceThreshold;
+        uint256 distanceMinMaxStake;
         (
             validators,
-            totalActiveNodeOperator,
             stakePerOperator,
             totalStaked,
-            distanceThreshold
+            distanceMinMaxStake
         ) = _getValidatorsDelegationInfos();
 
+        uint256 totalActiveNodeOperator = validators.length;
         require(
             totalActiveNodeOperator > 1,
             "Not enough active operators to rebalance"
@@ -594,11 +600,11 @@ contract NodeOperatorRegistry is
 
         uint256 distanceThresholdPercents = DISTANCE_THRESHOLD_PERCENTS;
         require(
-            distanceThreshold >= distanceThresholdPercents && totalStaked > 0,
+            distanceMinMaxStake > distanceThresholdPercents && totalStaked > 0,
             "The system is balanced"
         );
 
-        operatorRatios = new uint256[](totalActiveNodeOperator);
+        operatorRatiosToRebalance = new uint256[](totalActiveNodeOperator);
         uint256 rebalanceTarget = totalStaked / totalActiveNodeOperator;
         uint256 operatorRatioToRebalance;
 
@@ -607,13 +613,15 @@ contract NodeOperatorRegistry is
                 ? stakePerOperator[idx] - rebalanceTarget
                 : 0;
 
-            operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
-                rebalanceTarget >=
-                distanceThresholdPercents
-                ? operatorRatioToRebalance
-                : 0;
+            if (operatorRatioToRebalance > 0) {
+                operatorRatioToRebalance = (stakePerOperator[idx] * 100) /
+                    rebalanceTarget >=
+                    distanceThresholdPercents
+                    ? operatorRatioToRebalance
+                    : 0;
+            }
 
-            operatorRatios[idx] = operatorRatioToRebalance;
+            operatorRatiosToRebalance[idx] = operatorRatioToRebalance;
             totalRatio += operatorRatioToRebalance;
         }
         totalToWithdraw = totalRatio > _amountToReDelegate
@@ -627,63 +635,73 @@ contract NodeOperatorRegistry is
     }
 
     /// @notice Returns operators info.
-    /// @return nonInactiveValidators all no inactive node operators.
+    /// @return activeValidators all no active node operators.
     /// @return stakePerOperator amount staked in each validator.
     /// @return totalDelegated the total amount delegated to all validators.
-    /// @return minAmount the distance between the min and max amount staked in a validator.
-    /// @return maxAmount the distance between the min and max amount staked in a validator.
+    /// @return minAmount minimum amount staked in a validator.
+    /// @return maxAmount maximum amount staked in a validator.
     function _getValidatorsRequestWithdraw()
         private
         view
         returns (
-            ValidatorData[] memory nonInactiveValidators,
+            ValidatorData[] memory activeValidators,
             uint256[] memory stakePerOperator,
             uint256 totalDelegated,
             uint256 minAmount,
             uint256 maxAmount
         )
     {
-        uint256 length = validatorIds.length;
-        nonInactiveValidators = new ValidatorData[](length);
-        stakePerOperator = new uint256[](length);
+        uint256[] memory validatorIdsMem = validatorIds;
+        activeValidators = new ValidatorData[](validatorIdsMem.length);
+        stakePerOperator = new uint256[](validatorIdsMem.length);
+        address stMaticAddress = address(stMATIC);
 
-        uint256 validatorId;
+        address rewardAddress;
         IStakeManager.Validator memory validator;
+        NodeOperatorRegistryStatus validatorStatus;
+        minAmount = type(uint256).max;
+        uint256 activeValidatorsCounter;
 
-        for (uint256 i = 0; i < length; i++) {
-            validatorId = validatorIds[i];
-            (, validator) = _getOperatorStatusAndValidator(validatorId);
+        for (uint256 i = 0; i < validatorIdsMem.length; i++) {
+            rewardAddress = validatorIdToRewardAddress[validatorIdsMem[i]];
+            (validatorStatus, validator) = _getOperatorStatusAndValidator(validatorIdsMem[i], rewardAddress);
+
+            if (validatorStatus ==  NodeOperatorRegistryStatus.INACTIVE) continue;
 
             // Get the total staked tokens by the StMatic contract in a validatorShare.
-            (uint256 amount, ) = IValidatorShare(validator.contractAddress)
-                .getTotalStake(address(stMATIC));
+            (uint256 amount, ) = IValidatorShare(validator.contractAddress).getTotalStake(stMaticAddress);
 
-            stakePerOperator[i] = amount;
+            stakePerOperator[activeValidatorsCounter] = amount;
             totalDelegated += amount;
 
             if (maxAmount < amount) {
                 maxAmount = amount;
             }
 
-            if ((minAmount > amount && amount != 0) || minAmount == 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
 
-            nonInactiveValidators[i] = ValidatorData(
+            activeValidators[activeValidatorsCounter] = ValidatorData(
                 validator.contractAddress,
-                validatorIdToRewardAddress[validatorIds[i]]
+                rewardAddress
             );
+            activeValidatorsCounter++;
         }
-        minAmount = minAmount == 0 ? 1 : minAmount;
+
+        if (activeValidatorsCounter < validatorIdsMem.length) {
+            assembly {
+                mstore(activeValidators, activeValidatorsCounter)
+                mstore(stakePerOperator, activeValidatorsCounter)
+            }
+        }
     }
 
     /// @notice Calculate the validators to request withdrawal from depending if the system is balalnced or not.
     /// @param _withdrawAmount The amount to withdraw.
     /// @return validators all node operators.
     /// @return totalDelegated total amount delegated.
-    /// @return bigNodeOperatorLength number of ids bigNodeOperatorIds.
     /// @return bigNodeOperatorIds stores the ids of node operators that amount delegated to it is greater than the average delegation.
-    /// @return smallNodeOperatorLength number of ids smallNodeOperatorIds.
     /// @return smallNodeOperatorIds stores the ids of node operators that amount delegated to it is less than the average delegation.
     /// @return operatorAmountCanBeRequested amount that can be requested from a spécific validator when the system is not balanced.
     /// @return totalValidatorToWithdrawFrom the number of validator to withdraw from when the system is balanced.
@@ -694,9 +712,7 @@ contract NodeOperatorRegistry is
         returns (
             ValidatorData[] memory validators,
             uint256 totalDelegated,
-            uint256 bigNodeOperatorLength,
             uint256[] memory bigNodeOperatorIds,
-            uint256 smallNodeOperatorLength,
             uint256[] memory smallNodeOperatorIds,
             uint256[] memory operatorAmountCanBeRequested,
             uint256 totalValidatorToWithdrawFrom
@@ -706,9 +722,7 @@ contract NodeOperatorRegistry is
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -730,9 +744,7 @@ contract NodeOperatorRegistry is
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -748,20 +760,16 @@ contract NodeOperatorRegistry is
                 length) / 100) +
             1;
 
-        totalValidatorToWithdrawFrom = totalValidatorToWithdrawFrom > length
-            ? length
-            : totalValidatorToWithdrawFrom;
+        totalValidatorToWithdrawFrom = min(totalValidatorToWithdrawFrom, length);
 
         if (
-            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS &&
-            minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount
+            minAmount * totalValidatorToWithdrawFrom >= _withdrawAmount &&
+            (maxAmount * 100) / minAmount <= DISTANCE_THRESHOLD_PERCENTS
         ) {
             return (
                 validators,
                 totalDelegated,
-                bigNodeOperatorLength,
                 bigNodeOperatorIds,
-                smallNodeOperatorLength,
                 smallNodeOperatorIds,
                 operatorAmountCanBeRequested,
                 totalValidatorToWithdrawFrom
@@ -769,18 +777,16 @@ contract NodeOperatorRegistry is
         }
         totalValidatorToWithdrawFrom = 0;
         operatorAmountCanBeRequested = new uint256[](length);
-        withdrawAmountPercentage = withdrawAmountPercentage == 0
-            ? 1
-            : withdrawAmountPercentage;
+
         uint256 rebalanceTarget = totalDelegated > _withdrawAmount
             ? (totalDelegated - _withdrawAmount) / length
             : 0;
 
-        rebalanceTarget = rebalanceTarget > minAmount
-            ? minAmount
-            : rebalanceTarget;
+        rebalanceTarget = min(rebalanceTarget, minAmount);
 
         uint256 averageTarget = totalDelegated / length;
+        uint256 bigNodeOperatorLength;
+        uint256 smallNodeOperatorLength;
         bigNodeOperatorIds = new uint256[](length);
         smallNodeOperatorIds = new uint256[](length);
 
@@ -799,6 +805,18 @@ contract NodeOperatorRegistry is
                 : 0;
             operatorAmountCanBeRequested[idx] = operatorRatioToRebalance;
         }
+
+        if (bigNodeOperatorLength < length) {
+            assembly {
+                mstore(bigNodeOperatorIds, bigNodeOperatorLength)
+            }
+        }
+
+        if (smallNodeOperatorLength < length) {
+            assembly {
+                mstore(smallNodeOperatorIds, smallNodeOperatorLength)
+            }
+        }
     }
 
     /// @notice Returns a node operator.
@@ -810,13 +828,17 @@ contract NodeOperatorRegistry is
         override
         returns (FullNodeOperatorRegistry memory nodeOperator)
     {
+        address rewardAddress = validatorIdToRewardAddress[_validatorId];
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(_validatorId);
+        ) = _getOperatorStatusAndValidator(
+            _validatorId,
+            rewardAddress
+        );
         nodeOperator.validatorShare = validator.contractAddress;
         nodeOperator.validatorId = _validatorId;
-        nodeOperator.rewardAddress = validatorIdToRewardAddress[_validatorId];
+        nodeOperator.rewardAddress = rewardAddress;
         nodeOperator.status = operatorStatus;
         nodeOperator.commissionRate = validator.commissionRate;
     }
@@ -834,7 +856,7 @@ contract NodeOperatorRegistry is
         (
             NodeOperatorRegistryStatus operatorStatus,
             IStakeManager.Validator memory validator
-        ) = _getOperatorStatusAndValidator(validatorId);
+        ) = _getOperatorStatusAndValidator(validatorId, _rewardAddress);
 
         nodeOperator.status = operatorStatus;
         nodeOperator.rewardAddress = _rewardAddress;
@@ -852,14 +874,17 @@ contract NodeOperatorRegistry is
         override
         returns (NodeOperatorRegistryStatus operatorStatus)
     {
-        (operatorStatus, ) = _getOperatorStatusAndValidator(_validatorId);
+        (operatorStatus, ) = _getOperatorStatusAndValidator(
+            _validatorId,
+            validatorIdToRewardAddress[_validatorId]
+        );
     }
 
     /// @notice Returns a node operator status.
     /// @param  _validatorId is the id of the node operator.
     /// @return operatorStatus is the operator status.
     /// @return validator is the validator info.
-    function _getOperatorStatusAndValidator(uint256 _validatorId)
+    function _getOperatorStatusAndValidator(uint256 _validatorId, address _rewardAddress)
         private
         view
         returns (
@@ -867,8 +892,8 @@ contract NodeOperatorRegistry is
             IStakeManager.Validator memory validator
         )
     {
-        address rewardAddress = validatorIdToRewardAddress[_validatorId];
-        require(rewardAddress != address(0), "Operator not found");
+        require(_validatorId != 0, "Operator not found");
+        require(_rewardAddress != address(0), "Operator not found");
         validator = stakeManager.validators(_validatorId);
 
         if (
@@ -908,7 +933,7 @@ contract NodeOperatorRegistry is
 
     /// @notice Return the statistics about the protocol as a list
     /// @return isBalanced if the system is balanced or not.
-    /// @return distanceThreshold the distance threshold
+    /// @return distanceMinMaxStake the distance threshold
     /// @return minAmount min amount delegated to a validator.
     /// @return maxAmount max amount delegated to a validator.
     function getProtocolStats()
@@ -917,19 +942,21 @@ contract NodeOperatorRegistry is
         override
         returns (
             bool isBalanced,
-            uint256 distanceThreshold,
+            uint256 distanceMinMaxStake,
             uint256 minAmount,
             uint256 maxAmount
         )
     {
         uint256 length = validatorIds.length;
         uint256 validatorId;
+        minAmount = length == 0 ? 0 : type(uint256).max;
+
         for (uint256 i = 0; i < length; i++) {
             validatorId = validatorIds[i];
             (
                 ,
                 IStakeManager.Validator memory validator
-            ) = _getOperatorStatusAndValidator(validatorId);
+            ) = _getOperatorStatusAndValidator(validatorId, validatorIdToRewardAddress[validatorId]);
 
             (uint256 amount, ) = IValidatorShare(validator.contractAddress)
                 .getTotalStake(address(stMATIC));
@@ -937,14 +964,15 @@ contract NodeOperatorRegistry is
                 maxAmount = amount;
             }
 
-            if (minAmount > amount || minAmount == 0) {
+            if (minAmount > amount) {
                 minAmount = amount;
             }
         }
 
-        uint256 min = minAmount == 0 ? 1 : minAmount;
-        distanceThreshold = ((maxAmount * 100) / min);
-        isBalanced = distanceThreshold <= DISTANCE_THRESHOLD_PERCENTS;
+        uint256 _min = minAmount == 0 ? 1 : minAmount;
+        uint256 _max = maxAmount == 0 ? 1 : maxAmount;
+        distanceMinMaxStake = ((_max * 100) / _min);
+        isBalanced = distanceMinMaxStake <= DISTANCE_THRESHOLD_PERCENTS;
     }
 
     /// @notice List all the node operator statuses in the system.
@@ -966,11 +994,13 @@ contract NodeOperatorRegistry is
         )
     {
         uint256 length = validatorIds.length;
+        uint256 validatorId;
         for (uint256 idx = 0; idx < length; idx++) {
+            validatorId = validatorIds[idx];
             (
                 NodeOperatorRegistryStatus operatorStatus,
 
-            ) = _getOperatorStatusAndValidator(validatorIds[idx]);
+            ) = _getOperatorStatusAndValidator(validatorId, validatorIdToRewardAddress[validatorId]);
             if (operatorStatus == NodeOperatorRegistryStatus.ACTIVE) {
                 activeNodeOperator++;
             } else if (operatorStatus == NodeOperatorRegistryStatus.JAILED) {
@@ -983,5 +1013,9 @@ contract NodeOperatorRegistry is
                 inactiveNodeOperator++;
             }
         }
+    }
+
+    function min(uint256 _valueA, uint256 _valueB) private pure returns(uint256) {
+        return _valueA > _valueB ? _valueB : _valueA;
     }
 }

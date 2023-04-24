@@ -61,13 +61,8 @@ contract PoLidoNFT is
     /// @param _to - Address that will be the owner of minted token
     /// @return Index of the minted token
     function mint(address _to) external override isLido returns (uint256) {
-        uint256 currentIndex = tokenIdIndex + 1;
-
-        _mint(_to, currentIndex);
-
-        tokenIdIndex = currentIndex;
-
-        return currentIndex;
+        _mint(_to, ++tokenIdIndex);
+        return tokenIdIndex;
     }
 
     /// @notice Burn the token with specified _tokenId
@@ -84,8 +79,9 @@ contract PoLidoNFT is
         override(ERC721Upgradeable, IERC721Upgradeable)
     {
         // If this token was approved before, remove it from the mapping of approvals
-        if (getApproved(_tokenId) != address(0)) {
-            _removeApproval(_tokenId);
+        address approvedAddress = getApproved(_tokenId);
+        if (approvedAddress != address(0)) {
+            _removeApproval(_tokenId, approvedAddress);
         }
 
         super.approve(_to, _tokenId);
@@ -136,21 +132,21 @@ contract PoLidoNFT is
                 token2Index[lastOwnerTokenId] = burnedTokenIndexInOwnerTokens;
                 // Copy currently last token to the place of a token we want to burn.
                 // So updated pointer in token2Index points to a slot with the correct value.
-                ownerTokens[burnedTokenIndexInOwnerTokens] = ownerTokens[
-                    lastOwnerTokensIndex
-                ];
+                ownerTokens[burnedTokenIndexInOwnerTokens] = lastOwnerTokenId;
             }
             ownerTokens.pop();
             delete token2Index[tokenId];
 
-            if (getApproved(tokenId) != address(0)) {
-                _removeApproval(tokenId);
+            address approvedAddress = getApproved(tokenId);
+            if (approvedAddress != address(0)) {
+                _removeApproval(tokenId, approvedAddress);
             }
         }
         // Transferring
         else if (from != to) {
-            if (getApproved(tokenId) != address(0)) {
-                _removeApproval(tokenId);
+            address approvedAddress = getApproved(tokenId);
+            if (approvedAddress != address(0)) {
+                _removeApproval(tokenId, approvedAddress);
             }
 
             uint256[] storage senderTokens = owner2Tokens[from];
@@ -231,10 +227,8 @@ contract PoLidoNFT is
 
     /// @notice Remove the tokenId from the specific users array of approved tokens
     /// @param _tokenId - Id of the token that will be removed
-    function _removeApproval(uint256 _tokenId) internal {
-        uint256[] storage approvedTokens = address2Approved[
-            getApproved(_tokenId)
-        ];
+    function _removeApproval(uint256 _tokenId, address _approvedAddress) internal {
+        uint256[] storage approvedTokens = address2Approved[_approvedAddress];
         uint256 removeApprovedTokenIndexInOwnerTokens = tokenId2ApprovedIndex[
             _tokenId
         ];
