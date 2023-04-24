@@ -570,7 +570,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "distanceThreshold",
+        "name": "distanceMinMaxStake",
         "type": "uint256"
       },
       {
@@ -680,13 +680,8 @@
         "type": "tuple[]"
       },
       {
-        "internalType": "uint256",
-        "name": "totalActiveNodeOperator",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint256[]",
-        "name": "operatorRatios",
+        "name": "operatorRatiosToDelegate",
         "type": "uint256[]"
       },
       {
@@ -726,13 +721,8 @@
         "type": "tuple[]"
       },
       {
-        "internalType": "uint256",
-        "name": "totalActiveNodeOperator",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint256[]",
-        "name": "operatorRatios",
+        "name": "operatorRatiosToRebalance",
         "type": "uint256[]"
       },
       {
@@ -782,19 +772,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "bigNodeOperatorLength",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint256[]",
         "name": "bigNodeOperatorIds",
         "type": "uint256[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "smallNodeOperatorLength",
-        "type": "uint256"
       },
       {
         "internalType": "uint256[]",
@@ -900,11 +880,6 @@
         "internalType": "struct INodeOperatorRegistry.ValidatorData[]",
         "name": "",
         "type": "tuple[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -930,11 +905,6 @@
         "internalType": "struct INodeOperatorRegistry.ValidatorData[]",
         "name": "",
         "type": "tuple[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
       }
     ],
     "stateMutability": "view",
