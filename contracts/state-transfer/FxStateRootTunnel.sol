@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2021 ShardLabs
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@maticnetwork/fx-portal/contracts/tunnel/FxBaseRootTunnel.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IFxStateRootTunnel.sol";
 
-/// @title FxStateRootTunnel contract.
-/// @author 2021 ShardLabs
-contract FxStateRootTunnel is IFxStateRootTunnel, FxBaseRootTunnel, Ownable {
+import {FxBaseRootTunnel} from "../tunnel/FxBaseRootTunnel.sol";
+
+/**
+ * @title FxStateRootTunnel
+ */
+contract FxStateRootTunnel is FxBaseRootTunnel, Ownable {
     bytes public latestData;
     address public stMATIC;
 
@@ -26,16 +26,12 @@ contract FxStateRootTunnel is IFxStateRootTunnel, FxBaseRootTunnel, Ownable {
         latestData = data;
     }
 
-    /// @notice send message to child
-    /// @param _message message
-    function sendMessageToChild(bytes memory _message) public override {
+    function sendMessageToChild(bytes memory message) public {
         require(msg.sender == stMATIC, "Not stMATIC");
-        _sendMessageToChild(_message);
+        _sendMessageToChild(message);
     }
 
-    /// @notice Set stMatic address
-    /// @param _newStMATIC new address.
-    function setStMATIC(address _newStMATIC) external override onlyOwner {
-        stMATIC = _newStMATIC;
+    function setStMATIC(address _stMATIC) external onlyOwner {
+        stMATIC = _stMATIC;
     }
 }

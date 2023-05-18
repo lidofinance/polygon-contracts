@@ -1,5 +1,4 @@
-// SPDX-FileCopyrightText: 2021 ShardLabs
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
 import "../interfaces/IRateProvider.sol";
@@ -16,7 +15,7 @@ contract RateProvider is IRateProvider {
     }
 
     function getRate() external override view returns (uint256) {
-        (uint256 stMATIC, uint256 MATIC) = fxChild.getReserves();
-        return MATIC * 1 ether / stMATIC;
+        (uint256 stMatic, uint256 matic) = fxChild.getReserves();
+        return matic * 1 ether / stMatic;
     }
 }

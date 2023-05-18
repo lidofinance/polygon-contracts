@@ -3,9 +3,15 @@
 pragma solidity 0.8.7;
 
 interface IFxStateChildTunnel {
-    
-    /// @dev Function that returns the amount of stMATIC and MATIC in the PoLido protocol
-    /// @return stMATIC return value is the number of stMATIC.
-    /// @return MATIC return value is the number of MATIC.
-    function getReserves() external view returns (uint256 stMATIC, uint256 MATIC);
+    function latestStateId() external view returns (uint256);
+
+    function latestRootMessageSender() external view returns (address);
+
+    function latestData() external view returns (bytes memory);
+
+    function sendMessageToRoot(bytes memory message) external;
+
+    function setFxRootTunnel(address _fxRootTunnel) external;
+
+    function getReserves() external view returns (uint256, uint256);
 }
