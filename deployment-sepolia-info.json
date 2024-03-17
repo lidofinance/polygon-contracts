@@ -1,0 +1,19 @@
+{
+  "network": 11155111,
+  "multisig_upgrader": { "address": "0x3E46BEFDA7112d8954b923ea6bd9f07c2e615e10", "owners": [] },
+  "root_deployer": "0x3E46BEFDA7112d8954b923ea6bd9f07c2e615e10",
+  "child_deployer": "0x3E46BEFDA7112d8954b923ea6bd9f07c2e615e10",
+  "dao": "0x3E46BEFDA7112d8954b923ea6bd9f07c2e615e10",
+  "treasury": "0x3E46BEFDA7112d8954b923ea6bd9f07c2e615e10",
+  "matic_erc20_address": "0x3fd0A53F4Bf853985a95F4Eb3F9C9FDE1F8e2b53",
+  "matic_stake_manager_proxy": "0x4AE8f648B1Ec892B6cc68C89cc088583964d08bE",
+  "proxy_admin": "0xfBccF87bBAC0C8B4277D6C69D4f05B7243A2181f",
+  "lido_nft_proxy": "0xAA9DF46226F9AEf57eB0218A84bd5876372b54cf",
+  "lido_nft_impl": "0x28A7A36AC42159c9fb9375491272861Bd858cd56",
+  "stMATIC_proxy": "0x9206E763776308bed1255507A7674f7590d457b0",
+  "stMATIC_impl": "0x28A7A36AC42159c9fb9375491272861Bd858cd56",
+  "node_operator_registry_proxy": "0x232FdD286B49AA63A0BE21838a5a92267e56F22e",
+  "node_operator_registry_impl": "0xa96c9146c91a3125a9432d9ad0570cbbdfc3e198",
+  "fx_state_root_tunnel": "0xF06cacF59a944bc9c970bC59FAD3dE15Bb53E872",
+  "fx_state_child_tunnel": "0xdD26d8c0d66Cc0203e238E086902e424DC1feF53"
+}

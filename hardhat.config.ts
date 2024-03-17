@@ -58,27 +58,29 @@ const config: HardhatUserConfig = {
         },
         testnet: {
             url: ROOT_CHAIN_RPC,
-            accounts: [DEPLOYER_PRIVATE_KEY],
-            gasPrice: Number(ROOT_GAS_PRICE),
-            gas: Number(ROOT_GAS_LIMIT)
+            accounts: [DEPLOYER_PRIVATE_KEY]
         },
         mainnet: {
             url: ROOT_CHAIN_RPC,
             accounts: [DEPLOYER_PRIVATE_KEY],
-            gasPrice: Number(ROOT_GAS_PRICE),
-            gas: Number(ROOT_GAS_LIMIT)
         },
         mumbai: {
             url: CHILD_CHAIN_RPC,
             accounts: [DEPLOYER_PRIVATE_KEY],
-            gasPrice: Number(CHILD_GAS_PRICE),
-            gas: Number(CHILD_GAS_LIMIT)
         },
         polygon: {
             url: CHILD_CHAIN_RPC,
             accounts: [DEPLOYER_PRIVATE_KEY],
-            gasPrice: Number(CHILD_GAS_PRICE),
-            gas: Number(CHILD_GAS_LIMIT)
+        },
+        sepolia: {
+            url: ROOT_CHAIN_RPC,
+            accounts: [DEPLOYER_PRIVATE_KEY],
+            timeout: 1500000
+        },
+        amoy: {
+            url: CHILD_CHAIN_RPC,
+            accounts: [DEPLOYER_PRIVATE_KEY],
+            timeout: 1500000
         }
     },
     typechain: {
